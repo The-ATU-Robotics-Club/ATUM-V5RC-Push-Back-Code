@@ -1,0 +1,14 @@
+[workspace]
+members = ["packages/*"]
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace.dependencies]
+vexide = "0.7.0"
+atum = { path = "packages/atum" }
+slint = { version = "1.9.2", default-features = false, features = ["compat-1-2", "unsafe-single-threaded", "libm", "renderer-software"] }
+vexide-slint = "0.1.0"
+log = "0.4.27"
+
+

@@ -1,0 +1,22 @@
+[package]
+name = "pink"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# These fields configure default behavior for uploads with `cargo v5`.
+[package.metadata.v5]
+upload-strategy = "differential"
+slot = 2
+name = "pink"
+icon = "cool-x"
+compress = true
+
+[dependencies]
+atum = { workspace = true }
+vexide = { workspace = true }
+log = { workspace = true }
+
+[build-dependencies]
+slint-build = "1.9.1"

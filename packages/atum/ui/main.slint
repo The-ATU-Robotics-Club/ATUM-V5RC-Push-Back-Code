@@ -1,0 +1,142 @@
+import { ComboBox, Button, VerticalBox, HorizontalBox, VerticalBox } from "std-widgets.slint";
+import { DemoPalette, Page } from "./common.slint";
+import { HomePage } from "home_page.slint";
+import { SelectorPage, Selector } from "selector.slint";
+import { DiagnosticPage } from "diagnostic.slint";
+
+export { Selector }
+
+component SideBarIcon inherits Rectangle {
+    in-out property <bool> active;
+    in-out property <image> icon <=> i.source;
+    in-out property <brush> icon-colorize <=> i.colorize;
+
+    callback activate;
+    width: DemoPalette.side-bar-width;
+    height: 60px;
+
+    Rectangle {
+        // x: DemoPalette.side-bar-margin;
+        GridLayout {
+            padding: 0px;
+            @children
+        }
+
+        i := Image {
+            width: 30px;
+            colorize: root.active ? DemoPalette.active-page-icon-color : DemoPalette.inactive-page-icon-color;
+            animate colorize { duration: 125ms; }
+        }
+    }
+
+    TouchArea {
+        clicked => { root.activate(); }
+    }
+}
+
+/// Main application window
+export component AppWindow inherits Window {
+    in-out property<int> active-page: 1;
+
+    width: 480px;
+    height: 240px;
+
+    background: DemoPalette.primary;
+
+    HorizontalLayout {
+        // padding: 10px;
+        padding-left: 50px;
+
+        main-view := Rectangle {
+            height: 100%;
+            // border-radius: 30px;
+            background: DemoPalette.background;
+
+            Rectangle {
+                clip: true;
+                x: main-view.border-radius / 2;
+                y: main-view.border-radius / 2;
+                width: main-view.width - main-view.border-radius;
+                height: main-view.height - main-view.border-radius;
+
+                function calcPageY(pageNumber: int) -> length {
+                    if (root.active-page == pageNumber) {
+                        return 0;
+                    }
+                    return root.active-page < pageNumber ? - self.height / 2 : parent.height / 2;
+                }
+
+                property <duration> page-animation-duration: 250ms;
+
+                HomePage {
+                    property<int> pageNumber: 0;
+                    y: calcPageY(pageNumber);
+                    opacity: root.active-page == pageNumber ? 1 : 0;
+                    animate y {
+                        duration: page-animation-duration;
+                        easing: ease-out-quad;
+                    }
+                    animate opacity {
+                        duration: page-animation-duration;
+                        easing: ease-out-quad;
+                    }
+                }
+
+                path-selector := SelectorPage {
+                    property<int> pageNumber: 1;
+                    y: calcPageY(pageNumber);
+                    opacity: root.active-page == pageNumber ? 1 : 0;
+                    animate y {
+                        duration: page-animation-duration;
+                        easing: ease-out-quad;
+                    }
+                    animate opacity {
+                        duration: page-animation-duration;
+                        easing: ease-out-quad;
+                    }
+                }
+
+                DiagnosticPage {
+                    property<int> pageNumber: 2;
+                    y: calcPageY(pageNumber);
+                    opacity: root.active-page == pageNumber ? 1 : 0;
+                    animate y {
+                        duration: page-animation-duration;
+                        easing: ease-out-quad;
+                    }
+                    animate opacity {
+                        duration: page-animation-duration;
+                        easing: ease-out-quad;
+                    }
+                }
+            }
+        }
+    }
+
+    sidebar := Rectangle {
+        function icon-y(index: int) -> length {
+            return 100px // top padding
+                + index * 72px;
+        }
+        x: 0px;
+        width: DemoPalette.side-bar-width;
+
+        // VerticalLayout {
+        //     y: 20px;
+
+        //     for page-icon[idx] in [
+        //         @image-url("images/home.svg"),
+        //         @image-url("images/home.svg"),
+        //         @image-url("images/home.svg"),
+        //         // @image-url("images/path.svg"),
+        //         // @image-url("images/diagnostic.svg"),
+        //     ]: SideBarIcon {
+        //         activate => {
+        //             root.active-page = idx;
+        //         }
+        //         icon: page-icon;
+        //         active: root.active-page == idx;
+        //     }
+        // }
+    }
+}
