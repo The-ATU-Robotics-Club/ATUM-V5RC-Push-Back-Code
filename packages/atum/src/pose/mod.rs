@@ -29,7 +29,7 @@ impl Pose {
     }
 
     pub fn magnitude(&self) -> Length {
-        (self.x.powi(2) + self.y.powi(2)).sqrt().inch()
+        (self.x.powi(2) + self.y.powi(2)).sqrt().inch() 
     }
 
     pub fn distance(&self, other: Vec2) -> Length {
@@ -39,7 +39,7 @@ impl Pose {
 
     pub fn angular_distance(&self, other: Vec2) -> Angle {
         let dx = other.x - self.x;
-        let dy = other.y - self.y;
+        let dy = other.y - self.y; 
         dy.atan2(dx).rad()
     }
 }

@@ -13,7 +13,10 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     math::{angle::IntoAngle, length::IntoLength},
-    motion::{move_to::MoveTo, turn::Turn},
+    motion::{
+        move_to::MoveTo,
+        turn::{self, Turn},
+    },
     pose::{Pose, Vec2},
     subsystems::{
         drivetrain::{differential, Drivetrain},
@@ -27,6 +30,7 @@ struct Robot {
     controller: Controller,
     intake: Intake,
     drivetrain: Drivetrain,
+
     // otos: Otos,
     settings: Rc<RefCell<Settings>>,
 }
@@ -60,7 +64,13 @@ impl Compete for Robot {
             30.0.deg(),
         );
 
-        let mut turn = Turn::new(Pid::new(3.0, 0.0, 1.8, 5.0), 0.0.deg());
+        let mut turn = Turn::new(
+            Pid::new(24.0, 0.08, 1.1, 20.0),
+            Pid::new(28.0, 0.02, 1.8, 10.0),
+            0.5.deg(),
+            5.0.deg(),
+            85.0.deg(),
+        );
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -88,7 +98,7 @@ impl Compete for Robot {
             // info!("Position: ({}, {}, {})", pose.x, pose.y, pose.h);
 
             if state.button_left.is_pressed() {
-                turn.turn_to(&mut self.drivetrain, 0.0.deg(), Duration::from_millis(2500))
+                turn.turn_to(&mut self.drivetrain, 0.0.deg(), Duration::from_millis(1000))
                     .await;
             }
 

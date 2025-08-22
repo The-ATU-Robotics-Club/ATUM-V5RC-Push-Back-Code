@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use log::debug;
+use log::{debug, warn};
 use vexide::{
     prelude::{Float, Motor},
     time::{sleep, Instant},
@@ -8,19 +8,28 @@ use vexide::{
 
 use crate::{
     controllers::pid::Pid,
-    math::angle::Angle,
+    math::angle::{Angle, IntoAngle},
     pose::Vec2,
     subsystems::drivetrain::Drivetrain,
 };
 
 pub struct Turn {
-    pid: Pid,
+    small_pid: Pid,
+    large_pid: Pid,
     tolerance: Angle,
+    velocity_tolerance: Angle,
+    threshold: Angle,
 }
 
 impl Turn {
-    pub fn new(pid: Pid, tolerance: Angle) -> Self {
-        Self { pid, tolerance }
+    pub fn new(small_pid: Pid, large_pid: Pid, tolerance: Angle, velocity_tolerance: Angle, threshold: Angle) -> Self {
+        Self {
+            small_pid,
+            large_pid,
+            tolerance,
+            velocity_tolerance,
+            threshold,
+        }
     }
 
     pub async fn turn_to_point(&mut self, dt: &mut Drivetrain, point: Vec2, timeout: Duration) {
@@ -33,6 +42,13 @@ impl Turn {
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
+        let starting_error = (target - dt.get_pose().h).wrap().abs();
+        let pid = if starting_error < self.threshold {
+            &mut self.small_pid
+        } else {
+            &mut self.large_pid
+        };
+
         loop {
             sleep(Motor::WRITE_INTERVAL).await;
             time += Motor::WRITE_INTERVAL;
@@ -41,15 +57,17 @@ impl Turn {
 
             let heading = dt.get_pose().h;
             let error = (target - heading).wrap();
-            let output = self.pid.output(error.as_radians(), elapsed_time);
+            let output = pid.output(error.as_radians(), elapsed_time);
+            let omega = dt.get_pose().omega.rad();
 
-            if error.abs() < self.tolerance {
-                debug!("Turn complete");
+            debug!("(Heading, Velocity): ({}, {})", error.as_degrees(), omega.as_degrees());
+            if error.abs() < self.tolerance && omega.abs() < self.velocity_tolerance {
+                debug!("Turn complete at: {}", starting_error.as_degrees());
                 break;
             }
 
             if time > timeout {
-                debug!("Turn interrupted");
+                warn!("Turn interrupted at: {}", starting_error.as_degrees());
                 break;
             }
 

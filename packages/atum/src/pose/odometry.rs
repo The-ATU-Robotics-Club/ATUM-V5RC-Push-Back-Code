@@ -38,7 +38,7 @@ impl Odometry {
                     let mut dh = heading - prev_heading;
                     prev_heading = heading;
 
-                    if dh != 0.0 {
+                    if dh != 0.0 { // Prevent divide by zero error
                         dx = 2.0 * (dh / 2.0).sin() * (dx / dh + side.from_center());
                         dy = 2.0 * (dh / 2.0).sin() * (dy / dh + forward.from_center());
                     }
@@ -56,6 +56,7 @@ impl Odometry {
                     pose.replace_with(|prev| {
                         let heading_avg = prev.h + dh / 2.0;
                         Pose {
+                            // Doing vector rotation for odom and adding to position
                             x: prev.x + (heading_avg.cos() * dx + heading_avg.sin() * dy),
                             y: prev.y + (-heading_avg.sin() * dx + heading_avg.cos() * dy),
                             h: prev.h + dh,
@@ -73,10 +74,10 @@ impl Odometry {
     }
 
     pub fn get_pose(&self) -> Pose {
-        *self.pose.borrow()
+        *self.pose.borrow() // Gets the position as a vector
     }
 
     pub fn set_pose(&mut self, pose: Pose) {
-        *self.pose.borrow_mut() = pose;
+        *self.pose.borrow_mut() = pose; // Sets the position vector
     }
 }
