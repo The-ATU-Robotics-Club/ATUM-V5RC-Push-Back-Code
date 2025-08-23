@@ -8,6 +8,8 @@ use crate::math::length::Length;
 pub struct Angle(f64);
 
 impl Angle {
+    pub const ZERO: Self = Self(0.0);
+
     pub const fn from_radians(radians: f64) -> Self {
         Self(radians)
     }
@@ -34,6 +36,10 @@ impl Angle {
 
     pub fn wrap(&self) -> Self {
         Self((self.0 + PI).rem_euclid(TAU) - PI)
+    }
+
+    pub const fn is_infinite(&self) -> bool {
+        self.0.is_infinite()
     }
 }
 

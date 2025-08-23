@@ -9,14 +9,11 @@ use core::{cell::RefCell, time::Duration};
 use atum::{
     backend::{start_ui, Settings, SlintColor},
     controllers::pid::Pid,
-    hardware::{motor_group::MotorGroup, odometer::Odometer, otos::Otos},
+    hardware::{motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     math::{angle::IntoAngle, length::IntoLength},
-    motion::{
-        move_to::MoveTo,
-        turn::{self, Turn},
-    },
+    motion::{move_to::MoveTo, turn::Turn},
     pose::{Pose, Vec2},
     subsystems::{
         drivetrain::{differential, Drivetrain},
@@ -47,7 +44,7 @@ impl Compete for Robot {
         move_to
             .move_to_point(
                 &mut self.drivetrain,
-                Vec2::new(10.0, 10.0),
+                Vec2::new(10.0.inch(), 10.0.inch()),
                 Duration::from_secs(2),
                 Direction::Forward,
             )
@@ -106,7 +103,7 @@ impl Compete for Robot {
                 move_to
                     .move_to_point(
                         &mut self.drivetrain,
-                        Vec2::new(0.0, 10.0),
+                        Vec2::new(0.0.inch(), 10.0.inch()),
                         Duration::from_millis(5000),
                         Direction::Forward,
                     )
@@ -156,20 +153,20 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
                 Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
             ]),
-            Pose::new(0.0, 0.0, 0.0),
-            Odometer::new(
+            Pose::new(0.0.inch(), 0.0.inch(), 0.0.deg()),
+            TrackingWheel::new(
                 peripherals.adi_c,
                 peripherals.adi_d,
                 Direction::Forward,
-                2.5,
-                0.0,
+                2.5.inch(),
+                0.0.inch(),
             ),
-            Odometer::new(
+            TrackingWheel::new(
                 peripherals.adi_a,
                 peripherals.adi_b,
                 Direction::Forward,
-                2.5,
-                2.0,
+                2.5.inch(),
+                2.0.inch(),
             ),
             imu,
             2.5,

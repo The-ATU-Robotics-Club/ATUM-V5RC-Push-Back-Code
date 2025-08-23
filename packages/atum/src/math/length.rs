@@ -2,11 +2,15 @@ use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAss
 
 use vexide::prelude::Float;
 
+use crate::math::angle::{Angle, IntoAngle};
+
 // distances will default to inches
 #[derive(Clone, Copy, Debug, Default, PartialEq, PartialOrd)]
 pub struct Length(f64);
 
 impl Length {
+    pub const ZERO: Self = Self(0.0);
+
     const METERS_TO_INCHES: f64 = 39.3700787402;
 
     pub const fn from_inches(inches: f64) -> Self {
@@ -31,6 +35,22 @@ impl Length {
 
     pub const fn as_millimeters(&self) -> f64 {
         self.0 / Self::METERS_TO_INCHES * 1000.0
+    }
+
+    pub const fn abs(&self) -> Length {
+        Self(self.0.abs())
+    }
+
+    pub fn sqrt(&self) -> Length {
+        Self(self.0.sqrt())
+    }
+
+    pub fn atan2(&self, other: Length) -> Angle {
+        self.0.atan2(other.0).rad()
+    }
+
+    pub const fn is_infinite(&self) -> bool {
+        self.0.is_infinite()
     }
 }
 
@@ -183,4 +203,4 @@ impl IntoLength for f64 {
     }
 }
 
-crate::impl_float!(Length, f64);
+// crate::impl_float!(Length, f64);

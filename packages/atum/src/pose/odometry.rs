@@ -9,7 +9,7 @@ use vexide::{
 };
 
 use super::Pose;
-use crate::hardware::odometer::Odometer;
+use crate::{hardware::tracking_wheel::TrackingWheel, math::{angle::{Angle, IntoAngle}, length::Length}};
 
 pub struct Odometry {
     pose: Rc<RefCell<Pose>>,
@@ -19,42 +19,43 @@ pub struct Odometry {
 impl Odometry {
     pub fn new(
         mut starting_pose: Pose,
-        mut forward: Odometer<4096>,
-        mut side: Odometer<4096>,
+        mut forward: TrackingWheel,
+        mut side: TrackingWheel,
         imu: InertialSensor,
     ) -> Self {
-        starting_pose.h = starting_pose.h.to_radians();
+        starting_pose.h = starting_pose.h;
         let pose = Rc::new(RefCell::new(starting_pose));
 
         Self {
             pose: pose.clone(),
             _task: spawn(async move {
                 let mut prev_time = Instant::now();
-                let mut prev_heading = imu.heading().unwrap_or_default().to_radians();
+                let mut prev_heading = imu.heading().unwrap_or_default().deg();
                 loop {
                     let mut dx = side.traveled();
                     let mut dy = forward.traveled();
-                    let heading = imu.heading().unwrap_or_default().to_radians();
+                    let heading = imu.heading().unwrap_or_default().deg();
                     let mut dh = heading - prev_heading;
                     prev_heading = heading;
 
-                    if dh != 0.0 { // Prevent divide by zero error
-                        dx = 2.0 * (dh / 2.0).sin() * (dx / dh + side.from_center());
-                        dy = 2.0 * (dh / 2.0).sin() * (dy / dh + forward.from_center());
+                    if dh != Angle::ZERO {
+                        // Prevent divide by zero error
+                        dx = (dx / dh.as_radians() + side.from_center()) * (dh / 2.0).sin().as_radians() * 2.0;
+                        dy = (dy / dh.as_radians() + forward.from_center()) * (dh / 2.0).sin().as_radians() * 2.0;
                     }
 
                     if dx.is_infinite() || dy.is_infinite() || dh.is_infinite() {
                         warn!("Invalid values read from odometers");
-                        dx = 0.0;
-                        dy = 0.0;
-                        dh = 0.0;
+                        dx = Length::ZERO;
+                        dy = Length::ZERO;
+                        dh = Angle::ZERO;
                     }
 
                     // debug!("DELTA pos (x, y, h): ({}, {}, {})", dx, dy, dh);
 
-                    let dt = prev_time.elapsed();
                     pose.replace_with(|prev| {
                         let heading_avg = prev.h + dh / 2.0;
+                        let dt = prev_time.elapsed();
                         Pose {
                             // Doing vector rotation for odom and adding to position
                             x: prev.x + (heading_avg.cos() * dx + heading_avg.sin() * dy),

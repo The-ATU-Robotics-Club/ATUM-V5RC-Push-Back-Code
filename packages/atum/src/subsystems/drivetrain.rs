@@ -3,16 +3,12 @@ use core::f64::consts::TAU;
 use vexide::prelude::{Float, InertialSensor, Motor};
 
 use crate::{
-    hardware::{motor_group::MotorGroup, odometer::Odometer},
+    hardware::{motor_group::MotorGroup, tracking_wheel::TrackingWheel},
     mappings::DriveMode,
     pose::{odometry::Odometry, Pose},
 };
 
 pub struct Drivetrain {
-    // front_left: [Motor; 2],
-    // front_right: [Motor; 2],
-    // back_left: [Motor; 2],
-    // back_right: [Motor; 2],
     left: MotorGroup,
     right: MotorGroup,
     odometry: Odometry,
@@ -22,24 +18,16 @@ pub struct Drivetrain {
 
 impl Drivetrain {
     pub fn new(
-        // front_left: [Motor; 2],
-        // front_right: [Motor; 2],
-        // back_left: [Motor; 2],
-        // back_right: [Motor; 2],
         left: MotorGroup,
         right: MotorGroup,
         starting_pos: Pose,
-        forward: Odometer<4096>,
-        side: Odometer<4096>,
+        forward: TrackingWheel,
+        side: TrackingWheel,
         imu: InertialSensor,
         r: f64,
         track: f64,
     ) -> Self {
         Self {
-            // front_left,
-            // front_right,
-            // back_left,
-            // back_right,
             left,
             right,
             odometry: Odometry::new(starting_pos, forward, side, imu),
@@ -48,29 +36,9 @@ impl Drivetrain {
         }
     }
 
-    pub fn set_voltages(
-        &mut self,
-        // front_left: f64,
-        // front_right: f64,
-        // back_left: f64,
-        // back_right: f64,
-        left: f64,
-        right: f64,
-    ) {
+    pub fn set_voltages(&mut self, left: f64, right: f64) {
         self.left.set_voltage(left);
         self.right.set_voltage(right);
-        // for motor in self.front_left.iter_mut() {
-        //     _ = motor.set_voltage(front_left * Motor::V5_MAX_VOLTAGE);
-        // }
-        // for motor in self.front_right.iter_mut() {
-        //     _ = motor.set_voltage(front_right * Motor::V5_MAX_VOLTAGE);
-        // }
-        // for motor in self.back_left.iter_mut() {
-        //     _ = motor.set_voltage(back_left * Motor::V5_MAX_VOLTAGE);
-        // }
-        // for motor in self.back_right.iter_mut() {
-        //     _ = motor.set_voltage(back_right * Motor::V5_MAX_VOLTAGE);
-        // }
     }
 
     pub fn get_voltages(&self) -> [f64; 2] {
@@ -84,7 +52,7 @@ impl Drivetrain {
 
     pub fn angular_velocity(&self) -> f64 {
         let vdiff = TAU * self.r * (self.left.velocity() + self.right.velocity()) / 60.0; // figure
-        // out if this is also right
+                                                                                          // out if this is also right
         vdiff / self.track
     }
 
@@ -92,20 +60,6 @@ impl Drivetrain {
         self.odometry.get_pose()
     }
 }
-
-// pub fn holomonic(drivetrain: &mut Drivetrain, forward: f64, strafe: f64, turn: f64) {
-//     let magnitude = (strafe.powi(2) + forward.powi(2)).sqrt();
-//     let theta = forward.atan2(strafe) + drivetrain.odometry.pose.borrow().angle;
-//     let x = magnitude * theta.cos();
-//     let y = magnitude * theta.sin();
-//
-//     let front_left = x + y + turn;
-//     let front_right = x - y - turn;
-//     let back_left = x - y + turn;
-//     let back_right = x + y - turn;
-//
-//     drivetrain.set_voltages(front_left, front_right, back_left, back_right);
-// }
 
 /// Applies an acceleration function to the given power value.
 /// Uses polynomial scaling based on the acceleration factor.

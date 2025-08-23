@@ -6,7 +6,7 @@ use core::cell::RefCell;
 
 use vexide::prelude::{Display, spawn};
 
-use crate::{backend::canvas::Canvas, pose::Vec2};
+use crate::{backend::canvas::Canvas, math::length::IntoLength, pose::Vec2};
 
 slint::include_modules!();
 
@@ -28,9 +28,9 @@ pub fn start_ui(display: Display, settings: Rc<RefCell<Settings>>) {
             let _index = autonomous.index as usize;
 
             let coords = [
-                Vec2::new(0.0, 0.0),
-                Vec2::new(20.0, 20.0),
-                Vec2::new(40.0, 15.0),
+                Vec2::new(0.0.inch(), 0.0.inch()),
+                Vec2::new(20.0.inch(), 20.0.inch()),
+                Vec2::new(40.0.inch(), 15.0.inch()),
             ];
 
             let mut canvas = Canvas::new(144, 144, autonomous.color);

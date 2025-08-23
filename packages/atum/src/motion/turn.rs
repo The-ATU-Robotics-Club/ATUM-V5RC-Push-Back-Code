@@ -8,7 +8,7 @@ use vexide::{
 
 use crate::{
     controllers::pid::Pid,
-    math::angle::{Angle, IntoAngle},
+    math::angle::Angle,
     pose::Vec2,
     subsystems::drivetrain::Drivetrain,
 };
@@ -58,7 +58,7 @@ impl Turn {
             let heading = dt.get_pose().h;
             let error = (target - heading).wrap();
             let output = pid.output(error.as_radians(), elapsed_time);
-            let omega = dt.get_pose().omega.rad();
+            let omega = dt.get_pose().omega;
 
             debug!("(Heading, Velocity): ({}, {})", error.as_degrees(), omega.as_degrees());
             if error.abs() < self.tolerance && omega.abs() < self.velocity_tolerance {

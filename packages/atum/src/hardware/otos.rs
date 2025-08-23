@@ -10,7 +10,7 @@ use vexide::{
 };
 
 use super::{packet::Packet, serial_device::SerialDevice};
-use crate::pose::Pose;
+use crate::{math::{angle::{Angle, IntoAngle}, length::{IntoLength, Length}}, pose::Pose};
 struct Command;
 
 impl Command {
@@ -67,9 +67,9 @@ impl Otos {
         _ = otos.msg(Packet::new(Command::RESET), 2).await;
 
         let offset_piece = OTOSData {
-            x: offset.x as f32,
-            y: offset.y as f32,
-            h: offset.h as f32,
+            x: offset.x.as_inches() as f32,
+            y: offset.y.as_inches() as f32,
+            h: offset.h.as_degrees() as f32,
         };
 
         let bytes = bytemuck::bytes_of(&offset_piece);
@@ -116,9 +116,9 @@ impl Otos {
                             let vel = bytemuck::from_bytes::<OTOSData>(&raw).clone();
 
                             pose.replace(Pose {
-                                vf: -0.97 * vel.x as f64,
-                                vs: 0.97 * vel.y as f64,
-                                omega: -0.9825 * vel.h as f64,
+                                vf: (-0.97 * vel.x as f64).inch(),
+                                vs: (0.97 * vel.y as f64).inch(),
+                                omega: (-0.9825 * vel.h as f64).deg(),
                                 ..Default::default()
                             });
                         }
@@ -137,15 +137,15 @@ impl Otos {
         }
     }
 
-    pub fn vf(&self) -> f64 {
+    pub fn vf(&self) -> Length {
         self.pose.borrow().vf
     }
 
-    pub fn vs(&self) -> f64 {
+    pub fn vs(&self) -> Length {
         self.pose.borrow().vs
     }
 
-    pub fn omega(&self) -> f64 {
+    pub fn omega(&self) -> Angle {
         self.pose.borrow().omega
     }
 
