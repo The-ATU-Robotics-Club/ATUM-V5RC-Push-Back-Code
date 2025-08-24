@@ -17,6 +17,7 @@ use crate::{
         length::{IntoLength, Length},
     },
 };
+
 struct Command;
 
 #[allow(unused)]
@@ -138,7 +139,7 @@ impl Otos {
                         if vel_packet.id == Response::Success as u8 && vel_packet.is_correct() {
                             let mut raw = [0; 12];
                             raw.copy_from_slice(&vel_packet.data[..12]);
-                            let vel = bytemuck::from_bytes::<OTOSData>(&raw).clone();
+                            let vel = bytemuck::from_bytes::<OTOSData>(&raw);
 
                             pose.replace(Pose {
                                 vf: (-0.97 * vel.x as f64).inch(),

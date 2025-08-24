@@ -24,12 +24,11 @@ pub struct Odometry {
 
 impl Odometry {
     pub fn new(
-        mut starting_pose: Pose,
+        starting_pose: Pose,
         mut forward: TrackingWheel,
         mut side: TrackingWheel,
         imu: InertialSensor,
     ) -> Self {
-        starting_pose.h = starting_pose.h;
         let pose = Rc::new(RefCell::new(starting_pose));
 
         Self {

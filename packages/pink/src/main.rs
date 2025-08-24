@@ -3,17 +3,16 @@
 
 extern crate alloc;
 
-use alloc::{rc::Rc, vec};
-use core::{cell::RefCell, time::Duration};
+use alloc::vec;
+use core::time::Duration;
 
 use atum::{
-    backend::{start_ui, Settings, SlintColor},
     controllers::pid::Pid,
     hardware::{motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::{move_to::MoveTo, turn::Turn},
-    pose::{Pose, Vec2},
+    pose::{odometry::Odometry, Pose, Vec2},
     subsystems::{
         drivetrain::{differential, Drivetrain},
         intake::Intake,
@@ -27,9 +26,7 @@ struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
     intake: Intake,
-
-    // otos: Otos,
-    settings: Rc<RefCell<Settings>>,
+    otos: Otos,
 }
 
 impl Compete for Robot {
@@ -93,6 +90,10 @@ impl Compete for Robot {
 
             // let pose = self.drivetrain.get_pose();
             // info!("Position: ({}, {}, {})", pose.x, pose.y, pose.h);
+            let vf = self.otos.vf();
+            let vs = self.otos.vs();
+            let omega = self.otos.omega();
+            info!("Velocity: ({:?}, {:?}, {:?})", vf, vs, omega);
 
             if state.button_left.is_pressed() {
                 turn.turn_to(&mut self.drivetrain, 0.0.deg(), Duration::from_millis(1000))
@@ -119,11 +120,6 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
-    let settings = Rc::new(RefCell::new(Settings {
-        test_auton: false,
-        side: SlintColor::Red,
-    }));
-
     let mut imu = InertialSensor::new(peripherals.port_10);
     match imu.calibrate().await {
         Ok(_) => info!("Calibration Successful"),
@@ -145,22 +141,24 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
                 Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
             ]),
-            Pose::new(0.0.inch(), 0.0.inch(), 0.0.deg()),
-            TrackingWheel::new(
-                peripherals.adi_c,
-                peripherals.adi_d,
-                Direction::Forward,
-                2.5.inch(),
-                0.0.inch(),
+            Odometry::new(
+                Pose::new(0.0.inch(), 0.0.inch(), 0.0.deg()),
+                TrackingWheel::new(
+                    peripherals.adi_c,
+                    peripherals.adi_d,
+                    Direction::Forward,
+                    2.5.inch(),
+                    0.0.inch(),
+                ),
+                TrackingWheel::new(
+                    peripherals.adi_a,
+                    peripherals.adi_b,
+                    Direction::Forward,
+                    2.5.inch(),
+                    2.0.inch(),
+                ),
+                imu,
             ),
-            TrackingWheel::new(
-                peripherals.adi_a,
-                peripherals.adi_b,
-                Direction::Forward,
-                2.5.inch(),
-                2.0.inch(),
-            ),
-            imu,
             2.5.inch(),
             12.0.inch(),
         ),
@@ -169,14 +167,9 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
                 Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
             ]),
-            OpticalSensor::new(peripherals.port_2),
-            settings.clone(),
         ),
-        // otos: Otos::new(peripherals.port_21, Pose::new(0.0, 0.0, -90.0)).await,
-        settings: settings.clone(),
+        otos: Otos::new(peripherals.port_21, Pose::new(0.0.inch(), 0.0.inch(), -90.0.deg())).await,
     };
-
-    // start_ui(peripherals.display, settings.clone());
 
     robot.compete().await;
 }

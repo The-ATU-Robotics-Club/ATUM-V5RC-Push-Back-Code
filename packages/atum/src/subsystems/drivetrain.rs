@@ -1,9 +1,9 @@
 use core::f64::consts::PI;
 
-use vexide::prelude::{Float, InertialSensor, Motor};
+use vexide::prelude::{Float, Motor};
 
 use crate::{
-    hardware::{motor_group::MotorGroup, tracking_wheel::TrackingWheel},
+    hardware::motor_group::MotorGroup,
     mappings::DriveMode,
     pose::{odometry::Odometry, Pose},
     units::length::Length,
@@ -21,17 +21,14 @@ impl Drivetrain {
     pub fn new(
         left: MotorGroup,
         right: MotorGroup,
-        starting_pos: Pose,
-        forward: TrackingWheel,
-        side: TrackingWheel,
-        imu: InertialSensor,
+        odometry: Odometry,
         wheel_diameter: Length,
         track: Length,
     ) -> Self {
         Self {
             left,
             right,
-            odometry: Odometry::new(starting_pos, forward, side, imu),
+            odometry,
             wheel_circum: wheel_diameter * PI,
             track,
         }

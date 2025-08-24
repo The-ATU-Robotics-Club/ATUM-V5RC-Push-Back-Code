@@ -17,6 +17,3 @@ compress = true
 atum = { workspace = true }
 vexide = { workspace = true }
 log = { workspace = true }
-
-[build-dependencies]
-slint-build = "1.9.1"

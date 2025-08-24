@@ -3,7 +3,6 @@
 
 extern crate alloc;
 
-pub mod backend;
 pub mod controllers;
 pub mod hardware;
 pub mod units;
