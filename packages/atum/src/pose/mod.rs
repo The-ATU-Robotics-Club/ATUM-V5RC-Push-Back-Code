@@ -2,15 +2,19 @@ pub mod odometry;
 
 use core::ops::Sub;
 
-use vexide::prelude::Float;
+use vexide::float::Float;
 
-use crate::math::{angle::{Angle, IntoAngle}, length::{IntoLength, Length}};
+use crate::units::{
+    angle::{Angle, IntoAngle},
+    length::Length,
+};
 
 #[derive(Clone, Copy, Default)]
 pub struct Pose {
     pub x: Length,
     pub y: Length,
     pub h: Angle,
+    // change these to `LinearVelocity` and `AngularVelocity`
     pub vf: Length,
     pub vs: Length,
     pub omega: Angle,
@@ -22,65 +26,67 @@ impl Pose {
             x,
             y,
             h,
-            vf: 0.0.inch(),
-            vs: 0.0.inch(),
-            omega: 0.0.rad(),
+            vf: Length::ZERO,
+            vs: Length::ZERO,
+            omega: Angle::ZERO,
         }
     }
 
-    pub fn magnitude(&self) -> Length {
-        (self.x * self.x + self.y * self.y).sqrt()
+    pub fn distance(&self, other: Vec2<Length>) -> Length {
+        Vec2::new(self.x, self.y).distance(other)
     }
 
-    pub fn distance(&self, other: Vec2) -> Length {
-        let pose = Self::new(other.x - self.x, other.y - self.y, self.h);
-        pose.magnitude()
-    }
-
-    pub fn angular_distance(&self, other: Vec2) -> Angle {
-        let dx = other.x - self.x;
-        let dy = other.y - self.y; 
-        dy.atan2(dx)
+    pub fn angular_distance(&self, other: Vec2<Length>) -> Angle {
+        Vec2::new(self.x, self.y)
+            .angular_distance(other)
+            .as_inches()
+            .rad()
     }
 }
 
 #[derive(Clone, Copy, Default)]
-pub struct Vec2 {
-    pub x: Length,
-    pub y: Length,
+pub struct Vec2<T> {
+    pub x: T,
+    pub y: T,
 }
 
-impl Vec2 {
-    pub fn new(x: Length, y: Length) -> Self {
+impl<T> Vec2<T> {
+    pub fn new(x: T, y: T) -> Self {
         Vec2 { x, y }
     }
+}
 
-    pub const fn x(&self) -> Length {
+impl<T: Copy> Vec2<T> {
+    pub const fn x(&self) -> T {
         self.x
     }
 
-    pub const fn y(&self) -> Length {
+    pub const fn y(&self) -> T {
         self.y
     }
+}
 
-    pub fn magnitude(&self) -> Length {
-        (self.x * self.x + self.y * self.y).sqrt()
-    }
-
-    pub fn distance(&self, other: Vec2) -> Length {
-        (other - *self).magnitude()
-    }
-
-    pub fn angle(&self) -> Angle {
+impl<T: Copy + Float> Vec2<T> {
+    pub fn angle(&self) -> T {
         self.y.atan2(self.x)
     }
 
-    pub fn angular_distance(&self, other: Vec2) -> Angle {
+    pub fn magnitude(&self) -> T {
+        self.x.hypot(self.y)
+    }
+}
+
+impl<T: Copy + Float + Sub<Output = T>> Vec2<T> {
+    pub fn distance(&self, other: Self) -> T {
+        (other - *self).magnitude()
+    }
+
+    pub fn angular_distance(&self, other: Self) -> T {
         (other - *self).angle()
     }
 }
 
-impl Sub for Vec2 {
+impl<T: Sub<Output = T>> Sub for Vec2<T> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {

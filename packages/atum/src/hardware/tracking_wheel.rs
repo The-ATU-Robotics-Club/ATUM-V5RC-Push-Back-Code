@@ -2,13 +2,12 @@ use core::f64::consts::PI;
 
 use vexide::prelude::{AdiPort, Direction, Position};
 
-use crate::math::length::Length;
-
 use super::encoder::Encoder;
+use crate::units::length::Length;
 
 pub struct TrackingWheel {
     encoder: Encoder<4096>,
-    wheel_diameter: Length,
+    wheel_circum: Length,
     from_center: Length,
     prev_position: Position,
 }
@@ -23,7 +22,7 @@ impl TrackingWheel {
     ) -> Self {
         Self {
             encoder: Encoder::new(top_port, bottom_port, direction),
-            wheel_diameter,
+            wheel_circum: wheel_diameter * PI,
             from_center,
             prev_position: Position::from_revolutions(0.0),
         }
@@ -38,6 +37,6 @@ impl TrackingWheel {
         let change = position - self.prev_position;
         self.prev_position = position;
 
-        self.wheel_diameter * change.as_revolutions() * PI
+        self.wheel_circum * change.as_revolutions()
     }
 }

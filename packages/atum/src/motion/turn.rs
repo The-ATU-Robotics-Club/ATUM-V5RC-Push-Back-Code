@@ -8,9 +8,9 @@ use vexide::{
 
 use crate::{
     controllers::pid::Pid,
-    math::angle::Angle,
     pose::Vec2,
     subsystems::drivetrain::Drivetrain,
+    units::{angle::Angle, length::Length},
 };
 
 pub struct Turn {
@@ -22,7 +22,13 @@ pub struct Turn {
 }
 
 impl Turn {
-    pub fn new(small_pid: Pid, large_pid: Pid, tolerance: Angle, velocity_tolerance: Angle, threshold: Angle) -> Self {
+    pub fn new(
+        small_pid: Pid,
+        large_pid: Pid,
+        tolerance: Angle,
+        velocity_tolerance: Angle,
+        threshold: Angle,
+    ) -> Self {
         Self {
             small_pid,
             large_pid,
@@ -32,7 +38,12 @@ impl Turn {
         }
     }
 
-    pub async fn turn_to_point(&mut self, dt: &mut Drivetrain, point: Vec2, timeout: Duration) {
+    pub async fn turn_to_point(
+        &mut self,
+        dt: &mut Drivetrain,
+        point: Vec2<Length>,
+        timeout: Duration,
+    ) {
         let pose = dt.get_pose();
         let target = pose.angular_distance(point);
         self.turn_to(dt, target, timeout).await;
@@ -60,7 +71,11 @@ impl Turn {
             let output = pid.output(error.as_radians(), elapsed_time);
             let omega = dt.get_pose().omega;
 
-            debug!("(Heading, Velocity): ({}, {})", error.as_degrees(), omega.as_degrees());
+            debug!(
+                "(Heading, Velocity): ({}, {})",
+                error.as_degrees(),
+                omega.as_degrees()
+            );
             if error.abs() < self.tolerance && omega.abs() < self.velocity_tolerance {
                 debug!("Turn complete at: {}", starting_error.as_degrees());
                 break;

@@ -12,21 +12,21 @@ use atum::{
     hardware::{motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    math::{angle::IntoAngle, length::IntoLength},
     motion::{move_to::MoveTo, turn::Turn},
     pose::{Pose, Vec2},
     subsystems::{
         drivetrain::{differential, Drivetrain},
         intake::Intake,
     },
+    units::{angle::IntoAngle, length::IntoLength},
 };
 use log::{error, info, LevelFilter};
 use vexide::prelude::*;
 
 struct Robot {
     controller: Controller,
-    intake: Intake,
     drivetrain: Drivetrain,
+    intake: Intake,
 
     // otos: Otos,
     settings: Rc<RefCell<Settings>>,
@@ -132,14 +132,6 @@ async fn main(peripherals: Peripherals) {
 
     let robot = Robot {
         controller: peripherals.primary_controller,
-        intake: Intake::new(
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
-            ]),
-            OpticalSensor::new(peripherals.port_2),
-            settings.clone(),
-        ),
         drivetrain: Drivetrain::new(
             MotorGroup::new(vec![
                 Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
@@ -169,8 +161,16 @@ async fn main(peripherals: Peripherals) {
                 2.0.inch(),
             ),
             imu,
-            2.5,
-            12.0,
+            2.5.inch(),
+            12.0.inch(),
+        ),
+        intake: Intake::new(
+            MotorGroup::new(vec![
+                Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
+            ]),
+            OpticalSensor::new(peripherals.port_2),
+            settings.clone(),
         ),
         // otos: Otos::new(peripherals.port_21, Pose::new(0.0, 0.0, -90.0)).await,
         settings: settings.clone(),

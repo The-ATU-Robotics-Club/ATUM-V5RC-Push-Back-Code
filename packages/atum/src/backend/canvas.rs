@@ -1,7 +1,6 @@
 use alloc::{vec, vec::Vec};
 
 use slint::{Image, SharedPixelBuffer};
-use vexide::prelude::Float;
 
 use crate::{pose::Vec2};
 use super::SlintColor;
@@ -63,59 +62,11 @@ impl Canvas {
         }
     }
 
-    /// Draw a cubic Bézier curve using de Casteljau's algorithm with `steps` subdivisions
-    // fn draw_bezier(
-    //     &mut self,
-    //     p0: Vec2,
-    //     p1: Vec2,
-    //     p2: Vec2,
-    //     p3: Vec2,
-    //     steps: usize,
-    // ) {
-    //     let mut prev = (p0.x() as i32, p0.y() as i32);
-    //     for i in 1..=steps {
-    //         let t = i as f64 / steps as f64;
-    //         let x = (1.0 - t).powi(3) * p0.x()
-    //             + 3.0 * (1.0 - t).powi(2) * t * p1.x()
-    //             + 3.0 * (1.0 - t) * t.powi(2) * p2.x()
-    //             + t.powi(3) * p3.x();
-    //         let y = (1.0 - t).powi(3) * p0.y()
-    //             + 3.0 * (1.0 - t).powi(2) * t * p1.y()
-    //             + 3.0 * (1.0 - t) * t.powi(2) * p2.y()
-    //             + t.powi(3) * p3.y();
-    //
-    //         let next = (x as i32, y as i32);
-    //         self.draw_line(prev.0, prev.1, next.0, next.1);
-    //         prev = next;
-    //     }
-    // }
-
-    /// Draws coordinates and Bézier curves based on the given list of commands
-    // pub fn draw_commands(&mut self, commands: &[Command]) {
-    //     let mut prev: Option<(i32, i32)> = None;
-    //
-    //     for command in commands {
-    //         match command {
-    //             Command::Coordinate(coord) => {
-    //                 let current = (coord.x() as i32, coord.y() as i32);
-    //                 if let Some(prev) = prev {
-    //                     self.draw_line(prev.0, prev.1, current.0, current.1);
-    //                 }
-    //                 prev = Some(current);
-    //             }
-    //             Command::CubicBezier(p0, p1, p2, p3) => {
-    //                 self.draw_bezier(*p0, *p1, *p2, *p3, 100);
-    //                 prev = Some((p3.x() as i32, p3.y() as i32));
-    //             }
-    //             _ => (), // Ignore other commands
-    //         }
-    //     }
-    // }
-    pub fn draw_coords(&mut self, coords: &[Vec2]) {
+    pub fn draw_coords(&mut self, coords: &[Vec2<f64>]) {
         let mut prev: Option<(i32, i32)> = None;
 
         for coord in coords {
-            let current = (coord.x().as_inches() as i32, coord.y().as_inches() as i32);
+            let current = (coord.x() as i32, coord.y() as i32);
             if let Some(prev) = prev {
                 self.draw_line(prev.0, prev.1, current.0, current.1);
             }

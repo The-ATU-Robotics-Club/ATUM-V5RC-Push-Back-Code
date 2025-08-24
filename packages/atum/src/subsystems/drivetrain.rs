@@ -1,4 +1,4 @@
-use core::f64::consts::TAU;
+use core::f64::consts::PI;
 
 use vexide::prelude::{Float, InertialSensor, Motor};
 
@@ -6,14 +6,15 @@ use crate::{
     hardware::{motor_group::MotorGroup, tracking_wheel::TrackingWheel},
     mappings::DriveMode,
     pose::{odometry::Odometry, Pose},
+    units::length::Length,
 };
 
 pub struct Drivetrain {
     left: MotorGroup,
     right: MotorGroup,
     odometry: Odometry,
-    r: f64,
-    track: f64,
+    wheel_circum: Length,
+    track: Length,
 }
 
 impl Drivetrain {
@@ -24,14 +25,14 @@ impl Drivetrain {
         forward: TrackingWheel,
         side: TrackingWheel,
         imu: InertialSensor,
-        r: f64,
-        track: f64,
+        wheel_diameter: Length,
+        track: Length,
     ) -> Self {
         Self {
             left,
             right,
             odometry: Odometry::new(starting_pos, forward, side, imu),
-            r,
+            wheel_circum: wheel_diameter * PI,
             track,
         }
     }
@@ -47,13 +48,15 @@ impl Drivetrain {
 
     pub fn velocity(&self) -> f64 {
         let rpm = (self.left.velocity() + self.right.velocity()) / 2.0;
-        TAU * self.r * rpm / 60.0 // figure out if this is right
+        self.wheel_circum.as_inches() * rpm / 60.0 // figure out if this is right
     }
 
+    // change this to return `AngularVelocity`
     pub fn angular_velocity(&self) -> f64 {
-        let vdiff = TAU * self.r * (self.left.velocity() + self.right.velocity()) / 60.0; // figure
-                                                                                          // out if this is also right
-        vdiff / self.track
+        let vdiff =
+            self.wheel_circum.as_inches() * (self.left.velocity() + self.right.velocity()) / 60.0;
+
+        vdiff / self.track.as_inches()
     }
 
     pub fn get_pose(&self) -> Pose {

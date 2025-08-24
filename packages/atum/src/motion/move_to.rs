@@ -1,4 +1,4 @@
-use core::{f64::consts::PI, time::Duration};
+use core::time::Duration;
 
 use vexide::{
     prelude::{Direction, Float, Motor},
@@ -7,9 +7,12 @@ use vexide::{
 
 use crate::{
     controllers::pid::Pid,
-    math::{angle::Angle, length::{IntoLength, Length}},
     pose::Vec2,
     subsystems::drivetrain::Drivetrain,
+    units::{
+        angle::{Angle, IntoAngle},
+        length::Length,
+    },
 };
 
 pub struct MoveTo {
@@ -32,7 +35,7 @@ impl MoveTo {
     pub async fn move_to_point(
         &mut self,
         dt: &mut Drivetrain,
-        target: Vec2,
+        target: Vec2<Length>,
         timeout: Duration,
         direction: Direction,
     ) {
@@ -46,23 +49,23 @@ impl MoveTo {
 
             let pose = dt.get_pose();
             let distance = pose.distance(target);
-            let mut linear_output = self.linear.output(distance.as_inches(), elapsed_time).inch();
+            let mut linear_output = self.linear.output(distance.as_inches(), elapsed_time);
             let mut angle = pose.angular_distance(target);
 
-            if linear_output.abs() < self.tolerance || time > timeout {
+            if linear_output.abs() < self.tolerance.as_inches() || time > timeout {
                 break;
             }
 
             if matches!(direction, Direction::Reverse) {
                 linear_output *= -1.0;
-                angle += PI;
+                angle += 180.0.deg();
             }
 
             let herror = (angle - pose.h).wrap();
             let angular_output = self.angular.output(herror.as_radians(), elapsed_time);
 
-            let left = herror.cos() * linear_output + angular_output;
-            let right = herror.cos() * linear_output - angular_output;
+            let left = herror.cos().as_radians() * linear_output + angular_output;
+            let right = herror.cos().as_radians() * linear_output - angular_output;
 
             dt.set_voltages(left, right);
         }

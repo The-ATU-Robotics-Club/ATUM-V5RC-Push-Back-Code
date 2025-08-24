@@ -10,9 +10,16 @@ use vexide::{
 };
 
 use super::{packet::Packet, serial_device::SerialDevice};
-use crate::{math::{angle::{Angle, IntoAngle}, length::{IntoLength, Length}}, pose::Pose};
+use crate::{
+    pose::Pose,
+    units::{
+        angle::{Angle, IntoAngle},
+        length::{IntoLength, Length},
+    },
+};
 struct Command;
 
+#[allow(unused)]
 impl Command {
     const INITIALIZE: u8 = 0;
     const CALIBRATE: u8 = 1;
@@ -27,6 +34,7 @@ impl Command {
     const INVALID: u8 = 10;
 }
 
+#[allow(unused)]
 enum Response {
     Success,
     Error,
@@ -61,10 +69,15 @@ impl Otos {
         let port = SerialPort::open(port, 115200).await;
         let mut otos = SerialDevice::new(port, Response::Error as u8, 5);
 
-        _ = otos.msg(Packet::new(Command::INITIALIZE), 2).await;
+        _ = otos
+            .msg(Packet::new(Command::INITIALIZE), Self::SENDING_SIZE)
+            .await;
 
         sleep(Duration::from_millis(500)).await;
-        _ = otos.msg(Packet::new(Command::RESET), 2).await;
+
+        _ = otos
+            .msg(Packet::new(Command::RESET), Self::SENDING_SIZE)
+            .await;
 
         let offset_piece = OTOSData {
             x: offset.x.as_inches() as f32,
@@ -75,15 +88,23 @@ impl Otos {
         let bytes = bytemuck::bytes_of(&offset_piece);
         let data = bytes.to_vec();
         _ = otos
-            .msg(Packet::with_data(Command::SET_OFFSET, data), 2)
+            .msg(
+                Packet::with_data(Command::SET_OFFSET, data),
+                Self::SENDING_SIZE,
+            )
             .await;
 
-        _ = otos.msg(Packet::new(Command::CALIBRATE), 2).await;
+        _ = otos
+            .msg(Packet::new(Command::CALIBRATE), Self::SENDING_SIZE)
+            .await;
 
         info!("attempting to calibrate");
 
         let start_time = Instant::now();
-        while let Ok(msg) = otos.msg(Packet::new(Command::IS_CALIBRATING), 2).await {
+        while let Ok(msg) = otos
+            .msg(Packet::new(Command::IS_CALIBRATING), Self::SENDING_SIZE)
+            .await
+        {
             if msg.id != Response::Waiting as u8 {
                 info!("calibration success");
                 break;
@@ -97,7 +118,9 @@ impl Otos {
             sleep(Duration::from_millis(10)).await;
         }
 
-        _ = otos.msg(Packet::new(Command::SELF_TEST), 2).await;
+        _ = otos
+            .msg(Packet::new(Command::SELF_TEST), Self::SENDING_SIZE)
+            .await;
         sleep(Duration::from_millis(100)).await;
         info!("OTOS constructed!");
         let pose = Rc::new(RefCell::new(Pose::default()));
@@ -108,7 +131,9 @@ impl Otos {
                 sleep(Duration::from_millis(100)).await;
 
                 loop {
-                    let vel_packet_res = otos.msg(Packet::new(Command::GET_VELOCITY), 14).await;
+                    let vel_packet_res = otos
+                        .msg(Packet::new(Command::GET_VELOCITY), Self::RECEIVING_SIZE)
+                        .await;
                     if let Ok(vel_packet) = vel_packet_res {
                         if vel_packet.id == Response::Success as u8 && vel_packet.is_correct() {
                             let mut raw = [0; 12];
@@ -124,14 +149,13 @@ impl Otos {
                         }
                     }
 
-                    // let pose = pose.borrow();
-                    // debug!(
-                    //     "OTOS reading (vf, vs, omega): ({}, {}, {})",
-                    //     pose.vf, pose.vs, pose.omega
-                    // );
-                    // drop(pose);
-
                     sleep(Duration::from_millis(10)).await;
+
+                    let pose = pose.borrow();
+                    debug!(
+                        "OTOS reading (vf, vs, omega): ({:?}, {:?}, {:?})",
+                        pose.vf, pose.vs, pose.omega
+                    );
                 }
             }),
         }
