@@ -32,10 +32,11 @@ struct Robot {
 impl Compete for Robot {
     async fn autonomous(&mut self) {
         let mut move_to = MoveTo::new(
+            Pid::new(2.0, 0.0, 0.0, 0.0),
             Pid::new(0.0, 0.0, 0.0, 0.0),
-            Pid::new(0.0, 0.0, 0.0, 0.0),
-            1.0.inch(),
-            30.0.deg(),
+            0.5.inch(),
+            0.0.inch(),
+            1.0.tile(),
         );
 
         move_to
@@ -52,10 +53,11 @@ impl Compete for Robot {
         info!("Driver Control Started");
 
         let mut move_to = MoveTo::new(
-            Pid::new(0.0, 0.0, 0.0, 0.0),
-            Pid::new(30.0, 0.0, 1.8, 5.0), // 8, 6.0
-            0.0.inch(),
-            30.0.deg(),
+            Pid::new(1.0, 0.0, 0.0, 0.0),
+            Pid::new(1.0, 0.0, 0.0, 0.0), // 8, 6.0
+            1.0.inch(),
+            5.0.inch(),
+            1.0.tile(),
         );
 
         let mut turn = Turn::new(
@@ -104,8 +106,8 @@ impl Compete for Robot {
                 move_to
                     .move_to_point(
                         &mut self.drivetrain,
-                        Vec2::new(0.0.inch(), 10.0.inch()),
-                        Duration::from_millis(5000),
+                        Vec2::new(0.0.tile(), 1.0.tile()),
+                        Duration::from_millis(1000),
                         Direction::Forward,
                     )
                     .await;

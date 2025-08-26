@@ -10,7 +10,7 @@ pub struct Pid {
 }
 
 impl Pid {
-    pub fn new(kp: f64, ki: f64, kd: f64, integral_threshold: f64) -> Self {
+    pub const fn new(kp: f64, ki: f64, kd: f64, integral_threshold: f64) -> Self {
         Self {
             kp,
             ki,

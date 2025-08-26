@@ -39,6 +39,12 @@ impl Drivetrain {
         self.right.set_voltage(right);
     }
 
+    pub fn arcade(&mut self, power: f64, turn: f64) {
+        let left = power + turn;
+        let right = power - turn;
+        self.set_voltages(left, right);
+    }
+
     pub fn get_voltages(&self) -> [f64; 2] {
         [self.left.voltage(), self.right.voltage()]
     }

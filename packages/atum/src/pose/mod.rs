@@ -1,6 +1,7 @@
 pub mod odometry;
+pub mod ukf;
 
-use core::ops::Sub;
+use core::{fmt::Display, ops::Sub};
 
 use vexide::float::Float;
 
@@ -37,14 +38,23 @@ impl Pose {
     }
 
     pub fn angular_distance(&self, other: Vec2<Length>) -> Angle {
-        Vec2::new(self.x, self.y)
-            .angular_distance(other)
+        other
+            .angular_distance(Vec2::new(self.x, self.y))
             .as_inches()
             .rad()
     }
 }
 
-#[derive(Clone, Copy, Default)]
+impl Display for Pose {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let x = self.x.as_inches();
+        let y = self.y.as_inches();
+        let h = self.h.as_degrees();
+        write!(f, "({}, {}, {})", x, y, h)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Vec2<T> {
     pub x: T,
     pub y: T,
@@ -78,11 +88,11 @@ impl<T: Copy + Float> Vec2<T> {
 
 impl<T: Copy + Float + Sub<Output = T>> Vec2<T> {
     pub fn distance(&self, other: Self) -> T {
-        (other - *self).magnitude()
+        (*self - other).magnitude()
     }
 
     pub fn angular_distance(&self, other: Self) -> T {
-        (other - *self).angle()
+        (*self - other).angle()
     }
 }
 

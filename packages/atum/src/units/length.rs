@@ -19,6 +19,11 @@ impl Length {
         Self(millimeters * Self::METERS_TO_INCHES / 1000.0)
     }
 
+    // 24 being the size of one VEX field tile
+    pub const fn from_tiles(tiles: f64) -> Self {
+        Self(tiles / 24.0)
+    }
+
     pub const fn as_inches(&self) -> f64 {
         self.0
     }
@@ -31,6 +36,10 @@ impl Length {
         self.0 / Self::METERS_TO_INCHES * 1000.0
     }
 
+    pub const fn as_tiles(&self) -> f64 {
+        self.0 * 24.0
+    }
+
     pub const fn is_infinite(&self) -> bool {
         self.0.is_infinite()
     }
@@ -40,6 +49,7 @@ pub trait IntoLength {
     fn inch(self) -> Length;
     fn meter(self) -> Length;
     fn millimeters(self) -> Length;
+    fn tile(self) -> Length;
 }
 
 impl IntoLength for f64 {
@@ -53,6 +63,10 @@ impl IntoLength for f64 {
 
     fn millimeters(self) -> Length {
         Length::from_millimeters(self)
+    }
+
+    fn tile(self) -> Length {
+        Length::from_tiles(self)
     }
 }
 
