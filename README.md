@@ -30,7 +30,8 @@ Make sure you have [Git](https://git-scm.com/downloads) installed.
 3. **Clone this repository**
 
     ```bash
-    git clone https://github.com/YOUR-ORG/ATUM-VRC-High-Stakes-Code.git
+    git clone https://github.com/The-ATU-Robotics-Club/ATUM-V5RC-Push-Back-Code
+    
     cd ATUM-VRC-High-Stakes-Code
     ```
 
