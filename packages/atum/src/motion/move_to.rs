@@ -10,10 +10,7 @@ use crate::{
     controllers::pid::Pid,
     pose::Vec2,
     subsystems::drivetrain::Drivetrain,
-    units::{
-        angle::{Angle, IntoAngle},
-        length::Length,
-    },
+    units::{angle::IntoAngle, length::Length},
 };
 
 pub struct MoveTo {
@@ -50,6 +47,7 @@ impl MoveTo {
     ) {
         let start_time = Instant::now();
         let mut prev_time = Instant::now();
+        debug!("attempting to go to: {:?}", target);
 
         let start_heading = dt.get_pose().h;
         loop {
@@ -64,7 +62,8 @@ impl MoveTo {
             let position_error = target - position;
             let distance = position_error.magnitude();
             let mut linear_output = self.linear.output(distance.as_inches(), elapsed_time);
-            let mut target_h = if distance.abs() < self.turn_threshold {
+            linear_output = linear_output.clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE);
+            let target_h = if distance.abs() < self.turn_threshold {
                 start_heading
             } else {
                 position_error.angle().as_inches().rad()
@@ -76,7 +75,6 @@ impl MoveTo {
             //     target.x.as_inches(),
             //     target.y.as_inches()
             // );
-            debug!("distance: {:?}", distance);
 
             if distance.abs() < self.tolerance && pose.vf.abs() < self.velocity_tolerance {
                 info!("turn success");
@@ -88,13 +86,28 @@ impl MoveTo {
                 break;
             }
 
-            if direction.is_reverse() {
+            let mut herror = (heading - target_h - 270.0.deg()).wrap();
+
+            debug!(
+                "d, a : {:?}, {:?}",
+                distance.as_inches(),
+                herror.as_degrees()
+            );
+
+            if direction.is_reverse() || herror.abs() > 90.0.deg() {
                 linear_output *= -1.0;
-                target_h += 180.0.deg();
+                herror += 180.0.deg();
             }
 
-            let herror = (target_h - heading).wrap();
-            let angular_output = self.angular.output(herror.as_radians(), elapsed_time);
+            let angular_output = self
+                .angular
+                .output(herror.wrap().as_radians(), elapsed_time);
+
+            debug!(
+                "({}, {})",
+                linear_output * herror.cos().as_radians() + angular_output,
+                linear_output * herror.cos().as_radians() - angular_output
+            );
 
             // do cosine scaling on rewrite: herror.cos() * linear_output
             dt.arcade(linear_output * herror.cos().as_radians(), angular_output);

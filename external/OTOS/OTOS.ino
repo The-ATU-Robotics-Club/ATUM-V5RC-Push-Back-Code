@@ -69,6 +69,7 @@ enum Command {
   Calibrate,
   IsCalibrating,
   Reset,
+  ResetTracking,
   SetOffset,
   SetPosition,
   GetPosition,
@@ -139,6 +140,12 @@ void loop() {
         }
         break;
       case Command::Reset:
+        {
+          const bool success{ !otos.resetTracking() };
+          Packet{ success ? Response::Success : Response::Error }.write();
+        }
+        break;
+      case Command::ResetTracking:
         {
           const bool success{ !otos.resetTracking() };
           Packet{ success ? Response::Success : Response::Error }.write();

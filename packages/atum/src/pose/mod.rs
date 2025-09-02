@@ -1,7 +1,6 @@
 pub mod odometry;
-pub mod ukf;
 
-use core::{fmt::Display, ops::Sub};
+use core::{fmt::Display, ops::{Add, Mul, Sub}};
 
 use vexide::float::Float;
 
@@ -31,10 +30,6 @@ impl Pose {
             vs: Length::ZERO,
             omega: Angle::ZERO,
         }
-    }
-
-    pub fn distance(&self, other: Vec2<Length>) -> Length {
-        Vec2::new(self.x, self.y).distance(other)
     }
 
     pub fn angular_distance(&self, other: Vec2<Length>) -> Angle {
@@ -81,15 +76,24 @@ impl<T: Copy + Float> Vec2<T> {
         self.y.atan2(self.x)
     }
 
+    // pub fn magnitude(&self) -> T {
+    //     self.x.hypot(self.y)
+    // }
+}
+
+impl<T: Copy + Float + Add<Output = T> + Mul<Output = T>> Vec2<T> {
     pub fn magnitude(&self) -> T {
-        self.x.hypot(self.y)
+        let x = self.x;
+        let y = self.y;
+
+        (x * x + y * y).sqrt()
     }
 }
 
 impl<T: Copy + Float + Sub<Output = T>> Vec2<T> {
-    pub fn distance(&self, other: Self) -> T {
-        (*self - other).magnitude()
-    }
+    // pub fn distance(&self, other: Self) -> T {
+    //     (*self - other).magnitude()
+    // }
 
     pub fn angular_distance(&self, other: Self) -> T {
         (*self - other).angle()
