@@ -1,6 +1,5 @@
 use alloc::vec::Vec;
 
-use log::error;
 use vexide::prelude::Motor;
 
 pub struct MotorGroup {
@@ -14,10 +13,7 @@ impl MotorGroup {
 
     pub fn set_voltage(&mut self, voltage: f64) {
         for motor in self.motors.iter_mut() {
-            let status = motor.set_voltage(voltage);
-            if let Err(e) = status {
-                error!("motor failed {}", e);
-            }
+            _ = motor.set_voltage(voltage);
         }
     }
 

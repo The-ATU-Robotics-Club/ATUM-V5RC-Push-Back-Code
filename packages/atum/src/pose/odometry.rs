@@ -27,9 +27,10 @@ impl Odometry {
         starting_pose: Pose,
         mut forward: TrackingWheel,
         mut side: TrackingWheel,
-        imu: InertialSensor,
+        mut imu: InertialSensor,
     ) -> Self {
         let pose = Rc::new(RefCell::new(starting_pose));
+        _ = imu.set_heading(starting_pose.h.as_degrees());
 
         Self {
             pose: pose.clone(),

@@ -53,11 +53,11 @@ impl Compete for Robot {
         info!("Driver Control Started");
 
         let mut move_to = MoveTo::new(
-            Pid::new(1.0, 0.0, 0.0, 0.0),
-            Pid::new(1.0, 0.0, 0.0, 0.0), // 8, 6.0
+            Pid::new(0.5, 0.0, 0.05, 0.0),
+            Pid::new(6.0, 0.0, 0.0, 0.0),
             1.0.inch(),
-            5.0.inch(),
-            1.0.tile(),
+            10.0.inch(),
+            0.5.tile(),
         );
 
         let mut turn = Turn::new(
@@ -90,12 +90,19 @@ impl Compete for Robot {
                 self.intake.set_voltage(0.0);
             }
 
-            // let pose = self.drivetrain.get_pose();
-            // info!("Position: ({}, {}, {})", pose.x, pose.y, pose.h);
-            let vf = self.otos.vf();
-            let vs = self.otos.vs();
-            let omega = self.otos.omega();
-            info!("Velocity: ({:?}, {:?}, {:?})", vf, vs, omega);
+            // info!("Position: {}", self.drivetrain.get_pose());
+            // let vf = self.otos.vf();
+            // let vs = self.otos.vs();
+            // let omega = self.otos.omega();
+            // info!("Velocity: ({:?}, {:?}, {:?})", vf, vs, omega);
+            let x = self.otos.x().as_inches();
+            let y = self.otos.y().as_inches();
+            let h = self.otos.h().as_degrees();
+            info!("Position: ({:?}, {:?}, {:?})", x, y, h);
+            
+            if state.button_down.is_now_pressed() {
+                self.drivetrain.set_pose(Pose::new(0.0.inch(), 0.0.inch(), self.drivetrain.get_pose().h))
+            }
 
             if state.button_left.is_pressed() {
                 turn.turn_to(&mut self.drivetrain, 0.0.deg(), Duration::from_millis(1000))
@@ -106,8 +113,8 @@ impl Compete for Robot {
                 move_to
                     .move_to_point(
                         &mut self.drivetrain,
-                        Vec2::new(0.0.tile(), 1.0.tile()),
-                        Duration::from_millis(1000),
+                        Vec2::new(0.0.tile(), 24.0.inch()),
+                        Duration::from_secs(8),
                         Direction::Forward,
                     )
                     .await;
@@ -132,25 +139,25 @@ async fn main(peripherals: Peripherals) {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
             MotorGroup::new(vec![
-                Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
             ]),
             MotorGroup::new(vec![
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
             ]),
             Odometry::new(
                 Pose::new(0.0.inch(), 0.0.inch(), 0.0.deg()),
                 TrackingWheel::new(
                     peripherals.adi_c,
                     peripherals.adi_d,
-                    Direction::Forward,
+                    Direction::Reverse,
                     2.5.inch(),
-                    0.0.inch(),
+                    2.0.inch(),
                 ),
                 TrackingWheel::new(
                     peripherals.adi_a,
@@ -164,13 +171,15 @@ async fn main(peripherals: Peripherals) {
             2.5.inch(),
             12.0.inch(),
         ),
-        intake: Intake::new(
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
-            ]),
-        ),
-        otos: Otos::new(peripherals.port_21, Pose::new(0.0.inch(), 0.0.inch(), -90.0.deg())).await,
+        intake: Intake::new(MotorGroup::new(vec![
+            Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
+        ])),
+        otos: Otos::new(
+            peripherals.port_20,
+            Pose::new(0.0.inch(), 0.0.inch(), -90.0.deg()),
+        )
+        .await,
     };
 
     robot.compete().await;
