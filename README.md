@@ -1,4 +1,4 @@
-# ATUM-VRC-High-Stakes-Code
+# ATUM-VRC-Push-Back-Code
 
 [![Rust](https://shields.io/badge/-Rust-3776AB?style=flat&logo=rust)](https://www.rust-lang.org)
 
@@ -32,7 +32,7 @@ Make sure you have [Git](https://git-scm.com/downloads) installed.
     ```bash
     git clone https://github.com/The-ATU-Robotics-Club/ATUM-V5RC-Push-Back-Code
     
-    cd ATUM-VRC-High-Stakes-Code
+    cd ATUM-VRC-Push-Back-Code
     ```
 
 4. **Install Vexide tooling**
