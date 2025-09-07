@@ -2,6 +2,8 @@ use alloc::vec::Vec;
 
 use vexide::prelude::Motor;
 
+use super::average;
+
 pub struct MotorGroup {
     motors: Vec<Motor>,
 }
@@ -38,8 +40,4 @@ impl MotorGroup {
 
         average(velocities) // * ratio
     }
-}
-
-pub fn average(values: Vec<f64>) -> f64 {
-    values.iter().sum::<f64>() / values.len() as f64
 }

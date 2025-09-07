@@ -8,7 +8,7 @@ use core::time::Duration;
 
 use atum::{
     controllers::pid::Pid,
-    hardware::{motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
+    hardware::{imu::Imu, motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::{move_to::MoveTo, turn::Turn},
@@ -101,7 +101,11 @@ impl Compete for Robot {
             info!("Position: ({}, {}, {})", x, y, h);
 
             if state.button_down.is_now_pressed() {
-                self.drivetrain.set_pose(Pose::new(0.0.inch(), 0.0.inch(), self.drivetrain.get_pose().h))
+                self.drivetrain.set_pose(Pose::new(
+                    0.0.inch(),
+                    0.0.inch(),
+                    self.drivetrain.get_pose().h,
+                ))
             }
 
             if state.button_left.is_pressed() {
@@ -129,11 +133,13 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
-    let mut imu = InertialSensor::new(peripherals.port_10);
-    match imu.calibrate().await {
-        Ok(_) => info!("Calibration Successful"),
-        Err(e) => error!("Error {:?}", e),
-    }
+    let mut imu = Imu::new(vec![
+        InertialSensor::new(peripherals.port_10),
+        InertialSensor::new(peripherals.port_19),
+    ]);
+
+    imu.calibrate().await;
+
     let starting_position = Pose::new(0.0.inch(), 0.0.inch(), 0.0.deg());
 
     let robot = Robot {
@@ -158,14 +164,14 @@ async fn main(peripherals: Peripherals) {
                     peripherals.adi_d,
                     Direction::Reverse,
                     2.5.inch(),
-                    2.0.inch(),
+                    0.0.inch(),
                 ),
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
-                    Direction::Forward,
+                    Direction::Reverse,
                     2.5.inch(),
-                    2.0.inch(),
+                    -1.7175.inch(),
                 ),
                 imu,
             ),

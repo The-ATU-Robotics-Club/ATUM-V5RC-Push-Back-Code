@@ -3,18 +3,15 @@ use core::{cell::RefCell, time::Duration};
 
 use log::warn;
 use vexide::{
-    prelude::{Float, InertialSensor, Task},
+    prelude::{Float, Task},
     task::spawn,
     time::{sleep, Instant},
 };
 
 use super::Pose;
 use crate::{
-    hardware::tracking_wheel::TrackingWheel,
-    units::{
-        angle::{Angle, IntoAngle},
-        length::Length,
-    },
+    hardware::{imu::Imu, tracking_wheel::TrackingWheel},
+    units::{angle::Angle, length::Length},
 };
 
 pub struct Odometry {
@@ -27,20 +24,20 @@ impl Odometry {
         starting_pose: Pose,
         mut forward: TrackingWheel,
         mut side: TrackingWheel,
-        mut imu: InertialSensor,
+        mut imu: Imu,
     ) -> Self {
         let pose = Rc::new(RefCell::new(starting_pose));
-        _ = imu.set_heading(starting_pose.h.as_degrees());
+        imu.set_heading(starting_pose.h);
 
         Self {
             pose: pose.clone(),
             _task: spawn(async move {
                 let mut prev_time = Instant::now();
-                let mut prev_heading = imu.heading().unwrap_or_default().deg();
+                let mut prev_heading = imu.heading();
                 loop {
                     let mut dx = side.traveled();
                     let mut dy = forward.traveled();
-                    let heading = imu.heading().unwrap_or_default().deg();
+                    let heading = imu.heading();
                     let mut dh = heading - prev_heading;
                     prev_heading = heading;
 
