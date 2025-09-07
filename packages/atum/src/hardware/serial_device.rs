@@ -10,16 +10,14 @@ use super::packet::Packet;
 
 pub struct SerialDevice {
     serial: SerialPort,
-    error_id: u8,
     timeout: Duration,
 }
 
 impl SerialDevice {
-    pub fn new(serial: SerialPort, error_id: u8, timeout: u64) -> Self {
+    pub fn new(serial: SerialPort, timeout: Duration) -> Self {
         Self {
             serial,
-            error_id,
-            timeout: Duration::from_millis(timeout),
+            timeout,
         }
     }
 
@@ -33,7 +31,7 @@ impl SerialDevice {
         let start_time = Instant::now();
 
         while self.serial.unread_bytes()? < expected_response_size
-            && Instant::now() - start_time < self.timeout
+            && start_time.elapsed() < self.timeout
         {
             sleep(Duration::from_millis(0)).await;
         }

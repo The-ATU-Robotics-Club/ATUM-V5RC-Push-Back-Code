@@ -21,24 +21,20 @@ use crate::{
 
 struct Command;
 
-#[allow(unused)]
 impl Command {
     const INITIALIZE: u8 = 0;
     const CALIBRATE: u8 = 1;
     const IS_CALIBRATING: u8 = 2;
     const RESET: u8 = 3;
-    const RESET_TRACKING: u8 = 4;
-    const SET_OFFSET: u8 = 5;
-    const SET_POSITION: u8 = 6;
-    const GET_POSITION: u8 = 7;
-    const GET_VELOCITY: u8 = 8;
-    const CHECK: u8 = 9;
-    const SELF_TEST: u8 = 10;
-    const INVALID: u8 = 11;
+    const SET_OFFSET: u8 = 4;
+    const SET_POSITION: u8 = 5;
+    const GET_POSITION: u8 = 6;
+    const GET_VELOCITY: u8 = 7;
+    const CHECK: u8 = 8;
+    const SELF_TEST: u8 = 9;
 }
 
-#[allow(unused)]
-enum Response {
+pub enum Response {
     Success,
     Error,
     Waiting,
@@ -68,9 +64,9 @@ impl Otos {
     const RECEIVING_SIZE: usize = 14;
 
     #[must_use]
-    pub async fn new(port: SmartPort, offset: Pose) -> Self {
+    pub async fn new(port: SmartPort, start: Pose, offset: Pose) -> Self {
         let port = SerialPort::open(port, 115200).await;
-        let mut otos = SerialDevice::new(port, Response::Error as u8, 5);
+        let mut otos = SerialDevice::new(port, Duration::from_millis(5));
 
         _ = otos
             .msg(Packet::new(Command::INITIALIZE), Self::SENDING_SIZE)
@@ -82,10 +78,25 @@ impl Otos {
             .msg(Packet::new(Command::RESET), Self::SENDING_SIZE)
             .await;
 
+        let starting_piece = OTOSData {
+            x: start.x.as_meters() as f32,
+            y: start.y.as_meters() as f32,
+            h: start.h.as_radians() as f32,
+        };
+
+        let bytes = bytemuck::bytes_of(&starting_piece);
+        let data = bytes.to_vec();
+        _ = otos
+            .msg(
+                Packet::with_data(Command::SET_POSITION, data),
+                Self::SENDING_SIZE,
+            )
+            .await;
+
         let offset_piece = OTOSData {
-            x: offset.x.as_inches() as f32,
-            y: offset.y.as_inches() as f32,
-            h: offset.h.as_degrees() as f32,
+            x: offset.x.as_meters() as f32,
+            y: offset.y.as_meters() as f32,
+            h: offset.h.as_radians() as f32,
         };
 
         let bytes = bytemuck::bytes_of(&offset_piece);
@@ -122,15 +133,12 @@ impl Otos {
         }
 
         _ = otos
-            .msg(Packet::new(Command::RESET_TRACKING), Self::SENDING_SIZE)
-            .await;
-
-        _ = otos
             .msg(Packet::new(Command::SELF_TEST), Self::SENDING_SIZE)
             .await;
         sleep(Duration::from_millis(100)).await;
+        Self::check(&mut otos).await;
         info!("OTOS constructed!");
-        let pose = Rc::new(RefCell::new(Pose::default()));
+        let pose = Rc::new(RefCell::new(start));
 
         Self {
             pose: pose.clone(),
@@ -203,27 +211,27 @@ impl Otos {
         let vel = bytemuck::from_bytes::<OTOSData>(&vel_packet.data);
 
         Ok(Pose {
-            x: (pos.x as f64).meter(),
-            y: (pos.y as f64).meter(),
-            h: (pos.h as f64).rad(),
-            vf: (-0.97 * vel.x as f64).meter(),
-            vs: (0.97 * vel.y as f64).meter(),
-            omega: (-0.9825 * vel.h as f64).rad(),
+            x: (pos.x as f64).inch(),
+            y: (pos.y as f64).inch(),
+            h: (pos.h as f64).deg(),
+            vf: (-0.97 * vel.x as f64).inch(),
+            vs: (0.97 * vel.y as f64).inch(),
+            omega: (-0.9825 * vel.h as f64).deg(),
         })
     }
 
-    // async fn check(&mut self) -> bool {
-    //     let response = self
-    //         .otos
-    //         .msg(Packet::new(Command::CHECK), 2)
-    //         .await
-    //         .unwrap();
-    //     let good = response.is_correct() && response.id == Response::Success as u8;
-    //
-    //     if !good {
-    //         // ERROR
-    //     }
-    //
-    //     good
-    // }
+    // confirm if this function works as intended
+    async fn check(otos: &mut SerialDevice) -> bool {
+        let response = otos
+            .msg(Packet::new(Command::CHECK), 2)
+            .await
+            .unwrap_or_default();
+        let good = response.is_correct() && response.id == Response::Success as u8;
+
+        if !good {
+            error!("Detected issue with OTOS.");
+        }
+
+        good
+    }
 }

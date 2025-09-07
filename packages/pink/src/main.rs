@@ -90,16 +90,16 @@ impl Compete for Robot {
                 self.intake.set_voltage(0.0);
             }
 
-            // info!("Position: {}", self.drivetrain.get_pose());
-            // let vf = self.otos.vf();
-            // let vs = self.otos.vs();
-            // let omega = self.otos.omega();
-            // info!("Velocity: ({:?}, {:?}, {:?})", vf, vs, omega);
+            info!("Position: {}", self.drivetrain.get_pose());
+            let vf = self.otos.vf().as_inches();
+            let vs = self.otos.vs().as_inches();
+            let omega = self.otos.omega().as_degrees();
+            info!("Velocity: ({}, {}, {})", vf, vs, omega);
             let x = self.otos.x().as_inches();
             let y = self.otos.y().as_inches();
             let h = self.otos.h().as_degrees();
-            info!("Position: ({:?}, {:?}, {:?})", x, y, h);
-            
+            info!("Position: ({}, {}, {})", x, y, h);
+
             if state.button_down.is_now_pressed() {
                 self.drivetrain.set_pose(Pose::new(0.0.inch(), 0.0.inch(), self.drivetrain.get_pose().h))
             }
@@ -134,6 +134,7 @@ async fn main(peripherals: Peripherals) {
         Ok(_) => info!("Calibration Successful"),
         Err(e) => error!("Error {:?}", e),
     }
+    let starting_position = Pose::new(0.0.inch(), 0.0.inch(), 0.0.deg());
 
     let robot = Robot {
         controller: peripherals.primary_controller,
@@ -151,7 +152,7 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
             ]),
             Odometry::new(
-                Pose::new(0.0.inch(), 0.0.inch(), 0.0.deg()),
+                starting_position,
                 TrackingWheel::new(
                     peripherals.adi_c,
                     peripherals.adi_d,
@@ -177,6 +178,7 @@ async fn main(peripherals: Peripherals) {
         ])),
         otos: Otos::new(
             peripherals.port_20,
+            starting_position,
             Pose::new(0.0.inch(), 0.0.inch(), -90.0.deg()),
         )
         .await,

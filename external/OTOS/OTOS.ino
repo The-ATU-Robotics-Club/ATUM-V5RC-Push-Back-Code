@@ -69,7 +69,6 @@ enum Command {
   Calibrate,
   IsCalibrating,
   Reset,
-  ResetTracking,
   SetOffset,
   SetPosition,
   GetPosition,
@@ -145,12 +144,6 @@ void loop() {
           Packet{ success ? Response::Success : Response::Error }.write();
         }
         break;
-      case Command::ResetTracking:
-        {
-          const bool success{ !otos.resetTracking() };
-          Packet{ success ? Response::Success : Response::Error }.write();
-        }
-        break;
       case Command::SetOffset:
         {
           PiecedData<sfe_otos_pose2d_t> pos;
@@ -158,7 +151,7 @@ void loop() {
             pos.bytes[i] = packet.data[i];
           }
           const bool success { !otos.setOffset(pos.value) };
-          Packet{ success ? Response::Success : Reponse::Unknown }.write();
+          Packet{ success ? Response::Success : Response::Unknown }.write();
         }
         break;
       case Command::SetPosition:
@@ -184,7 +177,7 @@ void loop() {
           PiecedData<sfe_otos_pose2d_t> pos;
           const bool success{ !otos.getVelocity(pos.value) };
           std::vector<uint8_t> posVector(pos.bytes, pos.bytes + sizeof(pos));
-          Packet{ success ? Response::Success : Reponse::Error, posVector }.write();
+          Packet{ success ? Response::Success : Response::Error, posVector }.write();
         }
         break;
       case Command::Check:
