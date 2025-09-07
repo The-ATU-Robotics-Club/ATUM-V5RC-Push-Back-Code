@@ -151,7 +151,7 @@ impl Ukf { //Functions go here
             x_pred += wm[i] * propagated[i];
         }
 
-        // 5. compute predicted covariance (diagonal-only)
+        // 5. compute predicted covariance (Full-Matrix)
         let mut p_pred = StateCovariance::zeros();
         for i in 0..SIGMA_POINTS {
             let diff = propagated[i] - x_pred;
