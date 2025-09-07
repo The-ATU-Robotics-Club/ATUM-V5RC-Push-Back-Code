@@ -48,16 +48,16 @@ impl Ukf { //Functions go here
         let j = 1.001; // Moment of Inertia
         let g = 0.75; // Gear ratio
         let m = 8.0; // Mass of robot in kg
-        let c1 = -(g * g * kt * n) / (kv * r * rw * rw);
-        let c2 = (g * kt * n) / (r * rw);
+        let c1 = -(g * g * kt * nof_m) / (kv * r * rw * rw);
+        let c2 = (g * kt * nof_m) / (r * rw);
 
         let p: StateCovariance = SMatrix::from_diagonal(&SVector::from_row_slice(&[
-        0.330,      // variance or std dev for x
-        0.330,      // variance or std dev for y
-        0.01745,  // variance or std dev for θ (≈ 1° in radians)
-        0.0,      // vx
-        0.0,      // vy
-        0.0,     // ω
+            0.330_f64.powi(2),   // variance for x
+            0.330_f64.powi(2),   // variance for y
+            0.01745_f64.powi(2), // variance for θ
+            0.1_f64.powi(2),     // variance for vx
+            0.1_f64.powi(2),     // variance for vy
+            0.1_f64.powi(2),     // variance for ω
         ]));
 
         Self{
