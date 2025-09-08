@@ -15,10 +15,7 @@ pub struct SerialDevice {
 
 impl SerialDevice {
     pub fn new(serial: SerialPort, timeout: Duration) -> Self {
-        Self {
-            serial,
-            timeout,
-        }
+        Self { serial, timeout }
     }
 
     pub async fn msg(

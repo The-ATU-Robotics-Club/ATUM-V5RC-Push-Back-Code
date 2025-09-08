@@ -41,4 +41,3 @@ impl Imu {
         (average(angles) % 360.0).deg()
     }
 }
-

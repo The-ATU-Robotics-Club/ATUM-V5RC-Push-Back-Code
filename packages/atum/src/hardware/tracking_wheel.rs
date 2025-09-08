@@ -39,7 +39,11 @@ impl TrackingWheel {
     pub fn traveled(&mut self) -> Length {
         let position = self.encoder.position().unwrap_or_default();
         let change = position - self.prev_position;
-        debug!("p, c: {}, {}", self.prev_position.as_degrees(), change.as_degrees());
+        debug!(
+            "p, c: {}, {}",
+            self.prev_position.as_degrees(),
+            change.as_degrees()
+        );
         self.prev_position = position;
 
         self.wheel_circum * change.as_revolutions()

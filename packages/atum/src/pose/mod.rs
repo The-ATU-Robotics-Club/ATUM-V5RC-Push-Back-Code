@@ -1,7 +1,10 @@
 pub mod odometry;
 pub mod ukf;
 
-use core::{fmt::Display, ops::{Add, Mul, Sub}};
+use core::{
+    fmt::Display,
+    ops::{Add, Mul, Sub},
+};
 
 use vexide::float::Float;
 

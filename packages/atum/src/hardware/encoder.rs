@@ -9,11 +9,7 @@ pub struct Encoder<const TPR: u32> {
 }
 
 impl<const TPR: u32> Encoder<TPR> {
-    pub fn new(
-        top_port: AdiPort,
-        bottom_port: AdiPort,
-        direction: Direction,
-    ) -> Self {
+    pub fn new(top_port: AdiPort, bottom_port: AdiPort, direction: Direction) -> Self {
         Self {
             encoder: AdiEncoder::new(top_port, bottom_port),
             direction,
