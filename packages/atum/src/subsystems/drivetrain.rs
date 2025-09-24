@@ -50,7 +50,40 @@ impl Drivetrain {
         self.set_voltages(left, right);
     }
 
-    pub fn get_voltages(&self) -> [f64; 2] {
+    /// Computes the left and right motor power values based on the selected drive mode.
+    /// Supports both Arcade and Tank drive configurations.
+    pub fn drive(&mut self, drive_mode: &DriveMode) {
+        let mut power_val = 0.0;
+        let mut turn_val = 0.0;
+        let mut left_val = 0.0;
+        let mut right_val = 0.0;
+
+        // Extract joystick values based on the configured drive mode
+        match drive_mode {
+            DriveMode::Arcade { power, turn } => {
+                power_val = power.y(); // Forward/backward movement
+                turn_val = turn.x(); // Turning movement
+            }
+            DriveMode::Tank { left, right } => {
+                left_val = left.y(); // Left side control
+                right_val = right.y(); // Right side control
+            }
+        }
+
+        // Apply acceleration function if using Arcade drive
+        if matches!(drive_mode, DriveMode::Arcade { .. }) {
+            turn_val = apply_curve(turn_val, 2);
+            left_val = power_val + turn_val;
+            right_val = power_val - turn_val;
+        }
+
+        // Scale the final voltage values to the V5 motor's maximum voltage
+        self.set_voltages(
+            left_val * Motor::V5_MAX_VOLTAGE,
+            right_val * Motor::V5_MAX_VOLTAGE,
+        );
+    }
+
     pub fn voltages(&self) -> [f64; 2] {
         [self.left.voltage(), self.right.voltage()]
     }
@@ -90,38 +123,4 @@ fn apply_curve(power: f64, acceleration: i32) -> f64 {
         } else {
             power // Odd acceleration preserves sign
         }
-}
-
-/// Computes the left and right motor power values based on the selected drive mode.
-/// Supports both Arcade and Tank drive configurations.
-pub fn differential(drive_mode: &DriveMode) -> (f64, f64) {
-    let mut power_val = 0.0;
-    let mut turn_val = 0.0;
-    let mut left_val = 0.0;
-    let mut right_val = 0.0;
-
-    // Extract joystick values based on the configured drive mode
-    match drive_mode {
-        DriveMode::Arcade { power, turn } => {
-            power_val = power.y(); // Forward/backward movement
-            turn_val = turn.x(); // Turning movement
-        }
-        DriveMode::Tank { left, right } => {
-            left_val = left.y(); // Left side control
-            right_val = right.y(); // Right side control
-        }
-    }
-
-    // Apply acceleration function if using Arcade drive
-    if matches!(drive_mode, DriveMode::Arcade { .. }) {
-        turn_val = apply_curve(turn_val, 2);
-        left_val = power_val + turn_val;
-        right_val = power_val - turn_val;
-    }
-
-    // Scale the final voltage values to the V5 motor's maximum voltage
-    (
-        left_val * Motor::V5_MAX_VOLTAGE,
-        right_val * Motor::V5_MAX_VOLTAGE,
-    )
 }

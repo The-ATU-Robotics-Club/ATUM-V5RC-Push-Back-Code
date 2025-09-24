@@ -85,8 +85,7 @@ impl Compete for Robot {
                 outake: state.button_r2,
             };
 
-            let power = differential(&mappings.drive_mode);
-            self.drivetrain.set_voltages(power.0, power.1);
+            self.drivetrain.drive(&mappings.drive_mode);
 
             if mappings.intake.is_pressed() {
                 self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
