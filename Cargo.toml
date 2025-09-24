@@ -7,4 +7,5 @@ resolver = "2"
 [workspace.dependencies]
 vexide = "0.7.0"
 atum = { path = "packages/atum" }
+uom = { version = "0.37.0", default-features = false, features = ["autoconvert", "f64", "si"] }
 log = "0.4.27"

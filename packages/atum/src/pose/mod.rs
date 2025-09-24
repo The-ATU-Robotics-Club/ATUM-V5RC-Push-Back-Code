@@ -1,23 +1,28 @@
 pub mod odometry;
 
-use core::{fmt::Display, ops::{Add, Mul, Sub}};
-
-use vexide::float::Float;
-
-use crate::units::{
-    angle::{Angle, IntoAngle},
-    length::Length,
+use core::{
+    fmt::Display,
+    ops::{Add, Mul, Sub},
 };
+
+use uom::{
+    si::{
+        angle::degree,
+        f64::{Angle, AngularVelocity, Length, Velocity},
+        length::inch,
+    },
+    ConstZero,
+};
+use vexide::float::Float;
 
 #[derive(Clone, Copy, Default)]
 pub struct Pose {
     pub x: Length,
     pub y: Length,
     pub h: Angle,
-    // change these to `LinearVelocity` and `AngularVelocity`
-    pub vf: Length,
-    pub vs: Length,
-    pub omega: Angle,
+    pub vf: Velocity,
+    pub vs: Velocity,
+    pub omega: AngularVelocity,
 }
 
 impl Pose {
@@ -26,25 +31,18 @@ impl Pose {
             x,
             y,
             h,
-            vf: Length::ZERO,
-            vs: Length::ZERO,
-            omega: Angle::ZERO,
+            vf: Velocity::ZERO,
+            vs: Velocity::ZERO,
+            omega: AngularVelocity::ZERO,
         }
-    }
-
-    pub fn angular_distance(&self, other: Vec2<Length>) -> Angle {
-        other
-            .angular_distance(Vec2::new(self.x, self.y))
-            .as_inches()
-            .rad()
     }
 }
 
 impl Display for Pose {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let x = self.x.as_inches();
-        let y = self.y.as_inches();
-        let h = self.h.as_degrees();
+        let x = self.x.get::<inch>();
+        let y = self.y.get::<inch>();
+        let h = self.h.get::<degree>();
         write!(f, "({}, {}, {})", x, y, h)
     }
 }

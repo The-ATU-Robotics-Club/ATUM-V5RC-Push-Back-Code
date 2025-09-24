@@ -1,12 +1,17 @@
 use core::f64::consts::PI;
 
+use uom::si::{
+    angular_velocity::radian_per_second,
+    f64::{AngularVelocity, Length, Time, Velocity},
+    length::inch,
+    time::second,
+};
 use vexide::prelude::{Float, Motor};
 
 use crate::{
     hardware::motor_group::MotorGroup,
     mappings::DriveMode,
     pose::{odometry::Odometry, Pose},
-    units::length::Length,
 };
 
 pub struct Drivetrain {
@@ -46,20 +51,20 @@ impl Drivetrain {
     }
 
     pub fn get_voltages(&self) -> [f64; 2] {
+    pub fn voltages(&self) -> [f64; 2] {
         [self.left.voltage(), self.right.voltage()]
     }
 
-    pub fn velocity(&self) -> f64 {
+    pub fn velocity(&self) -> Velocity {
         let rpm = (self.left.velocity() + self.right.velocity()) / 2.0;
-        self.wheel_circum.as_inches() * rpm / 60.0 // figure out if this is right
+        (self.wheel_circum * rpm) / Time::new::<second>(60.0)
     }
 
-    // change this to return `AngularVelocity`
-    pub fn angular_velocity(&self) -> f64 {
+    pub fn angular_velocity(&self) -> AngularVelocity {
         let vdiff =
-            self.wheel_circum.as_inches() * (self.left.velocity() + self.right.velocity()) / 60.0;
+            self.wheel_circum.get::<inch>() * (self.left.velocity() - self.right.velocity()) / 60.0;
 
-        vdiff / self.track.as_inches()
+        AngularVelocity::new::<radian_per_second>(vdiff / self.track.get::<inch>())
     }
 
     pub fn get_pose(&self) -> Pose {

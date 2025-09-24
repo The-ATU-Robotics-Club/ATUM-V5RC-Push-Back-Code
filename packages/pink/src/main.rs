@@ -13,13 +13,19 @@ use atum::{
     mappings::{ControllerMappings, DriveMode},
     motion::{move_to::MoveTo, turn::Turn},
     pose::{odometry::Odometry, Pose, Vec2},
-    subsystems::{
-        drivetrain::{differential, Drivetrain},
-        intake::Intake,
-    },
-    units::{angle::IntoAngle, length::IntoLength},
+    subsystems::{drivetrain::Drivetrain, intake::Intake},
 };
-use log::{error, info, LevelFilter};
+use log::{info, LevelFilter};
+use uom::{
+    si::{
+        angle::degree,
+        angular_velocity::degree_per_second,
+        f64::{Angle, AngularVelocity, Length, Velocity},
+        length::inch,
+        velocity::inch_per_second,
+    },
+    ConstZero,
+};
 use vexide::prelude::*;
 
 struct Robot {
@@ -34,15 +40,15 @@ impl Compete for Robot {
         let mut move_to = MoveTo::new(
             Pid::new(2.0, 0.0, 0.0, 0.0),
             Pid::new(0.0, 0.0, 0.0, 0.0),
-            0.5.inch(),
-            0.0.inch(),
-            1.0.tile(),
+            Length::new::<inch>(0.5),
+            Velocity::new::<inch_per_second>(0.0),
+            Length::new::<inch>(24.0),
         );
 
         move_to
             .move_to_point(
                 &mut self.drivetrain,
-                Vec2::new(10.0.inch(), 10.0.inch()),
+                Vec2::new(Length::new::<inch>(10.0), Length::new::<inch>(10.0)),
                 Duration::from_secs(2),
                 Direction::Forward,
             )
@@ -53,19 +59,19 @@ impl Compete for Robot {
         info!("Driver Control Started");
 
         let mut move_to = MoveTo::new(
-            Pid::new(0.5, 0.0, 0.05, 0.0),
-            Pid::new(6.0, 0.0, 0.0, 0.0),
-            1.0.inch(),
-            10.0.inch(),
-            0.5.tile(),
+            Pid::new(0.25, 0.0, 0.05, 0.0),
+            Pid::new(10.0, 0.0, 0.0, 0.0),
+            Length::new::<inch>(1.0),
+            Velocity::new::<inch_per_second>(2.0),
+            Length::new::<inch>(6.0),
         );
 
         let mut turn = Turn::new(
             Pid::new(24.0, 0.08, 1.1, 20.0),
             Pid::new(28.0, 0.02, 1.8, 10.0),
-            0.5.deg(),
-            5.0.deg(),
-            85.0.deg(),
+            Angle::new::<degree>(0.5),
+            AngularVelocity::new::<degree_per_second>(5.0),
+            Angle::new::<degree>(85.0),
         );
 
         loop {
@@ -91,33 +97,39 @@ impl Compete for Robot {
             }
 
             info!("Position: {}", self.drivetrain.get_pose());
-            let vf = self.otos.vf().as_inches();
-            let vs = self.otos.vs().as_inches();
-            let omega = self.otos.omega().as_degrees();
-            info!("Velocity: ({}, {}, {})", vf, vs, omega);
-            let x = self.otos.x().as_inches();
-            let y = self.otos.y().as_inches();
-            let h = self.otos.h().as_degrees();
-            info!("Position: ({}, {}, {})", x, y, h);
+            // let vf = self.otos.vf().as_inches();
+            // let vs = self.otos.vs().as_inches();
+            // let omega = self.otos.omega().as_degrees();
+            // info!("Velocity: ({}, {}, {})", vf, vs, omega);
+            // let x = self.otos.x().as_inches();
+            // let y = self.otos.y().as_inches();
+            // let h = self.otos.h().as_degrees();
+            // info!("Position: ({}, {}, {})", x, y, h);
 
             if state.button_down.is_now_pressed() {
                 self.drivetrain.set_pose(Pose::new(
-                    0.0.inch(),
-                    0.0.inch(),
+                    Length::ZERO,
+                    Length::ZERO,
                     self.drivetrain.get_pose().h,
                 ))
             }
 
+            // tuning PID constants for angular movement
             if state.button_left.is_pressed() {
-                turn.turn_to(&mut self.drivetrain, 0.0.deg(), Duration::from_millis(1000))
-                    .await;
+                turn.turn_to(
+                    &mut self.drivetrain,
+                    Angle::ZERO,
+                    Duration::from_millis(1000),
+                )
+                .await;
             }
 
+            // testing and tuning seeking movement
             if state.button_up.is_pressed() {
                 move_to
                     .move_to_point(
                         &mut self.drivetrain,
-                        Vec2::new(0.0.tile(), 24.0.inch()),
+                        Vec2::new(Length::ZERO, Length::new::<inch>(24.0)),
                         Duration::from_secs(8),
                         Direction::Forward,
                     )
@@ -140,7 +152,7 @@ async fn main(peripherals: Peripherals) {
 
     imu.calibrate().await;
 
-    let starting_position = Pose::new(0.0.inch(), 0.0.inch(), 0.0.deg());
+    let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
 
     let robot = Robot {
         controller: peripherals.primary_controller,
@@ -163,20 +175,20 @@ async fn main(peripherals: Peripherals) {
                     peripherals.adi_c,
                     peripherals.adi_d,
                     Direction::Reverse,
-                    2.5.inch(),
-                    0.0.inch(),
+                    Length::new::<inch>(2.5),
+                    Length::ZERO,
                 ),
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
                     Direction::Reverse,
-                    2.5.inch(),
-                    -1.7175.inch(),
+                    Length::new::<inch>(2.5),
+                    Length::new::<inch>(-1.7175),
                 ),
                 imu,
             ),
-            2.5.inch(),
-            12.0.inch(),
+            Length::new::<inch>(2.5),
+            Length::new::<inch>(12.0),
         ),
         intake: Intake::new(MotorGroup::new(vec![
             Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
@@ -185,7 +197,7 @@ async fn main(peripherals: Peripherals) {
         otos: Otos::new(
             peripherals.port_20,
             starting_position,
-            Pose::new(0.0.inch(), 0.0.inch(), -90.0.deg()),
+            Pose::new(Length::ZERO, Length::ZERO, Angle::new::<degree>(-90.0)),
         )
         .await,
     };

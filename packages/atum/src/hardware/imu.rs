@@ -1,10 +1,10 @@
 use alloc::vec::Vec;
 
 use log::{error, info};
+use uom::si::{angle::degree, f64::Angle};
 use vexide::prelude::InertialSensor;
 
 use super::average;
-use crate::units::angle::{Angle, IntoAngle};
 
 pub struct Imu {
     imus: Vec<InertialSensor>,
@@ -26,7 +26,7 @@ impl Imu {
 
     pub fn set_heading(&mut self, heading: Angle) {
         for imu in self.imus.iter_mut() {
-            _ = imu.set_rotation(heading.as_degrees());
+            _ = imu.set_rotation(heading.get::<degree>());
         }
     }
 
@@ -38,7 +38,7 @@ impl Imu {
             }
         }
 
-        (average(angles) % 360.0).deg()
+        Angle::new::<degree>(average(angles) % 360.0)
     }
 }
 

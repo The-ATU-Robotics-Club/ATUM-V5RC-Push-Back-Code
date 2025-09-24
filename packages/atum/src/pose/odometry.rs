@@ -2,6 +2,14 @@ use alloc::rc::Rc;
 use core::{cell::RefCell, time::Duration};
 
 use log::warn;
+use uom::{
+    si::{
+        angle::radian,
+        f64::{Angle, Length, Time},
+        time::second,
+    },
+    ConstZero,
+};
 use vexide::{
     prelude::{Float, Task},
     task::spawn,
@@ -9,10 +17,7 @@ use vexide::{
 };
 
 use super::Pose;
-use crate::{
-    hardware::{imu::Imu, tracking_wheel::TrackingWheel},
-    units::{angle::Angle, length::Length},
-};
+use crate::hardware::{imu::Imu, tracking_wheel::TrackingWheel};
 
 pub struct Odometry {
     pose: Rc<RefCell<Pose>>,
@@ -44,11 +49,11 @@ impl Odometry {
                     if dh != Angle::ZERO {
                         // Prevent divide by zero error
                         dx = 2.0
-                            * (dh / 2.0).sin().as_radians()
-                            * (dx / dh.as_radians() + side.from_center());
+                            * (dh.get::<radian>() / 2.0).sin()
+                            * (dx / dh.get::<radian>() + side.from_center());
                         dy = 2.0
-                            * (dh / 2.0).sin().as_radians()
-                            * (dy / dh.as_radians() + forward.from_center());
+                            * (dh.get::<radian>() / 2.0).sin()
+                            * (dy / dh.get::<radian>() + forward.from_center());
                     }
 
                     if dx.is_infinite() || dy.is_infinite() || dh.is_infinite() {
@@ -64,15 +69,15 @@ impl Odometry {
                         Pose {
                             // Doing vector rotation for odom and adding to position
                             x: prev.x
-                                + (heading_avg.cos().as_radians() * dx
-                                    + heading_avg.sin().as_radians() * dy),
+                                + (heading_avg.get::<radian>().cos() * dx
+                                    + heading_avg.get::<radian>().sin() * dy),
                             y: prev.y
-                                + (-heading_avg.sin().as_radians() * dx
-                                    + heading_avg.cos().as_radians() * dy),
+                                + (-heading_avg.get::<radian>().sin() * dx
+                                    + heading_avg.get::<radian>().cos() * dy),
                             h: prev.h + dh,
-                            vf: dy / dt.as_secs_f64(),
-                            vs: dx / dt.as_secs_f64(),
-                            omega: dh / dt.as_secs_f64(),
+                            vf: dy / Time::new::<second>(dt.as_secs_f64()),
+                            vs: dx / Time::new::<second>(dt.as_secs_f64()),
+                            omega: (dh / Time::new::<second>(dt.as_secs_f64())).into(),
                         }
                     });
 

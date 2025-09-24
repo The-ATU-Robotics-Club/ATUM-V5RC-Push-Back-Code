@@ -3,6 +3,13 @@ use core::{cell::RefCell, time::Duration};
 
 use bytemuck::{Pod, Zeroable};
 use log::{error, info};
+use uom::si::{
+    angle::{degree, radian},
+    angular_velocity::degree_per_second,
+    f64::{Angle, AngularVelocity, Length, Velocity},
+    length::{inch, meter},
+    velocity::inch_per_second,
+};
 use vexide::{
     devices::smart::serial::SerialError,
     prelude::{SerialPort, SmartPort},
@@ -11,13 +18,7 @@ use vexide::{
 };
 
 use super::{packet::Packet, serial_device::SerialDevice};
-use crate::{
-    pose::Pose,
-    units::{
-        angle::{Angle, IntoAngle},
-        length::{IntoLength, Length},
-    },
-};
+use crate::pose::Pose;
 
 struct Command;
 
@@ -79,9 +80,9 @@ impl Otos {
             .await;
 
         let starting_piece = OTOSData {
-            x: start.x.as_meters() as f32,
-            y: start.y.as_meters() as f32,
-            h: start.h.as_radians() as f32,
+            x: start.x.get::<meter>() as f32,
+            y: start.y.get::<meter>() as f32,
+            h: start.h.get::<radian>() as f32,
         };
 
         let bytes = bytemuck::bytes_of(&starting_piece);
@@ -94,9 +95,9 @@ impl Otos {
             .await;
 
         let offset_piece = OTOSData {
-            x: offset.x.as_meters() as f32,
-            y: offset.y.as_meters() as f32,
-            h: offset.h.as_radians() as f32,
+            x: offset.x.get::<meter>() as f32,
+            y: offset.y.get::<meter>() as f32,
+            h: offset.h.get::<radian>() as f32,
         };
 
         let bytes = bytemuck::bytes_of(&offset_piece);
@@ -177,15 +178,15 @@ impl Otos {
         self.pose.borrow().h
     }
 
-    pub fn vf(&self) -> Length {
+    pub fn vf(&self) -> Velocity {
         self.pose.borrow().vf
     }
 
-    pub fn vs(&self) -> Length {
+    pub fn vs(&self) -> Velocity {
         self.pose.borrow().vs
     }
 
-    pub fn omega(&self) -> Angle {
+    pub fn omega(&self) -> AngularVelocity {
         self.pose.borrow().omega
     }
 
@@ -211,12 +212,12 @@ impl Otos {
         let vel = bytemuck::from_bytes::<OTOSData>(&vel_packet.data);
 
         Ok(Pose {
-            x: (pos.x as f64).inch(),
-            y: (pos.y as f64).inch(),
-            h: (pos.h as f64).deg(),
-            vf: (-0.97 * vel.x as f64).inch(),
-            vs: (0.97 * vel.y as f64).inch(),
-            omega: (-0.9825 * vel.h as f64).deg(),
+            x: Length::new::<inch>(pos.x as f64),
+            y: Length::new::<inch>(pos.y as f64),
+            h: Angle::new::<degree>(pos.h as f64),
+            vf: Velocity::new::<inch_per_second>(-0.97 * vel.x as f64),
+            vs: Velocity::new::<inch_per_second>(0.97 * vel.y as f64),
+            omega: AngularVelocity::new::<degree_per_second>(-0.9825 * vel.h as f64),
         })
     }
 
