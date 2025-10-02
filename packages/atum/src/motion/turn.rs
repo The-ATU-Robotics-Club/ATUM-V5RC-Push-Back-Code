@@ -49,7 +49,7 @@ impl Turn {
         point: Vec2<Length>,
         timeout: Duration,
     ) {
-        let pose = dt.get_pose();
+        let pose = dt.pose();
         let target = angular_distance(pose, point);
         self.turn_to(dt, target, timeout).await;
     }
@@ -58,7 +58,7 @@ impl Turn {
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
-        let starting_error = wrap(target - dt.get_pose().h).abs();
+        let starting_error = wrap(target - dt.pose().h).abs();
         let pid = if starting_error < self.threshold {
             &mut self.small_pid
         } else {
@@ -71,10 +71,10 @@ impl Turn {
             let elapsed_time = prev_time.elapsed();
             prev_time = Instant::now();
 
-            let heading = dt.get_pose().h;
+            let heading = dt.pose().h;
             let error = wrap(target - heading);
             let output = pid.output(error.get::<radian>(), elapsed_time);
-            let omega = dt.get_pose().omega;
+            let omega = dt.pose().omega;
 
             debug!(
                 "(Heading, Velocity): ({}, {})",

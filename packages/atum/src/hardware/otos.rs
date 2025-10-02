@@ -4,10 +4,10 @@ use core::{cell::RefCell, time::Duration};
 use bytemuck::{Pod, Zeroable};
 use log::{error, info};
 use uom::si::{
-    angle::{degree, radian},
+    angle::degree,
     angular_velocity::degree_per_second,
     f64::{Angle, AngularVelocity, Length, Velocity},
-    length::{inch, meter},
+    length::inch,
     velocity::inch_per_second,
 };
 use vexide::{
@@ -80,9 +80,9 @@ impl Otos {
             .await;
 
         let starting_piece = OTOSData {
-            x: start.x.get::<meter>() as f32,
-            y: start.y.get::<meter>() as f32,
-            h: start.h.get::<radian>() as f32,
+            x: start.x.get::<inch>() as f32,
+            y: start.y.get::<inch>() as f32,
+            h: start.h.get::<degree>() as f32,
         };
 
         let bytes = bytemuck::bytes_of(&starting_piece);
@@ -95,9 +95,9 @@ impl Otos {
             .await;
 
         let offset_piece = OTOSData {
-            x: offset.x.get::<meter>() as f32,
-            y: offset.y.get::<meter>() as f32,
-            h: offset.h.get::<radian>() as f32,
+            x: offset.x.get::<inch>() as f32,
+            y: offset.y.get::<inch>() as f32,
+            h: offset.h.get::<degree>() as f32,
         };
 
         let bytes = bytemuck::bytes_of(&offset_piece);

@@ -95,21 +95,14 @@ impl Compete for Robot {
                 self.intake.set_voltage(0.0);
             }
 
-            info!("Position: {}", self.drivetrain.get_pose());
-            // let vf = self.otos.vf().as_inches();
-            // let vs = self.otos.vs().as_inches();
-            // let omega = self.otos.omega().as_degrees();
-            // info!("Velocity: ({}, {}, {})", vf, vs, omega);
-            // let x = self.otos.x().as_inches();
-            // let y = self.otos.y().as_inches();
-            // let h = self.otos.h().as_degrees();
-            // info!("Position: ({}, {}, {})", x, y, h);
+            info!("Drivetrain: {}", self.drivetrain.pose());
+            info!("OTOS: {}", self.otos.pose());
 
             if state.button_down.is_now_pressed() {
                 self.drivetrain.set_pose(Pose::new(
                     Length::ZERO,
                     Length::ZERO,
-                    self.drivetrain.get_pose().h,
+                    self.drivetrain.pose().h,
                 ))
             }
 
@@ -196,7 +189,11 @@ async fn main(peripherals: Peripherals) {
         otos: Otos::new(
             peripherals.port_20,
             starting_position,
-            Pose::new(Length::ZERO, Length::ZERO, Angle::new::<degree>(-90.0)),
+            Pose::new(
+                Length::ZERO,
+                Length::new::<inch>(3.275),
+                Angle::new::<degree>(-90.0),
+            ),
         )
         .await,
     };

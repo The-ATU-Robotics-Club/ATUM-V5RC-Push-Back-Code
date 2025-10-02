@@ -100,7 +100,7 @@ impl Drivetrain {
         AngularVelocity::new::<radian_per_second>(vdiff / self.track.get::<inch>())
     }
 
-    pub fn get_pose(&self) -> Pose {
+    pub fn pose(&self) -> Pose {
         self.odometry.get_pose()
     }
 

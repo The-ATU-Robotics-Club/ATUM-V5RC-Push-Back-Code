@@ -7,9 +7,7 @@ use core::{
 
 use uom::{
     si::{
-        angle::degree,
-        f64::{Angle, AngularVelocity, Length, Velocity},
-        length::inch,
+        angle::degree, angular_velocity::degree_per_second, f64::{Angle, AngularVelocity, Length, Velocity}, length::inch, velocity::inch_per_second
     },
     ConstZero,
 };
@@ -43,7 +41,10 @@ impl Display for Pose {
         let x = self.x.get::<inch>();
         let y = self.y.get::<inch>();
         let h = self.h.get::<degree>();
-        write!(f, "({}, {}, {})", x, y, h)
+        let vf = self.vf.get::<inch_per_second>();
+        let vs = self.vs.get::<inch_per_second>();
+        let omega = self.omega.get::<degree_per_second>();
+        write!(f, "({}, {}, {}, {}, {}, {})", x, y, h, vf, vs, omega)
     }
 }
 

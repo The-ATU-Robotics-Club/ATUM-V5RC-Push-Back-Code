@@ -56,7 +56,7 @@ impl MoveTo {
             let elapsed_time = prev_time.elapsed();
             prev_time = Instant::now();
 
-            let pose = dt.get_pose();
+            let pose = dt.pose();
             let position = Vec2::new(pose.x, pose.y);
             let heading = pose.h;
 
