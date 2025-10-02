@@ -17,8 +17,9 @@ pub enum DriveMode {
 pub struct ControllerMappings {
     pub drive_mode: DriveMode,
 
-    pub intake: ButtonState,
-    pub outake: ButtonState,
+    pub intake_high: ButtonState,
+    pub intake_middle: ButtonState,
+    pub intake_low: ButtonState,
     // pub toggle_color_sort: ButtonState,
 
     // piston to take balls from match load

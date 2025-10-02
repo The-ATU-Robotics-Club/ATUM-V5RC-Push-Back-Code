@@ -13,7 +13,10 @@ use atum::{
     mappings::{ControllerMappings, DriveMode},
     motion::{move_to::MoveTo, turn::Turn},
     pose::{odometry::Odometry, Pose, Vec2},
-    subsystems::{drivetrain::Drivetrain, intake::Intake},
+    subsystems::{
+        drivetrain::Drivetrain,
+        intake::{Intake, IntakeCommand},
+    },
 };
 use log::{info, LevelFilter};
 use uom::{
@@ -81,18 +84,24 @@ impl Compete for Robot {
                     power: state.left_stick,
                     turn: state.right_stick,
                 },
-                intake: state.button_r1,
-                outake: state.button_r2,
+                intake_high: state.button_r2,
+                intake_middle: state.button_r1,
+                intake_low: state.button_l1,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
 
-            if mappings.intake.is_pressed() {
-                self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-            } else if mappings.outake.is_pressed() {
-                self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
+            if mappings.intake_high.is_pressed() {
+                self.intake
+                    .set_command(Some(IntakeCommand::ScoreHigh(Motor::V5_MAX_VOLTAGE)));
+            } else if mappings.intake_middle.is_pressed() {
+                self.intake
+                    .set_command(Some(IntakeCommand::ScoreMiddle(Motor::V5_MAX_VOLTAGE)));
+            } else if mappings.intake_low.is_pressed() {
+                self.intake
+                    .set_command(Some(IntakeCommand::ScoreLow(Motor::V5_MAX_VOLTAGE)));
             } else {
-                self.intake.set_voltage(0.0);
+                self.intake.set_command(None);
             }
 
             info!("Drivetrain: {}", self.drivetrain.pose());
@@ -138,8 +147,8 @@ async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
     let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_10),
-        InertialSensor::new(peripherals.port_19),
+        InertialSensor::new(peripherals.port_3),
+        InertialSensor::new(peripherals.port_4),
     ]);
 
     imu.calibrate().await;
@@ -150,32 +159,32 @@ async fn main(peripherals: Peripherals) {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
             MotorGroup::new(vec![
-                Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_14, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_13, Gearset::Blue, Direction::Forward),
             ]),
             MotorGroup::new(vec![
-                Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
             ]),
             Odometry::new(
                 starting_position,
-                TrackingWheel::new(
-                    peripherals.adi_c,
-                    peripherals.adi_d,
-                    Direction::Reverse,
-                    Length::new::<inch>(2.5),
-                    Length::ZERO,
-                ),
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
                     Direction::Reverse,
                     Length::new::<inch>(2.5),
-                    Length::new::<inch>(-1.7175),
+                    Length::ZERO,
+                ),
+                TrackingWheel::new(
+                    peripherals.adi_c,
+                    peripherals.adi_d,
+                    Direction::Reverse,
+                    Length::new::<inch>(2.5),
+                    Length::new::<inch>(-5.0),
                 ),
                 imu,
             ),
@@ -183,11 +192,12 @@ async fn main(peripherals: Peripherals) {
             Length::new::<inch>(12.0),
         ),
         intake: Intake::new(MotorGroup::new(vec![
-            Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_12, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
         ])),
         otos: Otos::new(
-            peripherals.port_20,
+            peripherals.port_2,
             starting_position,
             Pose::new(
                 Length::ZERO,

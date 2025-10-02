@@ -40,4 +40,8 @@ impl MotorGroup {
 
         average(velocities) // * ratio
     }
+
+    pub fn iter_mut(&mut self) -> core::slice::IterMut<'_, Motor> {
+        self.motors.iter_mut()
+    }
 }
