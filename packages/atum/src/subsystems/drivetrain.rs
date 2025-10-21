@@ -1,4 +1,4 @@
-use core::f64::consts::PI;
+use std::f64::consts::PI;
 
 use uom::si::{
     angular_velocity::radian_per_second,
@@ -6,7 +6,7 @@ use uom::si::{
     length::inch,
     time::second,
 };
-use vexide::prelude::{Float, Motor};
+use vexide::prelude::Motor;
 
 use crate::{
     hardware::motor_group::MotorGroup,

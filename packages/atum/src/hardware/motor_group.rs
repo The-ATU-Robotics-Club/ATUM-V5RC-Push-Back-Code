@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 use vexide::prelude::Motor;
 
 use super::average;

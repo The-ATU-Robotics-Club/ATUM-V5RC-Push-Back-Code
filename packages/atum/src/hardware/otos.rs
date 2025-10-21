@@ -1,5 +1,4 @@
-use alloc::rc::Rc;
-use core::{cell::RefCell, time::Duration};
+use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
 
 use bytemuck::{Pod, Zeroable};
 use log::{error, info};
@@ -11,10 +10,10 @@ use uom::si::{
     velocity::inch_per_second,
 };
 use vexide::{
-    devices::smart::serial::SerialError,
-    prelude::{SerialPort, SmartPort},
+    smart::{serial::SerialError, SmartPort},
+    prelude::SerialPort,
     task::{spawn, Task},
-    time::{sleep, Instant},
+    time::sleep,
 };
 
 use super::{packet::Packet, serial_device::SerialDevice};

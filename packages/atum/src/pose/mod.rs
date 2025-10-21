@@ -1,17 +1,18 @@
 pub mod odometry;
 
-use core::{
-    fmt::Display,
-    ops::{Add, Mul, Sub},
-};
+use std::{fmt::Display, ops::{Add, Mul, Sub}};
 
+use num_traits::Float;
 use uom::{
     si::{
-        angle::degree, angular_velocity::degree_per_second, f64::{Angle, AngularVelocity, Length, Velocity}, length::inch, velocity::inch_per_second
+        angle::degree,
+        angular_velocity::degree_per_second,
+        f64::{Angle, AngularVelocity, Length, Velocity},
+        length::inch,
+        velocity::inch_per_second,
     },
     ConstZero,
 };
-use vexide::float::Float;
 
 #[derive(Clone, Copy, Default)]
 pub struct Pose {

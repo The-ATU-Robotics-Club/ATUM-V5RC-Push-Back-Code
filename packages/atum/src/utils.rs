@@ -1,7 +1,6 @@
-use core::f64::consts::{PI, TAU};
+use std::f64::consts::{PI, TAU};
 
 use uom::si::{angle::radian, f64::{Angle, Length}, length::inch};
-use vexide::float::Float;
 
 use crate::pose::{Pose, Vec2};
 

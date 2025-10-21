@@ -1,6 +1,6 @@
 // Rewrite UOM implementation when std support gets stabilized
 
-use core::time::Duration;
+use std::time::{Duration, Instant};
 
 use log::{debug, info, warn};
 use uom::si::{
@@ -9,8 +9,8 @@ use uom::si::{
     length::inch,
 };
 use vexide::{
-    prelude::{Direction, Float, Motor},
-    time::{sleep, Instant},
+    prelude::{Direction, Motor},
+    time::sleep,
 };
 
 use crate::{controllers::pid::Pid, pose::Vec2, subsystems::drivetrain::Drivetrain, utils::wrap};

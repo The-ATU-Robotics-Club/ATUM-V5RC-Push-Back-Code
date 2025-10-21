@@ -1,5 +1,4 @@
-use alloc::{rc::Rc, vec};
-use core::{cell::RefCell, time::Duration};
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use vexide::{
     task::{spawn, Task},

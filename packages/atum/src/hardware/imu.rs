@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 use log::{error, info};
 use uom::si::{angle::degree, f64::Angle};
 use vexide::prelude::InertialSensor;
@@ -34,11 +32,10 @@ impl Imu {
         let mut angles = Vec::new();
         for imu in self.imus.iter() {
             if let Ok(rotation) = imu.rotation() {
-                angles.push(rotation);
+                angles.push(rotation.as_degrees());
             }
         }
 
         Angle::new::<degree>(average(angles) % 360.0)
     }
 }
-
