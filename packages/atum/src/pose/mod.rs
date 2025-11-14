@@ -44,7 +44,7 @@ impl Display for Pose {
         let vf = self.vf.get::<inch_per_second>();
         let vs = self.vs.get::<inch_per_second>();
         let omega = self.omega.get::<degree_per_second>();
-        write!(f, "({}, {}, {}, {}, {}, {})", x, y, h, vf, vs, omega)
+        write!(f, "({:.4}, {:.4}, {:.4}, {:.4}, {:.4}, {:.4})", x, y, h, vf, vs, omega)
     }
 }
 

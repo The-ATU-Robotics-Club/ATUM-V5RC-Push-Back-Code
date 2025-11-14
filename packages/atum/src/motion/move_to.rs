@@ -52,18 +52,16 @@ impl MoveTo {
         debug!("attempting to go to: {:?}", target);
 
         loop {
-            sleep(Motor::WRITE_INTERVAL).await;
+            sleep(Duration::from_millis(10)).await;
             let elapsed_time = prev_time.elapsed();
             prev_time = Instant::now();
 
             let pose = dt.pose();
-            let position = Vec2::new(pose.x, pose.y);
             let heading = pose.h;
 
-            let position_error = target - position;
             let position_error = Vec2::new(
-                position_error.x.get::<inch>(),
-                position_error.y.get::<inch>(),
+                (target.x - pose.x).get::<inch>(),
+                (target.y - pose.y).get::<inch>(),
             );
             let distance = position_error.magnitude();
             let linear_output = self
@@ -79,27 +77,31 @@ impl MoveTo {
                 break;
             }
 
-            if start_time.elapsed() > timeout {
-                warn!("Moving failed");
-                break;
-            }
+            // if start_time.elapsed() > timeout {
+            //     warn!("Moving failed");
+            //     break;
+            // }
 
-            let mut herror = wrap(heading - target_h + Angle::new::<degree>(90.0));
+            let mut herror = wrap(heading - target_h);
             let scaling = herror.get::<radian>().cos();
 
-            debug!("d, a : {:?}, {:?}", distance, herror.get::<degree>());
+            debug!("a, s: {:.4}, {:.4}", herror.get::<degree>(), scaling);
 
             if direction.is_reverse() || herror.abs() > Angle::new::<degree>(90.0) {
                 herror = wrap(herror + Angle::HALF_TURN);
             }
 
+            debug!("d, a, c: {:.4}, {:.4}", linear_output, herror.get::<degree>());
+
             let angular_output = if distance < self.turn_threshold.get::<inch>() {
                 0.0
             } else {
-                self.angular.output(herror.get::<radian>(), elapsed_time)
+                -self.angular.output(herror.get::<radian>(), elapsed_time)
             };
 
-            debug!("({}, {})", linear_output * scaling, angular_output);
+            debug!("la ({:.4}, {:.4})", linear_output * scaling, angular_output);
+            debug!("lr ({:.4}, {:.4})", linear_output * scaling + angular_output, linear_output * scaling - angular_output);
+            debug!("");
 
             // do cosine scaling on rewrite: herror.cos() * linear_output
             dt.arcade(linear_output * scaling, angular_output);
