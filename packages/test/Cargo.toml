@@ -1,0 +1,20 @@
+[package]
+name = "test"
+description = "testing localization and motion algorithms"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# These fields configure default behavior for uploads with `cargo v5`.
+[package.metadata.v5]
+upload-strategy = "differential"
+slot = 2
+icon = "alien"
+compress = true
+
+[dependencies]
+atum = { workspace = true }
+vexide = { workspace = true }
+uom = { workspace = true }
+log = { workspace = true }
