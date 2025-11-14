@@ -3,6 +3,7 @@
 
 extern crate alloc;
 
+use alloc::vec::Vec;
 use alloc::vec;
 use core::time::Duration;
 
@@ -34,7 +35,9 @@ use vexide::prelude::*;
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
-    intake: Intake,
+    intake: Vec<Motor>,
+    lift: AdiDigitalOut,
+    duck_bill: AdiDigitalOut,
     otos: Otos,
 }
 
@@ -84,24 +87,40 @@ impl Compete for Robot {
                     power: state.left_stick,
                     turn: state.right_stick,
                 },
-                intake_high: state.button_r2,
-                intake_middle: state.button_r1,
-                intake_low: state.button_l1,
+                intake_high: state.button_r1,
+                intake_low: state.button_r2,
+                outake_high: state.button_l1,
+                outake_low: state.button_l2,
+                lift: state.button_y,
+                duck_bill: state.button_right,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
 
             if mappings.intake_high.is_pressed() {
-                self.intake
-                    .set_command(Some(IntakeCommand::ScoreHigh(Motor::V5_MAX_VOLTAGE)));
-            } else if mappings.intake_middle.is_pressed() {
-                self.intake
-                    .set_command(Some(IntakeCommand::ScoreMiddle(Motor::V5_MAX_VOLTAGE)));
+                _ = self.intake[0].set_voltage(Motor::V5_MAX_VOLTAGE);
+                _ = self.intake[1].set_voltage(Motor::V5_MAX_VOLTAGE);
             } else if mappings.intake_low.is_pressed() {
-                self.intake
-                    .set_command(Some(IntakeCommand::ScoreLow(Motor::V5_MAX_VOLTAGE)));
-            } else {
-                self.intake.set_command(None);
+                _ = self.intake[0].set_voltage(-Motor::V5_MAX_VOLTAGE);
+                _ = self.intake[1].set_voltage(-Motor::V5_MAX_VOLTAGE);
+            }
+            if mappings.outake_high.is_pressed() {
+                _ = self.intake[2].set_voltage(-Motor::V5_MAX_VOLTAGE);
+            } else if mappings.outake_low.is_pressed() {
+                _ = self.intake[2].set_voltage(Motor::V5_MAX_VOLTAGE);
+            } 
+
+            if !mappings.intake_high.is_pressed() && !mappings.intake_low.is_pressed() && !mappings.outake_high.is_pressed() && !mappings.outake_low.is_pressed() {
+                _ = self.intake[0].set_voltage(0.0);
+                _ = self.intake[1].set_voltage(0.0);
+                _ = self.intake[2].set_voltage(0.0);
+            }
+
+            if mappings.lift.is_now_pressed() {
+                _ = self.lift.toggle();
+            }
+            if mappings.duck_bill.is_now_pressed() {
+                _ = self.duck_bill.toggle();
             }
 
             info!("Drivetrain: {}", self.drivetrain.pose());
@@ -160,28 +179,28 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(vec![
                 Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_14, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_13, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
             ]),
             MotorGroup::new(vec![
-                Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
+                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
             ]),
             Odometry::new(
                 starting_position,
                 TrackingWheel::new(
-                    peripherals.adi_a,
-                    peripherals.adi_b,
+                    peripherals.adi_c,
+                    peripherals.adi_d,
                     Direction::Reverse,
                     Length::new::<inch>(2.5),
                     Length::ZERO,
                 ),
                 TrackingWheel::new(
-                    peripherals.adi_c,
-                    peripherals.adi_d,
+                    peripherals.adi_e,
+                    peripherals.adi_f,
                     Direction::Reverse,
                     Length::new::<inch>(2.5),
                     Length::new::<inch>(-5.0),
@@ -191,11 +210,13 @@ async fn main(peripherals: Peripherals) {
             Length::new::<inch>(2.5),
             Length::new::<inch>(12.0),
         ),
-        intake: Intake::new(MotorGroup::new(vec![
-            Motor::new(peripherals.port_12, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
+        intake: vec![
             Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
-        ])),
+            Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
+        ],
+        lift: AdiDigitalOut::new(peripherals.adi_a),
+        duck_bill: AdiDigitalOut::new(peripherals.adi_b),
         otos: Otos::new(
             peripherals.port_2,
             starting_position,

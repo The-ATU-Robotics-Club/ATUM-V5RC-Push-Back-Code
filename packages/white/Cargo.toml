@@ -1,5 +1,6 @@
 [package]
-name = "white"
+name = "stout-drive"
+description = "left: bottom(16-18) top(19-20), right: bottom(6-8) top(9-10)"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,10 +10,11 @@ edition = "2021"
 [package.metadata.v5]
 upload-strategy = "differential"
 slot = 1
-name = "white"
-icon = "cool-x"
+icon = "robot"
 compress = true
 
 [dependencies]
 atum = { workspace = true }
 vexide = { workspace = true }
+uom = { workspace = true }
+log = { workspace = true }
