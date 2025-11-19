@@ -9,7 +9,7 @@ pub fn wrap(angle: Angle) -> Angle {
     let angle = angle.get::<radian>();
     Angle::new::<radian>((angle + PI).rem_euclid(TAU) - PI)
 }
-pub fn wrapped(angle:f64) ->f64{
+pub fn wrapped(angle: f64) -> f64{
     (-angle + PI).rem_euclid(TAU) - PI
 }
 

@@ -136,4 +136,55 @@ impl<T: Float + Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T>> Vec2
     }
 }
 
+impl<T> From<(T, T)> for Vec2<T> {
+    fn from(tuple: (T, T)) -> Self {
+        Self {
+            x: tuple.0,
+            y: tuple.1,
+        }
+    }
+}
 
+impl<T: Add<Output = T>> Add for Vec2<T> {
+    type Output = Self;
+
+    fn add(self, other: Vec2<T>) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl<T: Add<Output = T> + Copy> Add<T> for Vec2<T> {
+    type Output = Self;
+
+    fn add(self, scalar: T) -> Self {
+        Self {
+            x: self.x + scalar,
+            y: self.y + scalar,
+        }
+    }
+}
+
+impl<T: Sub<Output = T> + Copy> Sub<T> for Vec2<T> {
+    type Output = Self;
+
+    fn sub(self, scalar: T) -> Self {
+        Self {
+            x: self.x - scalar,
+            y: self.y - scalar,
+        }
+    }
+}
+
+impl<T: Mul<Output = T> + Copy> Mul<T> for Vec2<T> {
+    type Output = Self;
+
+    fn mul(self, scalar: T) -> Self {
+        Self {
+            x: self.x * scalar,
+            y: self.y * scalar,
+        }
+    }
+}

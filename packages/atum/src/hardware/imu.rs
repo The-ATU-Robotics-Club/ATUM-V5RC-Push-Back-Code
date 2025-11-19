@@ -34,7 +34,7 @@ impl Imu {
         let mut angles = Vec::new();
         for imu in self.imus.iter() {
             if let Ok(rotation) = imu.rotation() {
-                angles.push(rotation);
+                angles.push(360.0 - rotation);
             }
         }
 

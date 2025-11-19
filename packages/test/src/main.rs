@@ -12,7 +12,7 @@ use atum::{
     hardware::{imu::Imu, motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    motion::{move_to::MoveTo, turn::Turn},
+    motion::{move_to::MoveTo, profiling::{bezier::Bezier, trajectory::{Trajectory, TrajectoryConstraints}}, ramsete::Ramsete, turn::Turn},
     pose::{odometry::Odometry, Pose, Vec2},
     subsystems::{
         drivetrain::Drivetrain,
@@ -31,6 +31,11 @@ use uom::{
     ConstZero,
 };
 use vexide::prelude::*;
+
+#[inline]
+pub const fn from_drive_rpm(rpm: f64, wheel_diameter: f64) -> f64 {
+    (rpm / 60.0) * (core::f64::consts::PI * wheel_diameter)
+}
 
 struct Robot {
     controller: Controller,
@@ -76,7 +81,15 @@ impl Compete for Robot {
             Angle::new::<degree>(0.5),
             AngularVelocity::new::<degree_per_second>(5.0),
             Angle::new::<degree>(85.0),
-        );
+        ); 
+
+        let mut ramsete = Ramsete {
+            b: 0.00129,
+            zeta: 0.2,
+            track_width: 12.0,
+            wheel_diameter: 3.25,
+            external_gearing: 36.0 / 48.0,
+        };
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -118,9 +131,9 @@ impl Compete for Robot {
 
             if state.button_down.is_now_pressed() {
                 self.drivetrain.set_pose(Pose::new(
-                    Length::ZERO,
-                    Length::ZERO,
-                    self.drivetrain.pose().h,
+                    Length::new::<inch>(10.0),
+                    Length::new::<inch>(40.0),
+                    Angle::new::<degree>(180.0),
                 ))
             }
 
@@ -136,14 +149,24 @@ impl Compete for Robot {
 
             // testing and tuning seeking movement
             if state.button_up.is_pressed() {
-                move_to
-                    .move_to_point(
-                        &mut self.drivetrain,
-                        Vec2::new(Length::new::<inch>(24.0), Length::ZERO),
-                        Duration::from_secs(8),
-                        Direction::Forward,
-                    )
-                    .await;
+                let constraints = TrajectoryConstraints {
+                    max_velocity: from_drive_rpm(450.0, 3.25),
+                    max_acceleration: 200.0,
+                    max_deceleration: 200.0,
+                    friction_coefficient: 1.0,
+                    track_width: 12.0,
+                };
+                let curve = Bezier::new((10.0,40.0), (43.5,10.5), (66.0,66.0), (90.0,30.0));
+                let trajectory = Trajectory::generate(curve, 0.1, constraints);
+                ramsete.follow(&mut self.drivetrain, trajectory).await;
+                // move_to
+                //     .move_to_point(
+                //         &mut self.drivetrain,
+                //         Vec2::new(Length::new::<inch>(24.0), Length::ZERO),
+                //         Duration::from_secs(8),
+                //         Direction::Forward,
+                //     )
+                //     .await;
             }
 
             sleep(Controller::UPDATE_INTERVAL).await;
