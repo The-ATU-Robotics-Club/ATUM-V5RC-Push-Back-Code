@@ -19,6 +19,12 @@ impl MotorGroup {
         }
     }
 
+    pub fn set_velocity(&mut self, velocity: i32) {
+        for motor in self.motors.iter_mut() {
+            _ = motor.set_velocity(velocity);
+        }
+    }
+
     pub fn voltage(&self) -> f64 {
         let mut voltages = Vec::new();
         for motor in self.motors.iter() {

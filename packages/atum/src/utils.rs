@@ -9,6 +9,9 @@ pub fn wrap(angle: Angle) -> Angle {
     let angle = angle.get::<radian>();
     Angle::new::<radian>((angle + PI).rem_euclid(TAU) - PI)
 }
+pub fn wrapped(angle:f64) ->f64{
+    (-angle + PI).rem_euclid(TAU) - PI
+}
 
 pub fn angular_distance(pose: Pose, other: Vec2<Length>) -> Angle {
     let pose = Vec2::new(pose.x.get::<inch>(), pose.y.get::<inch>());

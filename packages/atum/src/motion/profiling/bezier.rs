@@ -16,11 +16,11 @@ impl Bezier {
         todo!()
     }
 
-    pub fn dervative(&self, t: f64) -> Vec2<f64> {
+    pub fn derivative(&self, t: f64) -> Vec2<f64> {
         todo!()
     }
 
-    pub fn second_dervative(&self, t: f64) -> Vec2<f64> {
+    pub fn second_derivative(&self, t: f64) -> Vec2<f64> {
         todo!()
     }
 }
