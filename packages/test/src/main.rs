@@ -131,9 +131,9 @@ impl Compete for Robot {
 
             if state.button_down.is_now_pressed() {
                 self.drivetrain.set_pose(Pose::new(
-                    Length::new::<inch>(10.0),
-                    Length::new::<inch>(40.0),
-                    Angle::new::<degree>(180.0),
+                    Length::new::<inch>(24.0),
+                    Length::new::<inch>(36.0),
+                    Angle::ZERO,
                 ))
             }
 
@@ -151,12 +151,12 @@ impl Compete for Robot {
             if state.button_up.is_pressed() {
                 let constraints = TrajectoryConstraints {
                     max_velocity: from_drive_rpm(450.0, 3.25),
-                    max_acceleration: 200.0,
-                    max_deceleration: 200.0,
+                    max_acceleration: 220.0,
+                    max_deceleration: 300.0,
                     friction_coefficient: 1.0,
                     track_width: 12.0,
                 };
-                let curve = Bezier::new((10.0,40.0), (43.5,10.5), (66.0,66.0), (90.0,30.0));
+                let curve = Bezier::new((24.0,36.0), (60.0,36.0), (84.0,108.0), (120.0,108.0));
                 let trajectory = Trajectory::generate(curve, 0.1, constraints);
                 ramsete.follow(&mut self.drivetrain, trajectory).await;
                 // move_to
