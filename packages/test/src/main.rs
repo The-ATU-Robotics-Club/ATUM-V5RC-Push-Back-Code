@@ -131,8 +131,8 @@ impl Compete for Robot {
 
             if state.button_down.is_now_pressed() {
                 self.drivetrain.set_pose(Pose::new(
-                    Length::new::<inch>(24.0),
-                    Length::new::<inch>(36.0),
+                    Length::new::<inch>(0.0),
+                    Length::new::<inch>(0.0),
                     Angle::ZERO,
                 ))
             }
@@ -225,14 +225,16 @@ async fn main(peripherals: Peripherals) {
                     peripherals.adi_d,
                     Direction::Forward,
                     Length::new::<millimeter>(64.8),
-                    Length::new::<inch>(0.086),
+                    Vec2::new(Length::new::<inch>(0.086),Length::new::<inch>(0.0)),
+                    Angle::new::<degree>(90.0),
                 ),
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
                     Direction::Forward,
                     Length::new::<millimeter>(64.8),
-                    Length::new::<inch>(-1.685),
+                    Vec2::new(Length::new::<inch>(0.0), Length::new::<inch>(-1.685)),
+                    Angle::new::<degree>(0.0),
                 ),
                 imu,
             ),

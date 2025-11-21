@@ -40,28 +40,48 @@ impl Odometry {
                 let mut prev_time = Instant::now();
                 let mut prev_heading = imu.heading();
                 loop {
-                    let mut dx = side.traveled();
-                    let mut dy = forward.traveled();
+
+
+ 
+                    let mut ds1 = side.traveled(); // Distance 1 traveled
+                    let mut ds2 = forward.traveled(); // Distance 2 traveled
                     let heading = imu.heading();
                     let mut dh = heading - prev_heading;
                     prev_heading = heading;
 
-                    if dh != Angle::ZERO {
-                        // Prevent divide by zero error
-                        dx = 2.0
-                            * (dh.get::<radian>() / 2.0).sin()
-                            * (dx / dh.get::<radian>() + side.from_center());
-                        dy = 2.0
-                            * (dh.get::<radian>() / 2.0).sin()
-                            * (dy / dh.get::<radian>() + forward.from_center());
-                    }
+                    let phi1 = side.angle();
+                    let phi2 = forward.angle();
 
-                    if dx.is_infinite() || dy.is_infinite() || dh.is_infinite() {
-                        warn!("Invalid values read from odometers");
-                        dx = Length::ZERO;
-                        dy = Length::ZERO;
-                        dh = Angle::ZERO;
-                    }
+                    let offset1 = side.from_center();    // Vec2<Length>
+                    let offset2 = forward.from_center(); // Vec2<Length>
+
+
+                    let dx_rot1 = -dh.get::<radian>() * offset1.y;
+                    let dy_rot1 =  dh.get::<radian>() * offset1.x;
+                    let dx_rot2 = - dh.get::<radian>() * offset2.y;
+                    let dy_rot2 =  dh.get::<radian>() * offset2.x;
+
+                    // projection of that rotation along each wheel axis (Length)
+                    let ds1_rot = dx_rot1 * phi1.get::<radian>().cos() + dy_rot1 * phi1.get::<radian>().sin();
+                    let ds2_rot = dx_rot2 * phi2.get::<radian>().cos() + dy_rot2 * phi2.get::<radian>().sin();
+
+                    // corrected wheel distances (translation only)
+                    let ds1_corr = ds1 - ds1_rot;
+                    let ds2_corr = ds2 - ds2_rot;
+
+                    let det = (phi2.get::<radian>() - phi1.get::<radian>()).sin();
+                    let inv_det = 1.0 / det;
+
+                                    
+                    let c1 = phi1.get::<radian>().cos();
+                    let s1 = phi1.get::<radian>().sin();
+                    let c2 = phi2.get::<radian>().cos();
+                    let s2 = phi2.get::<radian>().sin();
+
+                    let dx = ( s2 * ds1_corr - s1 * ds2_corr ) * inv_det;
+                    let dy = (-c2 * ds1_corr + c1 * ds2_corr ) * inv_det;
+
+
 
                     pose.replace_with(|prev| {
                         let heading_avg = prev.h + dh / 2.0;
