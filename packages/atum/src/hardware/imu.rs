@@ -26,7 +26,7 @@ impl Imu {
 
     pub fn set_heading(&mut self, heading: Angle) {
         for imu in self.imus.iter_mut() {
-            _ = imu.set_rotation(heading.get::<degree>());
+            _ = imu.set_rotation(-heading.get::<degree>());
         }
     }
 

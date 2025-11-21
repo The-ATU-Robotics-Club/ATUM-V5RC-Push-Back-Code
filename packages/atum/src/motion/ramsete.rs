@@ -67,7 +67,7 @@ impl Ramsete {
             // Compute error in the local reference frame of the robot (+x is forward)
             let position_error =
                 (profile.position - position).rotated(-pose.h.get::<radian>()); 
-            let heading_error = pose.h.get::<radian>() - profile.heading; //swtiched pose.get::<radian>() and profile heading so we should have a negative heading error
+            let heading_error = profile.heading - pose.h.get::<radian>(); //swtiched pose.get::<radian>() and profile heading so we should have a negative heading error
 
             // Linear/angular velocity commands
             let angular_velocity = (desired_angular_velocity

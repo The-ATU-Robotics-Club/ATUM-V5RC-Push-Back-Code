@@ -82,7 +82,7 @@ impl MoveTo {
             //     break;
             // }
 
-            let mut herror = wrap(heading - target_h);
+            let mut herror = wrap(target_h - heading);
             let scaling = herror.get::<radian>().cos();
 
             debug!("a, s: {:.4}, {:.4}", herror.get::<degree>(), scaling);
