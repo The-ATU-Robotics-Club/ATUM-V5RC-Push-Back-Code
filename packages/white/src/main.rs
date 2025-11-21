@@ -89,6 +89,8 @@ impl Compete for Robot {
                 intake_low: state.button_r2,
                 outake_high: state.button_l1,
                 outake_low: state.button_l2,
+                lift: state.button_y,
+                duck_bill: state.button_right,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
@@ -165,20 +167,26 @@ async fn main(peripherals: Peripherals) {
     let robot = Robot {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
-            ]),
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
-            ]),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
+                ],
+                None,
+            ),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+                ],
+                None,
+            ),
             Odometry::new(
                 starting_position,
                 TrackingWheel::new(

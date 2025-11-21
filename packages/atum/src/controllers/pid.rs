@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+#[derive(Clone, Copy)]
 pub struct Pid {
     kp: f64,
     ki: f64,

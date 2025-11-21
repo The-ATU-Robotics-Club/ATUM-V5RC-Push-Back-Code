@@ -1,6 +1,6 @@
 [package]
 name = "stout-drive"
-description = "left: bottom(16-18) top(19-20), right: bottom(6-8) top(9-10)"
+description = "left: bottom(6-8) top(9-10), right: bottom(16-18) top(19-20)"
 version = "0.1.0"
 edition = "2021"
 

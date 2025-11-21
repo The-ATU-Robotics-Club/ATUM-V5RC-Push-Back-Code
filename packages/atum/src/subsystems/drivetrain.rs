@@ -1,12 +1,13 @@
 use core::f64::consts::PI;
 
+use alloc::format;
 use uom::si::{
     angular_velocity::radian_per_second,
     f64::{AngularVelocity, Length, Time, Velocity},
     length::inch,
     time::second,
 };
-use vexide::prelude::{Float, Motor};
+use vexide::{fs::File, path::Path, prelude::{Float, Motor}};
 
 use crate::{
     hardware::motor_group::MotorGroup,
@@ -15,8 +16,8 @@ use crate::{
 };
 
 pub struct Drivetrain {
-    left: MotorGroup,
-    right: MotorGroup,
+    pub left: MotorGroup,
+    pub right: MotorGroup,
     odometry: Odometry,
     wheel_circum: Length,
     track: Length,
@@ -111,6 +112,20 @@ impl Drivetrain {
 
     pub fn set_pose(&mut self, pose: Pose) {
         self.odometry.set_pose(pose);
+    }
+
+    pub fn record_volt_to_vel(&mut self, voltage: f64) {
+        let name = format!("{}V.txt", voltage);
+        let path = Path::new(name.as_str());
+        let file = File::create(path.as_ref()).unwrap();
+
+        loop { // change to move a set distance
+            _ = self.set_voltages(voltage, voltage);
+            let rpm = (self.left.velocity() + self.right.velocity()) / 2.0;
+
+
+            // write!(file, "rpm: {}", rpm.get::<minute>()).unwrap();
+        }
     }
 }
 

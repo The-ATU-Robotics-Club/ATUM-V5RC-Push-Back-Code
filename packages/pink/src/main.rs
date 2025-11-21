@@ -177,18 +177,24 @@ async fn main(peripherals: Peripherals) {
     let robot = Robot {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-            ]),
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
-            ]),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                ],
+                None,
+            ),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
+                ],
+                None,
+            ),
             Odometry::new(
                 starting_position,
                 TrackingWheel::new(

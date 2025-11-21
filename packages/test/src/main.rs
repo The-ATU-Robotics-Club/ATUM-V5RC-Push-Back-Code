@@ -9,11 +9,11 @@ use core::time::Duration;
 
 use atum::{
     controllers::pid::Pid,
-    hardware::{imu::Imu, motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
+    hardware::{imu::Imu, motor_group::{MotorController, MotorGroup}, otos::Otos, tracking_wheel::TrackingWheel},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::{move_to::MoveTo, profiling::{bezier::Bezier, trajectory::{Trajectory, TrajectoryConstraints}}, ramsete::Ramsete, turn::Turn},
-    pose::{odometry::Odometry, Pose, Vec2},
+    pose::{Pose, Vec2, odometry::Odometry},
     subsystems::{
         drivetrain::Drivetrain,
         intake::{Intake, IntakeCommand},
@@ -190,18 +190,34 @@ async fn main(peripherals: Peripherals) {
     let robot = Robot {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-            ]),
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
-            ]),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                ],
+                Some(MotorController::new(
+                    Pid::new(0.0, 0.0, 0.0, 0.0),
+                    0.0,
+                    0.0,
+                    0.0
+                )),
+            ),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
+                ],
+                Some(MotorController::new(
+                    Pid::new(0.0, 0.0, 0.0, 0.0),
+                    0.0, // ks
+                    0.0, // kv
+                    0.0, // ka
+                )),
+            ),
             Odometry::new(
                 starting_position,
                 TrackingWheel::new(
