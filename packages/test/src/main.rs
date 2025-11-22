@@ -30,7 +30,7 @@ use uom::{
     },
     ConstZero,
 };
-use vexide::prelude::*;
+use vexide::{prelude::*, time::Instant};
 
 #[inline]
 pub const fn from_drive_rpm(rpm: f64, wheel_diameter: f64) -> f64 {
@@ -84,7 +84,7 @@ impl Compete for Robot {
         ); 
 
         let mut ramsete = Ramsete {
-            b: 0.00129,
+            b: 0.02,
             zeta: 0.2,
             track_width: 12.0,
             wheel_diameter: 3.25,
@@ -168,7 +168,15 @@ impl Compete for Robot {
                 //     )
                 //     .await;
             }
+            if state.button_right.is_now_pressed(){
+                let time = Instant::now();
 
+                while time.elapsed() < Duration::from_secs(2) {
+                    self.drivetrain.set_velocity(300.0, 300.0);
+                    info!("Rpm: {}", (self.drivetrain.left.velocity()+self.drivetrain.right.velocity())/2.0);
+                    sleep(Duration::from_millis(10)).await;
+                }
+            }
             sleep(Controller::UPDATE_INTERVAL).await;
         }
     }
@@ -197,12 +205,12 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
                 ],
-                Some(MotorController::new(
-                    Pid::new(0.0, 0.0, 0.0, 0.0),
-                    0.0,
-                    0.0,
-                    0.0
-                )),
+                None,// Some(MotorController::new(
+                //     Pid::new(0.0368, 0.000001, 0.000005, 0.014),
+                //     0.96,
+                //     0.015,
+                //     0.0
+                // )),
             ),
             MotorGroup::new(
                 vec![
@@ -211,12 +219,12 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
                 ],
-                Some(MotorController::new(
-                    Pid::new(0.0, 0.0, 0.0, 0.0),
-                    0.0, // ks
-                    0.0, // kv
-                    0.0, // ka
-                )),
+                None, // Some(MotorController::new(
+                //     Pid::new(0.0368, 0.000001, 0.000005, 0.014),
+                //     0.96, // ks
+                //     0.015, // kv
+                //     0.0, // ka
+                // )),
             ),
             Odometry::new(
                 starting_position,
