@@ -7,13 +7,15 @@ use std::{
 use log::warn;
 use uom::{
     si::{
-        angle::radian,
         f64::{Angle, Length, Time},
         time::second,
     },
     ConstZero,
 };
-use vexide::{prelude::Task, task::spawn, time::sleep};
+use vexide::{
+    task::{spawn, Task},
+    time::sleep,
+};
 
 use super::Pose;
 use crate::hardware::{imu::Imu, tracking_wheel::TrackingWheel};
@@ -47,12 +49,8 @@ impl Odometry {
 
                     if dh != Angle::ZERO {
                         // Prevent divide by zero error
-                        dx = 2.0
-                            * (dh.get::<radian>() / 2.0).sin()
-                            * (dx / dh.get::<radian>() + side.from_center());
-                        dy = 2.0
-                            * (dh.get::<radian>() / 2.0).sin()
-                            * (dy / dh.get::<radian>() + forward.from_center());
+                        dx = 2.0 * (dh / 2.0).sin() * (dx / dh + side.from_center());
+                        dy = 2.0 * (dh / 2.0).sin() * (dy / dh + forward.from_center());
                     }
 
                     if dx.is_infinite() || dy.is_infinite() || dh.is_infinite() {
@@ -67,12 +65,8 @@ impl Odometry {
                         let dt = prev_time.elapsed();
                         Pose {
                             // Doing vector rotation for odom and adding to position
-                            x: prev.x
-                                + (heading_avg.get::<radian>().cos() * dx
-                                    + heading_avg.get::<radian>().sin() * dy),
-                            y: prev.y
-                                + (-heading_avg.get::<radian>().sin() * dx
-                                    + heading_avg.get::<radian>().cos() * dy),
+                            x: prev.x + (heading_avg.cos() * dx + heading_avg.sin() * dy),
+                            y: prev.y + (-heading_avg.sin() * dx + heading_avg.cos() * dy),
                             h: prev.h + dh,
                             vf: dy / Time::new::<second>(dt.as_secs_f64()),
                             vs: dx / Time::new::<second>(dt.as_secs_f64()),

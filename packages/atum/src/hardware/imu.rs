@@ -1,6 +1,7 @@
 use log::{error, info};
 use uom::si::{angle::degree, f64::Angle};
 use vexide::prelude::InertialSensor;
+use vexide::math::Angle as VAngle;
 
 use super::average;
 
@@ -24,7 +25,7 @@ impl Imu {
 
     pub fn set_heading(&mut self, heading: Angle) {
         for imu in self.imus.iter_mut() {
-            _ = imu.set_rotation(heading.get::<degree>());
+            _ = imu.set_rotation(VAngle::from_degrees(heading.get::<degree>()));
         }
     }
 
