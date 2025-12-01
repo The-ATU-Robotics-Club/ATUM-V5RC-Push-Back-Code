@@ -1,11 +1,4 @@
-#![no_main]
-#![no_std]
-
-extern crate alloc;
-
-use alloc::vec::Vec;
-use alloc::vec;
-use core::time::Duration;
+use std::time::Duration;
 
 use atum::{
     controllers::pid::Pid,
@@ -89,6 +82,8 @@ impl Compete for Robot {
                 intake_low: state.button_r2,
                 outake_high: state.button_l1,
                 outake_low: state.button_l2,
+                lift: state.button_y,
+                duck_bill: state.button_right,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
