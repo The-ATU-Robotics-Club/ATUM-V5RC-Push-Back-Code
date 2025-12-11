@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 // Packets used to transfer data over from the Arduino to Vex brain side
 #[derive(Default)]
 pub struct Packet {

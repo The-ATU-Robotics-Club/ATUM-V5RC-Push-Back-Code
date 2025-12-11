@@ -1,9 +1,9 @@
-use core::time::Duration;
+use std::time::{Duration, Instant};
 
 use vexide::{
-    devices::smart::serial::SerialError,
+    smart::serial::SerialError,
     prelude::SerialPort,
-    time::{sleep, Instant},
+    time::sleep,
 };
 
 use super::packet::Packet;

@@ -1,5 +1,3 @@
-use core::time::Duration;
-
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 
 const ESCAPES: [Option<&str>; 6] = [
@@ -29,11 +27,11 @@ impl Log for Logger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let timestamp = Duration::from_micros(unsafe { vex_sdk::vexSystemHighResTimeGet() });
+            let timestamp = vexide::time::system_uptime();
             let mins = timestamp.as_secs() / 60;
             let submin_secs = timestamp.as_secs() % 60;
 
-            vexide::io::println!(
+            println!(
                 "{:02}:{:02}:{:02} {}[{}]\x1B[0m {}",
                 mins,
                 submin_secs,

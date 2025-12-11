@@ -1,19 +1,20 @@
-use alloc::rc::Rc;
-use core::{cell::RefCell, time::Duration};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
 use log::warn;
 use uom::{
     si::{
-        angle::radian,
         f64::{Angle, Length, Time},
         time::second,
     },
     ConstZero,
 };
 use vexide::{
-    prelude::{Float, Task},
-    task::spawn,
-    time::{sleep, Instant},
+    task::{spawn, Task},
+    time::sleep,
 };
 
 use super::Pose;
@@ -40,9 +41,6 @@ impl Odometry {
                 let mut prev_time = Instant::now();
                 let mut prev_heading = imu.heading();
                 loop {
-
-
- 
                     let mut ds1 = side.traveled(); // Distance 1 traveled
                     let mut ds2 = forward.traveled(); // Distance 2 traveled
                     let heading = imu.heading();
@@ -52,9 +50,8 @@ impl Odometry {
                     let phi1 = side.angle();
                     let phi2 = forward.angle();
 
-                    let offset1 = side.from_center();    // Vec2<Length>
-                    let offset2 = forward.from_center(); // Vec2<Length>
-
+                    let offset1 = side.from_center();
+                    let offset2 = forward.from_center();
 
                     let dx_rot1 = -dh.get::<radian>() * offset1.y;
                     let dy_rot1 =  dh.get::<radian>() * offset1.x;
@@ -72,7 +69,6 @@ impl Odometry {
                     let det = (phi2.get::<radian>() - phi1.get::<radian>()).sin();
                     let inv_det = 1.0 / det;
 
-                                    
                     let c1 = phi1.get::<radian>().cos();
                     let s1 = phi1.get::<radian>().sin();
                     let c2 = phi2.get::<radian>().cos();
@@ -81,19 +77,13 @@ impl Odometry {
                     let dx = ( s2 * ds1_corr - s1 * ds2_corr ) * inv_det;
                     let dy = (-c2 * ds1_corr + c1 * ds2_corr ) * inv_det;
 
-
-
                     pose.replace_with(|prev| {
                         let heading_avg = prev.h + dh / 2.0;
                         let dt = prev_time.elapsed();
                         Pose {
                             // Doing vector rotation for odom and adding to position
-                            x: prev.x
-                                + (heading_avg.get::<radian>().cos() * dx
-                                    + heading_avg.get::<radian>().sin() * dy),
-                            y: prev.y
-                                + (-heading_avg.get::<radian>().sin() * dx
-                                    + heading_avg.get::<radian>().cos() * dy),
+                            x: prev.x + (heading_avg.cos() * dx + heading_avg.sin() * dy),
+                            y: prev.y + (-heading_avg.sin() * dx + heading_avg.cos() * dy),
                             h: prev.h + dh,
                             vf: dy / Time::new::<second>(dt.as_secs_f64()),
                             vs: dx / Time::new::<second>(dt.as_secs_f64()),

@@ -1,8 +1,3 @@
-#![no_std]
-#![no_main]
-
-extern crate alloc;
-
 pub mod controllers;
 pub mod hardware;
 pub mod motion;

@@ -10,4 +10,4 @@ uom = { workspace = true }
 
 bytemuck = { version = "1.23.2", features = ["derive"] }
 nalgebra = { version = "0.34.0", default-features = false, features = ["alloc", "libm", "macros"] }
-vex-sdk = "0.26.0"
+num-traits = "0.2.19"

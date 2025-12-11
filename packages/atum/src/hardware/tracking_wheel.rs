@@ -1,19 +1,21 @@
-use core::f64::consts::PI;
+use std::f64::consts::PI;
 
-use log::debug;
-use uom::si::f64::{Angle,Length};
-use vexide::prelude::{AdiPort, Direction, Position};
+use uom::si::f64::{Angle, Length};
+use vexide::{
+    adi::AdiPort,
+    math::{Angle, Direction},
+    prelude::AdiEncoder,
+};
 
 use crate::pose::Vec2;
 
-use super::encoder::Encoder;
-
 pub struct TrackingWheel {
-    encoder: Encoder<4096>,
+    encoder: AdiEncoder<4096>,
+    direction: Direction,
     wheel_circum: Length,
     from_center: Vec2<Length>,
     angle: Angle,
-    prev_position: Position,
+    prev_position: Angle,
 }
 
 impl TrackingWheel {
@@ -26,11 +28,12 @@ impl TrackingWheel {
         angle: Angle,
 
     ) -> Self {
-        let encoder = Encoder::new(top_port, bottom_port, direction);
+        let encoder = AdiEncoder::new(top_port, bottom_port);
         let prev_position = encoder.position().unwrap_or_default();
 
         Self {
             encoder,
+            direction,
             wheel_circum: wheel_diameter * PI,
             from_center,
             angle,
@@ -47,10 +50,14 @@ impl TrackingWheel {
     }
     
     pub fn traveled(&mut self) -> Length {
-        let position = self.encoder.position().unwrap_or_default();
+        let position = self.encoder.position().unwrap_or_default()
+            * match self.direction {
+                Direction::Forward => 1.0,
+                Direction::Reverse => -1.0,
+            };
         let change = position - self.prev_position;
         self.prev_position = position;
 
-        self.wheel_circum * change.as_revolutions()
+        self.wheel_circum * change.as_turns()
     }
 }

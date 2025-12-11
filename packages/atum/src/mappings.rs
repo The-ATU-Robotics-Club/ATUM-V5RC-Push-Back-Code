@@ -1,4 +1,4 @@
-use vexide::devices::controller::{ButtonState, JoystickState};
+use vexide::controller::{ButtonState, JoystickState};
 
 // Different drive mods that the driver can switch to
 pub enum DriveMode {

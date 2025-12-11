@@ -5,7 +5,7 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
-vexide = "0.7.0"
+vexide = { version = "0.8.0", features = ["full", "default-sdk", "vex-sdk-mock"] }
 atum = { path = "packages/atum" }
-uom = { version = "0.37.0", default-features = false, features = ["autoconvert", "f64", "si"] }
-log = "0.4.27"
+uom = { version = "0.37.0", default-features = false, features = ["autoconvert", "f64", "si", "std"] }
+log = "0.4.28"

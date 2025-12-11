@@ -1,11 +1,4 @@
-#![no_main]
-#![no_std]
-
-extern crate alloc;
-
-use alloc::vec::Vec;
-use alloc::vec;
-use core::time::Duration;
+use std::time::Duration;
 
 use atum::{
     controllers::pid::Pid,

@@ -1,4 +1,4 @@
-use core::time::Duration;
+use std::time::{Duration, Instant};
 
 use log::{debug, warn};
 use uom::si::{
@@ -6,10 +6,7 @@ use uom::si::{
     angular_velocity::degree_per_second,
     f64::{Angle, AngularVelocity, Length},
 };
-use vexide::{
-    prelude::Motor,
-    time::{sleep, Instant},
-};
+use vexide::{prelude::Motor, time::sleep};
 
 use crate::{
     controllers::pid::Pid,
