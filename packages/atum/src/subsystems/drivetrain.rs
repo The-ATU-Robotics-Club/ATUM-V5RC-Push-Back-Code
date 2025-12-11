@@ -15,8 +15,8 @@ use crate::{
 };
 
 pub struct Drivetrain {
-    left: MotorGroup,
-    right: MotorGroup,
+    pub left: MotorGroup,
+    pub right: MotorGroup,
     odometry: Odometry,
     wheel_circum: Length,
     track: Length,
@@ -42,6 +42,11 @@ impl Drivetrain {
     pub fn set_voltages(&mut self, left: f64, right: f64) {
         self.left.set_voltage(left);
         self.right.set_voltage(right);
+    }
+
+    pub fn set_velocity(&mut self, left: i32, right: i32) {
+        self.left.set_velocity(left);
+        self.right.set_velocity(right);
     }
 
     pub fn arcade(&mut self, power: f64, turn: f64) {

@@ -1,17 +1,20 @@
 use std::f64::consts::PI;
 
-use uom::si::f64::Length;
+use uom::si::f64::{Angle, Length};
 use vexide::{
     adi::AdiPort,
     math::{Angle, Direction},
     prelude::AdiEncoder,
 };
 
+use crate::pose::Vec2;
+
 pub struct TrackingWheel {
     encoder: AdiEncoder<4096>,
     direction: Direction,
     wheel_circum: Length,
-    from_center: Length,
+    from_center: Vec2<Length>,
+    angle: Angle,
     prev_position: Angle,
 }
 
@@ -21,7 +24,9 @@ impl TrackingWheel {
         bottom_port: AdiPort,
         direction: Direction,
         wheel_diameter: Length,
-        from_center: Length,
+        from_center: Vec2<Length>,
+        angle: Angle,
+
     ) -> Self {
         let encoder = AdiEncoder::new(top_port, bottom_port);
         let prev_position = encoder.position().unwrap_or_default();
@@ -31,14 +36,19 @@ impl TrackingWheel {
             direction,
             wheel_circum: wheel_diameter * PI,
             from_center,
+            angle,
             prev_position,
         }
     }
 
-    pub fn from_center(&self) -> Length {
+    pub fn from_center(&self) -> Vec2<Length> {
         self.from_center
     }
 
+    pub fn angle(&self) -> Angle{
+        self.angle
+    }
+    
     pub fn traveled(&mut self) -> Length {
         let position = self.encoder.position().unwrap_or_default()
             * match self.direction {

@@ -2,11 +2,11 @@ use std::time::Duration;
 
 use atum::{
     controllers::pid::Pid,
-    hardware::{imu::Imu, motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
+    hardware::{imu::Imu, motor_group::{MotorController, MotorGroup}, otos::Otos, tracking_wheel::TrackingWheel},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::{move_to::MoveTo, turn::Turn},
-    pose::{odometry::Odometry, Pose, Vec2},
+    pose::{Pose, Vec2, odometry::Odometry},
     subsystems::{
         drivetrain::Drivetrain,
         intake::{Intake, IntakeCommand},
@@ -69,7 +69,7 @@ impl Compete for Robot {
             Angle::new::<degree>(0.5),
             AngularVelocity::new::<degree_per_second>(5.0),
             Angle::new::<degree>(85.0),
-        );
+        ); 
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -111,9 +111,9 @@ impl Compete for Robot {
 
             if state.button_down.is_now_pressed() {
                 self.drivetrain.set_pose(Pose::new(
-                    Length::ZERO,
-                    Length::ZERO,
-                    self.drivetrain.pose().h,
+                    Length::new::<inch>(0.0),
+                    Length::new::<inch>(0.0),
+                    Angle::ZERO,
                 ))
             }
 
@@ -160,18 +160,34 @@ async fn main(peripherals: Peripherals) {
     let robot = Robot {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-            ]),
-            MotorGroup::new(vec![
-                Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-                Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
-                Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
-            ]),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                ],
+                Some(MotorController::new(
+                    Pid::new(0.0, 0.0, 0.0, 0.0),
+                    0.0,
+                    0.0,
+                    0.0
+                )),
+            ),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
+                ],
+                Some(MotorController::new(
+                    Pid::new(0.0, 0.0, 0.0, 0.0),
+                    0.0, // ks
+                    0.0, // kv
+                    0.0, // ka
+                )),
+            ),
             Odometry::new(
                 starting_position,
                 TrackingWheel::new(
@@ -179,14 +195,16 @@ async fn main(peripherals: Peripherals) {
                     peripherals.adi_d,
                     Direction::Forward,
                     Length::new::<millimeter>(64.8),
-                    Length::new::<inch>(0.086),
+                    Vec2::new(Length::new::<inch>(0.086),Length::new::<inch>(0.0)),
+                    Angle::new::<degree>(90.0),
                 ),
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
                     Direction::Forward,
                     Length::new::<millimeter>(64.8),
-                    Length::new::<inch>(-1.685),
+                    Vec2::new(Length::new::<inch>(0.0), Length::new::<inch>(-1.685)),
+                    Angle::new::<degree>(0.0),
                 ),
                 imu,
             ),
