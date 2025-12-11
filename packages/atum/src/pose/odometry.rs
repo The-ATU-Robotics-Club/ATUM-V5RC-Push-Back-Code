@@ -27,13 +27,12 @@ pub struct Odometry {
 
 impl Odometry {
     pub fn new(
-        starting_pose: Pose,
+        pose: Rc<RefCell<Pose>>,
         mut forward: TrackingWheel,
         mut side: TrackingWheel,
         mut imu: Imu,
     ) -> Self {
-        let pose = Rc::new(RefCell::new(starting_pose));
-        imu.set_heading(starting_pose.h);
+        imu.set_heading((*pose).borrow().h);
 
         Self {
             pose: pose.clone(),

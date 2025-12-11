@@ -1,4 +1,5 @@
 pub mod controllers;
+pub mod diagnostics;
 pub mod hardware;
 pub mod motion;
 pub mod pose;

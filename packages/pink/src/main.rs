@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use atum::{
     controllers::pid::Pid,
@@ -31,7 +31,7 @@ struct Robot {
     intake: Vec<Motor>,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
-    otos: Otos,
+    // otos: Otos,
 }
 
 impl Compete for Robot {
@@ -117,7 +117,7 @@ impl Compete for Robot {
             }
 
             info!("Drivetrain: {}", self.drivetrain.pose());
-            info!("OTOS: {}", self.otos.pose());
+            // info!("OTOS: {}", self.otos.pose());
 
             if state.button_down.is_now_pressed() {
                 self.drivetrain.set_pose(Pose::new(
@@ -165,7 +165,7 @@ async fn main(peripherals: Peripherals) {
 
     imu.calibrate().await;
 
-    let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
+    let pose = Rc::new(RefCell::new(Pose::default()));
 
     let robot = Robot {
         controller: peripherals.primary_controller,
@@ -183,7 +183,7 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
             ]),
             Odometry::new(
-                starting_position,
+                pose.clone(),
                 TrackingWheel::new(
                     peripherals.adi_c,
                     peripherals.adi_d,
@@ -210,16 +210,16 @@ async fn main(peripherals: Peripherals) {
         ],
         lift: AdiDigitalOut::new(peripherals.adi_a),
         duck_bill: AdiDigitalOut::new(peripherals.adi_b),
-        otos: Otos::new(
-            peripherals.port_2,
-            starting_position,
-            Pose::new(
-                Length::ZERO,
-                Length::new::<inch>(3.275),
-                Angle::new::<degree>(-90.0),
-            ),
-        )
-        .await,
+        // otos: Otos::new(
+        //     peripherals.port_2,
+        //     pose.clone(),
+        //     Pose::new(
+        //         Length::ZERO,
+        //         Length::new::<inch>(3.275),
+        //         Angle::new::<degree>(-90.0),
+        //     ),
+        // )
+        // .await,
     };
 
     robot.compete().await;

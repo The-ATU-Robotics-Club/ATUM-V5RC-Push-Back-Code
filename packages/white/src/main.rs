@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use atum::{
     controllers::pid::Pid,
@@ -29,6 +29,7 @@ struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
     intake: Vec<Motor>,
+    pose: Rc<RefCell<Pose>>,
     // otos: Otos,
 }
 
@@ -155,7 +156,7 @@ async fn main(peripherals: Peripherals) {
 
     imu.calibrate().await;
 
-    let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
+    let pose = Rc::new(RefCell::new(Pose::default()));
 
     let robot = Robot {
         controller: peripherals.primary_controller,
@@ -175,7 +176,7 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
             ]),
             Odometry::new(
-                starting_position,
+                pose.clone(),
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
@@ -200,6 +201,7 @@ async fn main(peripherals: Peripherals) {
             Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
             Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
         ],
+        pose: pose.clone(),
         // otos: Otos::new(
         //     peripherals.port_2,
         //     starting_position,

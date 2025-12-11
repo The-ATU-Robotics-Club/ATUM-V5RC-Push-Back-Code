@@ -1,19 +1,21 @@
-use std::time::Duration;
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use atum::{
     controllers::pid::Pid,
+    diagnostics::Diagnostics,
     hardware::{imu::Imu, motor_group::MotorGroup, otos::Otos, tracking_wheel::TrackingWheel},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::{move_to::MoveTo, turn::Turn},
-    pose::{odometry::Odometry, Pose, Vec2},
+    pose::{Pose, Vec2, odometry::Odometry},
     subsystems::{
         drivetrain::Drivetrain,
         intake::{Intake, IntakeCommand},
     },
 };
-use log::{info, LevelFilter};
+use log::{LevelFilter, info};
 use uom::{
+    ConstZero,
     si::{
         angle::degree,
         angular_velocity::degree_per_second,
@@ -21,7 +23,6 @@ use uom::{
         length::{inch, millimeter},
         velocity::inch_per_second,
     },
-    ConstZero,
 };
 use vexide::prelude::*;
 
@@ -99,14 +100,18 @@ impl Compete for Robot {
                 _ = self.intake[2].set_voltage(-Motor::EXP_MAX_VOLTAGE);
             } else if mappings.outake_low.is_pressed() {
                 _ = self.intake[2].set_voltage(Motor::EXP_MAX_VOLTAGE);
-            } 
+            }
 
-            if !mappings.intake_high.is_pressed() && !mappings.intake_low.is_pressed() && !mappings.outake_high.is_pressed() && !mappings.outake_low.is_pressed() {
+            if !mappings.intake_high.is_pressed()
+                && !mappings.intake_low.is_pressed()
+                && !mappings.outake_high.is_pressed()
+                && !mappings.outake_low.is_pressed()
+            {
                 _ = self.intake[0].set_voltage(0.0);
                 _ = self.intake[1].set_voltage(0.0);
             }
 
-            info!("Drivetrain: {}", self.drivetrain.pose());
+            // info!("Drivetrain: {}", self.drivetrain.pose());
             // info!("OTOS: {}", self.otos.pose());
 
             if state.button_down.is_now_pressed() {
@@ -155,7 +160,17 @@ async fn main(peripherals: Peripherals) {
 
     imu.calibrate().await;
 
-    let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
+    let pose = Rc::new(RefCell::new(Pose::default()));
+
+    let mut diagnostics = Diagnostics::new(pose.clone());
+    spawn(async move {
+        loop {
+            diagnostics.update();
+            diagnostics.log();
+            sleep(Duration::from_millis(100)).await;
+        }
+    })
+    .detach();
 
     let robot = Robot {
         controller: peripherals.primary_controller,
@@ -173,7 +188,7 @@ async fn main(peripherals: Peripherals) {
                 Motor::new(peripherals.port_9, Gearset::Blue, Direction::Forward),
             ]),
             Odometry::new(
-                starting_position,
+                pose.clone(),
                 TrackingWheel::new(
                     peripherals.adi_c,
                     peripherals.adi_d,
