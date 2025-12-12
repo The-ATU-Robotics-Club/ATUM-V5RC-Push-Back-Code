@@ -1,7 +1,8 @@
+use std::f64::consts::TAU;
+
 use log::{error, info};
-use uom::si::{angle::degree, f64::Angle};
-use vexide::prelude::InertialSensor;
-use vexide::math::Angle as VAngle;
+use uom::si::{angle::radian, f64::Angle};
+use vexide::{math::Angle as VAngle, prelude::InertialSensor};
 
 use super::average;
 
@@ -25,18 +26,29 @@ impl Imu {
 
     pub fn set_heading(&mut self, heading: Angle) {
         for imu in self.imus.iter_mut() {
-            _ = imu.set_rotation(VAngle::from_degrees(heading.get::<degree>()));
+            _ = imu.set_rotation(VAngle::from_radians(heading.get::<radian>()));
         }
+    }
+
+    pub fn rotation(&self) -> Angle {
+        let mut angles = Vec::new();
+        for imu in self.imus.iter() {
+            if let Ok(rotation) = imu.rotation() {
+                angles.push(TAU - rotation.as_radians());
+            }
+        }
+
+        Angle::new::<radian>(average(angles))
     }
 
     pub fn heading(&self) -> Angle {
         let mut angles = Vec::new();
         for imu in self.imus.iter() {
             if let Ok(rotation) = imu.rotation() {
-                angles.push(rotation.as_degrees());
+                angles.push(TAU - rotation.as_radians());
             }
         }
 
-        Angle::new::<degree>(average(angles) % 360.0)
+        Angle::new::<radian>(average(angles).rem_euclid(TAU))
     }
 }

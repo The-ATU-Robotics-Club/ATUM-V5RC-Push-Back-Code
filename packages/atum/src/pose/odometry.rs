@@ -4,14 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use log::warn;
-use uom::{
-    si::{
-        f64::{Angle, Length, Time},
-        time::second,
-    },
-    ConstZero,
-};
+use uom::si::{angle::radian, f64::Time, time::second};
 use vexide::{
     task::{spawn, Task},
     time::sleep,
@@ -41,10 +34,11 @@ impl Odometry {
                 let mut prev_time = Instant::now();
                 let mut prev_heading = imu.heading();
                 loop {
-                    let mut ds1 = side.traveled(); // Distance 1 traveled
-                    let mut ds2 = forward.traveled(); // Distance 2 traveled
-                    let heading = imu.heading();
-                    let mut dh = heading - prev_heading;
+                    let ds1 = side.traveled();
+                    let ds2 = forward.traveled();
+
+                    let heading = imu.rotation();
+                    let dh = heading - prev_heading;
                     prev_heading = heading;
 
                     let phi1 = side.angle();
@@ -54,13 +48,15 @@ impl Odometry {
                     let offset2 = forward.from_center();
 
                     let dx_rot1 = -dh.get::<radian>() * offset1.y;
-                    let dy_rot1 =  dh.get::<radian>() * offset1.x;
-                    let dx_rot2 = - dh.get::<radian>() * offset2.y;
-                    let dy_rot2 =  dh.get::<radian>() * offset2.x;
+                    let dy_rot1 = dh.get::<radian>() * offset1.x;
+                    let dx_rot2 = -dh.get::<radian>() * offset2.y;
+                    let dy_rot2 = dh.get::<radian>() * offset2.x;
 
                     // projection of that rotation along each wheel axis (Length)
-                    let ds1_rot = dx_rot1 * phi1.get::<radian>().cos() + dy_rot1 * phi1.get::<radian>().sin();
-                    let ds2_rot = dx_rot2 * phi2.get::<radian>().cos() + dy_rot2 * phi2.get::<radian>().sin();
+                    let ds1_rot =
+                        dx_rot1 * phi1.get::<radian>().cos() + dy_rot1 * phi1.get::<radian>().sin();
+                    let ds2_rot =
+                        dx_rot2 * phi2.get::<radian>().cos() + dy_rot2 * phi2.get::<radian>().sin();
 
                     // corrected wheel distances (translation only)
                     let ds1_corr = ds1 - ds1_rot;
@@ -74,8 +70,8 @@ impl Odometry {
                     let c2 = phi2.get::<radian>().cos();
                     let s2 = phi2.get::<radian>().sin();
 
-                    let dx = ( s2 * ds1_corr - s1 * ds2_corr ) * inv_det;
-                    let dy = (-c2 * ds1_corr + c1 * ds2_corr ) * inv_det;
+                    let dx = (s2 * ds1_corr - s1 * ds2_corr) * inv_det;
+                    let dy = (-c2 * ds1_corr + c1 * ds2_corr) * inv_det;
 
                     pose.replace_with(|prev| {
                         let heading_avg = prev.h + dh / 2.0;
@@ -84,9 +80,9 @@ impl Odometry {
                             // Doing vector rotation for odom and adding to position
                             x: prev.x + (heading_avg.cos() * dx + heading_avg.sin() * dy),
                             y: prev.y + (-heading_avg.sin() * dx + heading_avg.cos() * dy),
-                            h: prev.h + dh,
-                            vf: dy / Time::new::<second>(dt.as_secs_f64()),
-                            vs: dx / Time::new::<second>(dt.as_secs_f64()),
+                            h: imu.heading(),
+                            vf: dx / Time::new::<second>(dt.as_secs_f64()),
+                            vs: dy / Time::new::<second>(dt.as_secs_f64()),
                             omega: (dh / Time::new::<second>(dt.as_secs_f64())).into(),
                         }
                     });
