@@ -6,14 +6,12 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::{move_to::MoveTo, turn::Turn},
-    pose::{odometry::Odometry, Pose, Vec2},
-    subsystems::{
-        drivetrain::Drivetrain,
-        intake::{Intake, IntakeCommand},
-    },
+    pose::{Pose, Vec2, odometry::Odometry},
+    subsystems::drivetrain::Drivetrain,
 };
-use log::{info, LevelFilter};
+use log::{LevelFilter, info};
 use uom::{
+    ConstZero,
     si::{
         angle::degree,
         angular_velocity::degree_per_second,
@@ -21,7 +19,6 @@ use uom::{
         length::{inch, millimeter},
         velocity::inch_per_second,
     },
-    ConstZero,
 };
 use vexide::prelude::*;
 
@@ -99,9 +96,13 @@ impl Compete for Robot {
                 _ = self.intake[2].set_voltage(-Motor::V5_MAX_VOLTAGE);
             } else if mappings.outake_low.is_pressed() {
                 _ = self.intake[2].set_voltage(Motor::V5_MAX_VOLTAGE);
-            } 
+            }
 
-            if !mappings.intake_high.is_pressed() && !mappings.intake_low.is_pressed() && !mappings.outake_high.is_pressed() && !mappings.outake_low.is_pressed() {
+            if !mappings.intake_high.is_pressed()
+                && !mappings.intake_low.is_pressed()
+                && !mappings.outake_high.is_pressed()
+                && !mappings.outake_low.is_pressed()
+            {
                 _ = self.intake[0].set_voltage(0.0);
                 _ = self.intake[1].set_voltage(0.0);
                 _ = self.intake[2].set_voltage(0.0);
@@ -193,7 +194,7 @@ async fn main(peripherals: Peripherals) {
                     peripherals.adi_d,
                     Direction::Forward,
                     Length::new::<millimeter>(64.8),
-                    Vec2::new(Length::new::<inch>(0.086),Length::new::<inch>(0.0)),
+                    Vec2::new(Length::new::<inch>(0.086), Length::new::<inch>(0.0)),
                     Angle::new::<degree>(90.0),
                 ),
                 TrackingWheel::new(
