@@ -6,7 +6,7 @@ use uom::si::{
     angular_velocity::degree_per_second,
     f64::{Angle, AngularVelocity, Length},
 };
-use vexide::{prelude::Motor, time::sleep};
+use vexide::time::sleep;
 
 use crate::{
     controllers::pid::Pid,
@@ -48,7 +48,7 @@ impl Turn {
         let starting_error = wrap(target - dt.pose().h).abs();
 
         loop {
-            sleep(Motor::WRITE_INTERVAL).await;
+            sleep(Duration::from_millis(10)).await;
             let elapsed_time = prev_time.elapsed();
             time += elapsed_time;
             prev_time = Instant::now();

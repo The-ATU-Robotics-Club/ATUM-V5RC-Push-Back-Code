@@ -10,7 +10,7 @@ use uom::{
     },
     ConstZero,
 };
-use vexide::{prelude::Motor, time::sleep};
+use vexide::time::sleep;
 
 use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
 
@@ -48,7 +48,7 @@ impl Linear {
         let mut traveled = Length::ZERO;
 
         loop {
-            sleep(Motor::WRITE_INTERVAL).await;
+            sleep(Duration::from_millis(10)).await;
             let elapsed_time = prev_time.elapsed();
             time += elapsed_time;
             prev_time = Instant::now();
