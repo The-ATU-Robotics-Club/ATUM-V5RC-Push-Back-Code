@@ -10,7 +10,7 @@ use vexide::{prelude::Motor, time::sleep};
 
 use crate::{
     controllers::pid::Pid,
-    pose::Vec2,
+    localization::vec2::Vec2,
     subsystems::drivetrain::Drivetrain,
     utils::{angular_distance, wrap},
 };

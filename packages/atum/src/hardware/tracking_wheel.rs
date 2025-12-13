@@ -6,7 +6,7 @@ use uom::si::{
 };
 use vexide::{adi::AdiPort, math::Direction, prelude::AdiEncoder};
 
-use crate::pose::Vec2;
+use crate::localization::vec2::Vec2;
 
 pub struct TrackingWheel {
     encoder: AdiEncoder<4096>,

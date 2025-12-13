@@ -10,8 +10,8 @@ use vexide::prelude::Motor;
 
 use crate::{
     hardware::motor_group::MotorGroup,
+    localization::{odometry::Odometry, pose::Pose},
     mappings::DriveMode,
-    pose::{odometry::Odometry, Pose},
 };
 
 pub struct Drivetrain {

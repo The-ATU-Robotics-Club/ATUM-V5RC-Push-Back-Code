@@ -10,7 +10,7 @@ use vexide::{
     time::sleep,
 };
 
-use super::Pose;
+use super::pose::Pose;
 use crate::hardware::{imu::Imu, tracking_wheel::TrackingWheel};
 
 pub struct Odometry {

@@ -2,7 +2,7 @@ use std::f64::consts::{PI, TAU};
 
 use uom::si::{angle::radian, f64::{Angle, Length}, length::inch};
 
-use crate::pose::{Pose, Vec2};
+use crate::localization::{pose::Pose, vec2::Vec2};
 
 pub fn wrap(angle: Angle) -> Angle {
     let angle = angle.get::<radian>();

@@ -13,7 +13,10 @@ use vexide::{
     time::sleep,
 };
 
-use crate::{controllers::pid::Pid, pose::Vec2, subsystems::drivetrain::Drivetrain, utils::wrap};
+use crate::{
+    controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain,
+    utils::wrap,
+};
 
 pub struct MoveTo {
     linear: Pid,

@@ -3,10 +3,10 @@ use std::time::Duration;
 use atum::{
     controllers::pid::Pid,
     hardware::{imu::Imu, motor_group::MotorGroup, tracking_wheel::TrackingWheel},
+    localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::{linear::Linear, move_to::MoveTo, turn::Turn},
-    pose::{Pose, Vec2, odometry::Odometry},
     subsystems::drivetrain::Drivetrain,
     theme::STOUT_ROBOT,
 };

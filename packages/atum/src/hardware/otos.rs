@@ -17,7 +17,7 @@ use vexide::{
 };
 
 use super::{packet::Packet, serial_device::SerialDevice};
-use crate::pose::Pose;
+use crate::localization::pose::Pose;
 
 struct Command;
 
