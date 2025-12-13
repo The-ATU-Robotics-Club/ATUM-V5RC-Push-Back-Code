@@ -63,10 +63,16 @@ impl Compete for Robot {
             Length::new::<inch>(6.0),
         );
 
+        let mut linear = Linear::new(
+            Pid::new(1.2, 0.64, 0.10, 12.0),
+            Length::new::<inch>(0.5),
+            Velocity::new::<inch_per_second>(2.5),
+        );
+
         let mut turn = Turn::new(
-            Pid::new(24.0, 0.08, 1.1, 20.0),
-            Angle::new::<degree>(0.5),
-            AngularVelocity::new::<degree_per_second>(5.0),
+            Pid::new(20.0, 2.0, 0.85, 25.0),
+            Angle::new::<degree>(1.0),
+            AngularVelocity::new::<degree_per_second>(1.0),
         );
 
         loop {
@@ -127,12 +133,19 @@ impl Compete for Robot {
 
             // testing and tuning seeking movement
             if state.button_up.is_pressed() {
-                move_to
-                    .move_to_point(
+                // move_to
+                //     .move_to_point(
+                //         &mut self.drivetrain,
+                //         Vec2::new(Length::ZERO, Length::new::<inch>(24.0)),
+                //         Duration::from_secs(8),
+                //         Direction::Forward,
+                //     )
+                //     .await;
+                linear
+                    .drive_distance(
                         &mut self.drivetrain,
-                        Vec2::new(Length::ZERO, Length::new::<inch>(24.0)),
-                        Duration::from_secs(8),
-                        Direction::Forward,
+                        Length::new::<inch>(41.0),
+                        Duration::from_millis(1000),
                     )
                     .await;
             }
