@@ -8,6 +8,7 @@ use atum::{
     motion::{linear::Linear, move_to::MoveTo, turn::Turn},
     pose::{Pose, Vec2, odometry::Odometry},
     subsystems::drivetrain::Drivetrain,
+    theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
 use uom::{
@@ -308,7 +309,7 @@ impl Compete for Robot {
     }
 }
 
-#[vexide::main]
+#[vexide::main(banner(theme = STOUT_ROBOT))]
 async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
