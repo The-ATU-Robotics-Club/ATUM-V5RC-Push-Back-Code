@@ -30,22 +30,174 @@ struct Robot {
 }
 
 impl Compete for Robot {
+    // Make an autonomous selector and separate paths in a different file
     async fn autonomous(&mut self) {
-        let mut move_to = MoveTo::new(
-            Pid::new(2.0, 0.0, 0.0, 0.0),
-            Pid::new(0.0, 0.0, 0.0, 0.0),
+        let mut linear = Linear::new(
+            Pid::new(1.2, 0.64, 0.10, 12.0),
             Length::new::<inch>(0.5),
-            Velocity::new::<inch_per_second>(0.0),
-            Length::new::<inch>(24.0),
+            Velocity::new::<inch_per_second>(2.5),
         );
 
-        move_to
-            .move_to_point(
-                &mut self.drivetrain,
-                Vec2::new(Length::new::<inch>(10.0), Length::new::<inch>(10.0)),
-                Duration::from_secs(2),
-                Direction::Forward,
+        let mut angular = Turn::new(
+            Pid::new(20.0, 2.0, 0.85, 25.0),
+            Angle::new::<degree>(1.0),
+            AngularVelocity::new::<degree_per_second>(1.0),
+        );
+
+        self.drivetrain.set_pose(Pose::new(
+            Length::ZERO,
+            Length::ZERO,
+            Angle::new::<degree>(-90.0),
+        ));
+
+        let dt = &mut self.drivetrain;
+
+        // linear
+        //     .drive_distance(
+        //         &mut self.drivetrain,
+        //         Length::new::<inch>(41.0),
+        //         Duration::from_millis(1000),
+        //     )
+        //     .await;
+        // linear
+        //     .drive_distance(
+        //         &mut self.drivetrain,
+        //         Length::new::<inch>(-25.0),
+        //         Duration::from_secs(1000),
+        //     )
+        //     .await;
+
+        // angular.turn_to(
+        //     &mut self.drivetrain,
+        //     Angle::new::<degree>(-130.0),
+        //     Duration::from_secs(1),
+        // )
+        // .await;
+
+        // linear
+        //     .drive_distance(
+        //         &mut self.drivetrain,
+        //         Length::new::<inch>(28.0),
+        //         Duration::from_millis(1000),
+        //     )
+        //     .await;
+
+        // angular.turn_to(
+        //     &mut self.drivetrain,
+        //     Angle::new::<degree>(180.0),
+        //     Duration::from_secs(1),
+        // )
+        // .await;
+
+        // linear
+        //     .drive_distance(
+        //         &mut self.drivetrain,
+        //         Length::new::<inch>(11.0),
+        //         Duration::from_secs(1),
+        //     )
+        //     .await;
+
+        // sleep(Duration::from_secs(1)).await;
+
+        // linear
+        //     .drive_distance(
+        //         &mut self.drivetrain,
+        //         Length::new::<inch>(-5.0),
+        //         Duration::from_secs(1),
+        //     )
+        //     .await;
+
+        // angular.turn_to(
+        //     &mut self.drivetrain,
+        //     Angle::ZERO,
+        //     Duration::from_secs(1),
+        // )
+        // .await;
+
+        // linear
+        //     .drive_distance(
+        //         &mut self.drivetrain,
+        //         Length::new::<inch>(20.0),
+        //         Duration::from_secs(1),
+        //     )
+        //     .await;
+
+        // linear.drive_distance(dt, Length::new::<inch>(36.0), Duration::from_secs(2)).await;
+        // angular.turn_to(dt, Angle::new::<degree>(-180.0), Duration::from_millis(750)).await;
+        // linear.drive_distance(dt, Length::new::<inch>(12.0), Duration::from_secs(1)).await;
+        // sleep(Duration::from_secs(1)).await;
+        // linear.drive_distance(dt, Length::new::<inch>(-12.0), Duration::from_secs(2)).await;
+        // angular.turn_to(dt, Angle::new::<degree>(5.0),Duration::from_millis(1000)).await;
+        // linear.drive_distance(dt, Length::new::<inch>(15.0), Duration::from_secs(2)).await;
+        // sleep(Duration::from_millis(1500)).await;
+        // linear.drive_distance(dt, Length::new::<inch>(-15.0), Duration::from_secs(2)).await;
+        // angular.turn_to(dt, Angle::new::<degree>(-180.0), Duration::from_millis(1250)).await;
+        // linear.drive_distance(dt, Length::new::<inch>(12.0), Duration::from_secs(1)).await;
+        // sleep(Duration::from_secs(2)).await;
+        // linear.drive_distance(dt, Length::new::<inch>(-12.0), Duration::from_secs(2)).await;
+        // angular.turn_to(dt, Angle::new::<degree>(5.0), Duration::from_millis(1000)).await;
+        // linear.drive_distance(dt, Length::new::<inch>(17.0), Duration::from_secs(2)).await;
+        // sleep(Duration::from_millis(1500)).await;
+
+        linear
+            .drive_distance(dt, Length::new::<inch>(36.0), Duration::from_secs(2))
+            .await;
+        angular
+            .turn_to(dt, Angle::new::<degree>(-180.0), Duration::from_millis(750))
+            .await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(12.0), Duration::from_secs(1))
+            .await;
+        sleep(Duration::from_secs(1)).await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(-12.0), Duration::from_secs(2))
+            .await;
+        angular
+            .turn_to(dt, Angle::new::<degree>(47.0), Duration::from_millis(1000))
+            .await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(47.0), Duration::from_millis(1750))
+            .await;
+        sleep(Duration::from_millis(1000)).await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(-43.0), Duration::from_secs(2))
+            .await;
+        angular
+            .turn_to(
+                dt,
+                Angle::new::<degree>(-176.0),
+                Duration::from_millis(1250),
             )
+            .await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(15.0), Duration::from_secs(1))
+            .await;
+        sleep(Duration::from_secs(2)).await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(-12.0), Duration::from_secs(2))
+            .await;
+        angular
+            .turn_to(dt, Angle::new::<degree>(0.0), Duration::from_millis(1000))
+            .await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(17.0), Duration::from_secs(2))
+            .await;
+
+        sleep(Duration::from_millis(1500)).await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(-7.0), Duration::from_secs(2))
+            .await;
+        angular
+            .turn_to(dt, Angle::new::<degree>(90.0), Duration::from_secs(2))
+            .await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(48.0), Duration::from_secs(2))
+            .await;
+        angular
+            .turn_to(dt, Angle::new::<degree>(180.0), Duration::from_secs(2))
+            .await;
+        linear
+            .drive_distance(dt, Length::new::<inch>(20.0), Duration::from_secs(1))
             .await;
     }
 
