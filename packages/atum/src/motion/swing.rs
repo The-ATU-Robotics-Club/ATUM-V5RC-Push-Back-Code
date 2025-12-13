@@ -30,7 +30,7 @@ impl Swing {
         }
     }
 
-    pub async fn swing_to(&mut self, dt: &mut Drivetrain, target: Angle, radius: Inch, timeout: Duration){
+    pub async fn swing_to(&mut self, dt: &mut Drivetrain, target: Angle, radius: Length, timeout: Duration){
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
