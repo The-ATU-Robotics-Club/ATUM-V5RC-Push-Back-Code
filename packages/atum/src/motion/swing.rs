@@ -5,6 +5,7 @@ use uom::si::{
     angle::{degree, radian},
     angular_velocity::degree_per_second,
     f64::{Angle, AngularVelocity, Length},
+    length::meter,
 };
 use vexide::time::sleep;
 
@@ -62,8 +63,9 @@ impl Swing {
                 warn!("Turn interrupted at: {}", starting_error.get::<degree>());
                 break;
             }
-
-            dt.set_voltages(output*(radius-length/2), output*(radius+length/2));
+            let left = output*(radius-length/2.0);
+            let right = output*(radius+length/2.0);
+            dt.set_voltages(left.get::<meter>(), right.get::<meter>());
 
         }
     }
