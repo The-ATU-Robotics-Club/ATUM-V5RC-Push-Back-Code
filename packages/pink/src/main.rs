@@ -67,10 +67,8 @@ impl Compete for Robot {
 
         let mut turn = Turn::new(
             Pid::new(24.0, 0.08, 1.1, 20.0),
-            Pid::new(28.0, 0.02, 1.8, 10.0),
             Angle::new::<degree>(0.5),
             AngularVelocity::new::<degree_per_second>(5.0),
-            Angle::new::<degree>(85.0),
         );
 
         loop {

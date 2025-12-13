@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use log::{debug, warn};
+use log::{debug, info, warn};
 use uom::si::{
     angle::{degree, radian},
     angular_velocity::degree_per_second,
@@ -16,27 +16,17 @@ use crate::{
 };
 
 pub struct Turn {
-    small_pid: Pid,
-    large_pid: Pid,
+    pid: Pid,
     tolerance: Angle,
     velocity_tolerance: AngularVelocity,
-    threshold: Angle,
 }
 
 impl Turn {
-    pub fn new(
-        small_pid: Pid,
-        large_pid: Pid,
-        tolerance: Angle,
-        velocity_tolerance: AngularVelocity,
-        threshold: Angle,
-    ) -> Self {
+    pub fn new(pid: Pid, tolerance: Angle, velocity_tolerance: AngularVelocity) -> Self {
         Self {
-            small_pid,
-            large_pid,
+            pid,
             tolerance,
             velocity_tolerance,
-            threshold,
         }
     }
 
@@ -56,21 +46,16 @@ impl Turn {
         let mut prev_time = Instant::now();
 
         let starting_error = wrap(target - dt.pose().h).abs();
-        let pid = if starting_error < self.threshold {
-            &mut self.small_pid
-        } else {
-            &mut self.large_pid
-        };
 
         loop {
             sleep(Motor::WRITE_INTERVAL).await;
-            time += Motor::WRITE_INTERVAL;
             let elapsed_time = prev_time.elapsed();
+            time += elapsed_time;
             prev_time = Instant::now();
 
             let heading = dt.pose().h;
             let error = wrap(target - heading);
-            let output = pid.output(error.get::<radian>(), elapsed_time);
+            let output = self.pid.output(error.get::<radian>(), elapsed_time);
             let omega = dt.pose().omega;
 
             debug!(
@@ -79,7 +64,11 @@ impl Turn {
                 omega.get::<degree_per_second>()
             );
             if error.abs() < self.tolerance && omega.abs() < self.velocity_tolerance {
-                debug!("Turn complete at: {}", starting_error.get::<degree>());
+                info!(
+                    "Turn complete at: {} with {}ms",
+                    starting_error.get::<degree>(),
+                    time.as_millis()
+                );
                 break;
             }
 
