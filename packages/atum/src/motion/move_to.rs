@@ -6,7 +6,7 @@ use log::{debug, info, warn};
 use uom::si::{
     angle::{degree, radian},
     f64::{Angle, Length, Velocity},
-    length::inch,
+    length::meter,
 };
 use vexide::{
     prelude::{Direction, Motor},
@@ -63,8 +63,8 @@ impl MoveTo {
             let heading = pose.h;
 
             let position_error = Vec2::new(
-                (target.x - pose.x).get::<inch>(),
-                (target.y - pose.y).get::<inch>(),
+                (target.x - pose.x).get::<meter>(),
+                (target.y - pose.y).get::<meter>(),
             );
             let distance = position_error.magnitude();
             let linear_output = self
@@ -73,17 +73,17 @@ impl MoveTo {
                 .clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE);
             let target_h = Angle::new::<radian>(position_error.angle());
 
-            if distance.abs() < self.tolerance.get::<inch>()
+            if distance.abs() < self.tolerance.get::<meter>()
                 && pose.vf.abs() < self.velocity_tolerance
             {
                 info!("turn success");
                 break;
             }
 
-            // if start_time.elapsed() > timeout {
-            //     warn!("Moving failed");
-            //     break;
-            // }
+            if start_time.elapsed() > timeout {
+                warn!("Moving failed");
+                break;
+            }
 
             let mut herror = wrap(target_h - heading);
             let scaling = herror.get::<radian>().cos();
@@ -96,7 +96,7 @@ impl MoveTo {
 
             debug!("d, a, c: {:.4}, {:.4}", linear_output, herror.get::<degree>());
 
-            let angular_output = if distance < self.turn_threshold.get::<inch>() {
+            let angular_output = if distance < self.turn_threshold.get::<meter>() {
                 0.0
             } else {
                 -self.angular.output(herror.get::<radian>(), elapsed_time)
@@ -106,7 +106,6 @@ impl MoveTo {
             debug!("lr ({:.4}, {:.4})", linear_output * scaling + angular_output, linear_output * scaling - angular_output);
             debug!("");
 
-            // do cosine scaling on rewrite: herror.cos() * linear_output
             dt.arcade(linear_output * scaling, angular_output);
         }
 

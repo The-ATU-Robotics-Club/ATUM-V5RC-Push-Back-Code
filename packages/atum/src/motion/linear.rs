@@ -4,7 +4,7 @@ use log::{debug, info};
 use uom::{
     si::{
         f64::{Length, Time, Velocity},
-        length::inch,
+        length::{inch, meter},
         time::second,
         velocity::inch_per_second,
     },
@@ -35,9 +35,9 @@ impl Linear {
         point: Vec2<Length>,
         timeout: Duration,
     ) {
-        let point = Vec2::new(point.x.get::<inch>(), point.y.get::<inch>());
-        let pose = Vec2::new(dt.pose().x.get::<inch>(), dt.pose().y.get::<inch>());
-        let target_distance = Length::new::<inch>((point - pose).length());
+        let point = Vec2::new(point.x.get::<meter>(), point.y.get::<meter>());
+        let pose = Vec2::new(dt.pose().x.get::<meter>(), dt.pose().y.get::<meter>());
+        let target_distance = Length::new::<meter>((point - pose).length());
         self.drive_distance(dt, target_distance, timeout).await;
     }
 
@@ -57,7 +57,7 @@ impl Linear {
             let pose = dt.pose();
             traveled += pose.vf * Time::new::<second>(elapsed_time.as_secs_f64());
             let error = target - traveled;
-            let output = self.pid.output(error.get::<inch>(), elapsed_time);
+            let output = self.pid.output(error.get::<meter>(), elapsed_time);
 
             debug!(
                 "(Distance, Velocity): ({}, {})",

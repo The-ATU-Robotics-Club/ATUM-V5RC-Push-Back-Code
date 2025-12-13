@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 use uom::si::{
     angular_velocity::radian_per_second,
     f64::{AngularVelocity, Length, Time, Velocity},
-    length::inch,
+    length::meter,
     time::second,
 };
 use vexide::prelude::Motor;
@@ -100,9 +100,9 @@ impl Drivetrain {
 
     pub fn angular_velocity(&self) -> AngularVelocity {
         let vdiff =
-            self.wheel_circum.get::<inch>() * (self.left.velocity() - self.right.velocity()) / 60.0;
+            self.wheel_circum.get::<meter>() * (self.left.velocity() - self.right.velocity()) / 60.0;
 
-        AngularVelocity::new::<radian_per_second>(vdiff / self.track.get::<inch>())
+        AngularVelocity::new::<radian_per_second>(vdiff / self.track.get::<meter>())
     }
 
     pub fn pose(&self) -> Pose {
