@@ -65,7 +65,7 @@ impl Swing {
             }
             let left = output*(radius-length/2.0);
             let right = output*(radius+length/2.0);
-            dt.set_voltages(left.get::<meter>(), right.get::<meter>());
+            dt.set_velocity(left.get::<meter>(), right.get::<meter>());
 
         }
     }
