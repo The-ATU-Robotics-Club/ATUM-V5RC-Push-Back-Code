@@ -6,7 +6,7 @@ use atum::{
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    motion::{move_to::MoveTo, turn::Turn},
+    motion::move_to::MoveTo,
     subsystems::drivetrain::Drivetrain,
 };
 use log::{LevelFilter, info};
@@ -14,8 +14,7 @@ use uom::{
     ConstZero,
     si::{
         angle::degree,
-        angular_velocity::degree_per_second,
-        f64::{Angle, AngularVelocity, Length, Velocity},
+        f64::{Angle, Length, Velocity},
         length::{inch, millimeter},
         velocity::inch_per_second,
     },
@@ -28,6 +27,8 @@ struct Robot {
     intake: Vec<Motor>,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
+    match_loader: AdiDigitalOut,
+    wing: AdiDigitalOut,
     otos: Otos,
 }
 
@@ -53,20 +54,6 @@ impl Compete for Robot {
 
     async fn driver(&mut self) {
         info!("Driver Control Started");
-
-        let mut move_to = MoveTo::new(
-            Pid::new(0.25, 0.0, 0.05, 0.0),
-            Pid::new(10.0, 0.0, 0.0, 0.0),
-            Length::new::<inch>(1.0),
-            Velocity::new::<inch_per_second>(2.0),
-            Length::new::<inch>(6.0),
-        );
-
-        let mut turn = Turn::new(
-            Pid::new(24.0, 0.08, 1.1, 20.0),
-            Angle::new::<degree>(0.5),
-            AngularVelocity::new::<degree_per_second>(5.0),
-        );
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -126,26 +113,12 @@ impl Compete for Robot {
                 ))
             }
 
-            // tuning PID constants for angular movement
-            if state.button_left.is_pressed() {
-                turn.turn_to(
-                    &mut self.drivetrain,
-                    Angle::ZERO,
-                    Duration::from_millis(1000),
-                )
-                .await;
+            if state.button_left.is_now_pressed() {
+                _ = self.match_loader.toggle();
             }
 
-            // testing and tuning seeking movement
-            if state.button_up.is_pressed() {
-                move_to
-                    .move_to_point(
-                        &mut self.drivetrain,
-                        Vec2::new(Length::ZERO, Length::new::<inch>(24.0)),
-                        Duration::from_secs(8),
-                        Direction::Forward,
-                    )
-                    .await;
+            if state.button_x.is_now_pressed() {
+                _ = self.wing.toggle();
             }
 
             sleep(Controller::UPDATE_INTERVAL).await;
@@ -190,16 +163,16 @@ async fn main(peripherals: Peripherals) {
             Odometry::new(
                 starting_position,
                 TrackingWheel::new(
-                    peripherals.adi_c,
-                    peripherals.adi_d,
+                    peripherals.adi_e,
+                    peripherals.adi_f,
                     Direction::Forward,
                     Length::new::<millimeter>(64.8),
                     Vec2::new(Length::new::<inch>(0.086), Length::new::<inch>(0.0)),
                     Angle::new::<degree>(90.0),
                 ),
                 TrackingWheel::new(
-                    peripherals.adi_a,
-                    peripherals.adi_b,
+                    peripherals.adi_g,
+                    peripherals.adi_h,
                     Direction::Forward,
                     Length::new::<millimeter>(64.8),
                     Vec2::new(Length::new::<inch>(0.0), Length::new::<inch>(-1.685)),
@@ -215,8 +188,10 @@ async fn main(peripherals: Peripherals) {
             Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
             Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
         ],
-        lift: AdiDigitalOut::new(peripherals.adi_e),
-        duck_bill: AdiDigitalOut::new(peripherals.adi_f),
+        lift: AdiDigitalOut::new(peripherals.adi_a),
+        duck_bill: AdiDigitalOut::new(peripherals.adi_b),
+        match_loader: AdiDigitalOut::new(peripherals.adi_c),
+        wing: AdiDigitalOut::new(peripherals.adi_d),
         otos: Otos::new(
             peripherals.port_2,
             starting_position,
