@@ -50,9 +50,9 @@ impl Swing {
             let output = self.pid.output(error.get::<radian>(), elapsed_time);
             let omega = dt.pose().omega;
 
-            if error.abs() < self.tolerance && omega.abs() < self.velocity_tolerance {
+            if error.abs() < self.tolerance /*&& omega.abs() < self.velocity_tolerance*/ {
                 info!(
-                    "Turn complete at: {} with {}ms",
+                    "Swing complete at: {} with {}ms",
                     starting_error.get::<degree>(),
                     time.as_millis()
                 );
@@ -60,12 +60,12 @@ impl Swing {
             }
 
             if time > timeout {
-                warn!("Turn interrupted at: {}", starting_error.get::<degree>());
+                warn!("Swing interrupted at: {}", starting_error.get::<degree>());
                 break;
             }
             let left = output*(radius-length/2.0);
             let right = output*(radius+length/2.0);
-            dt.set_velocity(left.get::<meter>(), right.get::<meter>());
+            dt.set_velocity(left.get::<meter>() as i32, right.get::<meter>() as i32);
 
         }
     }
