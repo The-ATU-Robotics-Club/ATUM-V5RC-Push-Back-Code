@@ -1,51 +1,26 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use vexide::{
-    task::{spawn, Task},
-    time::sleep,
+    prelude::Motor, task::{spawn, Task}, time::sleep
 };
 
-use crate::hardware::motor_group::MotorGroup;
-
-#[derive(Copy, Clone)]
-pub enum IntakeCommand {
-    ScoreHigh(f64),
-    ScoreMiddle(f64),
-    ScoreLow(f64),
-}
-
 pub struct Intake {
-    command: Rc<RefCell<Option<IntakeCommand>>>,
+    voltage: Rc<RefCell<f64>>,
     _task: Task<()>,
 }
 
 impl Intake {
-    pub fn new(mut motors: MotorGroup) -> Self {
-        let command = Rc::new(RefCell::new(None));
+    pub fn new(mut top: Motor, mut bottom: Motor) -> Self {
+        let voltage = Rc::new(RefCell::new(0.0));
 
         Self {
-            command: command.clone(),
+            voltage: voltage.clone(),
             _task: spawn(async move {
                 loop {
-                    if let Some(command) = *command.borrow() {
-                        let voltages = match command {
-                            IntakeCommand::ScoreHigh(voltage) => {
-                                vec![-voltage, -voltage, voltage]
-                            }
-                            IntakeCommand::ScoreMiddle(voltage) => {
-                                vec![-voltage, voltage, voltage]
-                            }
-                            IntakeCommand::ScoreLow(voltage) => {
-                                vec![voltage, voltage, -voltage]
-                            }
-                        };
+                    let voltage = *voltage.borrow();
 
-                        for (motor, voltage) in motors.iter_mut().zip(voltages) {
-                            _ = motor.set_voltage(voltage);
-                        }
-                    } else {
-                        motors.set_voltage(0.0);
-                    }
+                    _ = top.set_voltage(voltage);
+                    _ = bottom.set_voltage(voltage);
 
                     sleep(Duration::from_millis(10)).await;
                 }
@@ -53,7 +28,7 @@ impl Intake {
         }
     }
 
-    pub fn set_command(&self, command: Option<IntakeCommand>) {
-        self.command.replace(command);
+    pub fn set_command(&self, voltage: f64) -> f64 {
+        self.voltage.replace(voltage)
     }
 }
