@@ -112,6 +112,10 @@ impl Drivetrain {
     pub fn set_pose(&mut self, pose: Pose) {
         self.odometry.set_pose(pose);
     }
+
+    pub fn track(&mut self) -> Length {
+        self.track
+    }
 }
 
 /// Applies an acceleration function to the given power value.
