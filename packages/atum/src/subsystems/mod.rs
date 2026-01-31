@@ -3,8 +3,8 @@ pub mod intake;
 
 #[derive(Clone, Copy)]
 pub struct RobotSettings {
-    color: Color,
-    enable_color: bool,
+    pub color: Color,
+    pub enable_color: bool,
 }
 
 #[derive(Clone, Copy)]
