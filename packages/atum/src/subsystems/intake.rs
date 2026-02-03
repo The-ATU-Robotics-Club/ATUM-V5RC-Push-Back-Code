@@ -1,12 +1,14 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
+use log::{debug, info};
 use vexide::{
-    adi::digital::LogicLevel, prelude::{AdiDigitalOut, Motor, OpticalSensor}, task::{spawn, Task}, time::sleep
+    prelude::{AdiDigitalOut, Motor, OpticalSensor},
+    task::{spawn, Task},
+    time::sleep,
 };
 
-use crate::subsystems::Color;
-
 use super::RobotSettings;
+use crate::subsystems::Color;
 
 pub struct Intake {
     voltage: Rc<RefCell<f64>>,
@@ -27,6 +29,8 @@ impl Intake {
         Self {
             voltage: voltage.clone(),
             _task: spawn(async move {
+                let mut ball_timer = Duration::ZERO;
+
                 loop {
                     let voltage = *voltage.borrow();
                     let settings = *settings.borrow();
@@ -38,26 +42,31 @@ impl Intake {
                         // Red hue -> 0-60
                         // Blue hue -> 120-240
                         let (alliance, opposing) = match settings.color {
-                            Color::Red => (0.0..60.0, 120.0..240.0),
-                            Color::Blue => (120.0..240.0, 0.0..60.0),
+                            Color::Red => (20.0..55.0, 70.0..210.0),
+                            Color::Blue => (70.0..210.0, 20.0..55.0),
                         };
 
                         let hue = color_sort.hue().unwrap_or_default();
                         let proximity = color_sort.proximity().unwrap_or_default();
 
-                        // switch low and high if piston starts differently
-                        let level = if alliance.contains(&hue) && proximity == 1.0 {
-                            Some(LogicLevel::Low)
-                        } else if opposing.contains(&hue) && proximity == 1.0 {
-                            Some(LogicLevel::High)
-                        } else {
-                            None
-                        };
-
-                        if let Some(level) = level {
-                            sleep(delay).await;
-                            _ = door.set_level(level);
+                        if proximity > 0.1 {
+                            if alliance.contains(&hue) {
+                                info!("red: {}", proximity);
+                                sleep(delay).await;
+                                _ = door.set_low();
+                            } else if opposing.contains(&hue) {
+                                info!("blue: {}", proximity);
+                                _ = door.set_high();
+                            }
+                            ball_timer = Duration::ZERO;
+                        } else if ball_timer > Duration::from_millis(1000) {
+                            _ = door.set_low();
+                            ball_timer = Duration::ZERO;
+                        } else if door.level().is_ok_and(|x| x.is_high()) {
+                            ball_timer += Duration::from_millis(10);
                         }
+
+                        debug!("{}", proximity);
                     }
 
                     sleep(Duration::from_millis(10)).await;
