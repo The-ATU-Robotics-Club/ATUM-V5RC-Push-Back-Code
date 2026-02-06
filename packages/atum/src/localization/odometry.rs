@@ -72,8 +72,8 @@ impl Odometry {
                         let dt = prev_time.elapsed().as_secs_f64();
                         Pose {
                             // Doing vector rotation for odom and adding to position
-                            x: prev.x + (heading_avg.cos() * dx + heading_avg.sin() * dy),
-                            y: prev.y + (-heading_avg.sin() * dx + heading_avg.cos() * dy),
+                            x: prev.x + (heading_avg.cos() * dx - heading_avg.sin() * dy),
+                            y: prev.y + (heading_avg.sin() * dx + heading_avg.cos() * dy),
                             h: prev.h + dh,
                             vf: dx / Time::new::<second>(dt),
                             vs: dy / Time::new::<second>(dt),
