@@ -21,12 +21,11 @@ pub struct Odometry {
 impl Odometry {
     pub fn new(
         starting_pose: Pose,
-        mut imu: Imu,
         mut wheel_1: TrackingWheel,
         mut wheel_2: TrackingWheel,
+        imu: Imu,
     ) -> Self {
         let pose = Rc::new(RefCell::new(starting_pose));
-        imu.set_heading(starting_pose.h);
 
         Self {
             pose: pose.clone(),
@@ -75,7 +74,7 @@ impl Odometry {
                             // Doing vector rotation for odom and adding to position
                             x: prev.x + (heading_avg.cos() * dx + heading_avg.sin() * dy),
                             y: prev.y + (-heading_avg.sin() * dx + heading_avg.cos() * dy),
-                            h: imu.heading(),
+                            h: prev.h + dh,
                             vf: dx / Time::new::<second>(dt),
                             vs: dy / Time::new::<second>(dt),
                             omega: (dh / Time::new::<second>(dt)).into(),
