@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use atum::{
     controllers::pid::Pid,
@@ -7,7 +7,7 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::move_to::MoveTo,
-    subsystems::drivetrain::Drivetrain,
+    subsystems::{Color, RobotSettings, drivetrain::Drivetrain, intake::Intake},
 };
 use log::{LevelFilter, info};
 use uom::{
@@ -24,12 +24,13 @@ use vexide::prelude::*;
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
-    intake: Vec<Motor>,
+    intake: Intake,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
-    match_loader: AdiDigitalOut,
+    // match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
     otos: Otos,
+    settings: Rc<RefCell<RobotSettings>>,
 }
 
 impl Compete for Robot {
@@ -62,38 +63,15 @@ impl Compete for Robot {
                     power: state.left_stick,
                     turn: state.right_stick,
                 },
-                intake_high: state.button_r1,
-                intake_low: state.button_r2,
-                outake_high: state.button_l1,
-                outake_low: state.button_l2,
+                intake: state.button_r1,
+                outake: state.button_r2,
                 lift: state.button_y,
                 duck_bill: state.button_right,
+                swap_color: state.button_a,
+                enable_color: state.button_b,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
-
-            if mappings.intake_high.is_pressed() {
-                _ = self.intake[0].set_voltage(Motor::V5_MAX_VOLTAGE);
-                _ = self.intake[1].set_voltage(Motor::V5_MAX_VOLTAGE);
-            } else if mappings.intake_low.is_pressed() {
-                _ = self.intake[0].set_voltage(-Motor::V5_MAX_VOLTAGE);
-                _ = self.intake[1].set_voltage(-Motor::V5_MAX_VOLTAGE);
-            }
-            if mappings.outake_high.is_pressed() {
-                _ = self.intake[2].set_voltage(-Motor::V5_MAX_VOLTAGE);
-            } else if mappings.outake_low.is_pressed() {
-                _ = self.intake[2].set_voltage(Motor::V5_MAX_VOLTAGE);
-            }
-
-            if !mappings.intake_high.is_pressed()
-                && !mappings.intake_low.is_pressed()
-                && !mappings.outake_high.is_pressed()
-                && !mappings.outake_low.is_pressed()
-            {
-                _ = self.intake[0].set_voltage(0.0);
-                _ = self.intake[1].set_voltage(0.0);
-                _ = self.intake[2].set_voltage(0.0);
-            }
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
@@ -114,7 +92,7 @@ impl Compete for Robot {
             }
 
             if state.button_left.is_now_pressed() {
-                _ = self.match_loader.toggle();
+                // _ = self.match_loader.toggle();
             }
 
             if state.button_x.is_now_pressed() {
@@ -138,6 +116,11 @@ async fn main(peripherals: Peripherals) {
     imu.calibrate().await;
 
     let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
+
+    let settings = Rc::new(RefCell::new(RobotSettings {
+        color: Color::Red,
+        enable_color: true,
+    }));
 
     let robot = Robot {
         controller: peripherals.primary_controller,
@@ -183,14 +166,22 @@ async fn main(peripherals: Peripherals) {
             Length::new::<inch>(2.5),
             Length::new::<inch>(12.0),
         ),
-        intake: vec![
+        // intake: vec![
+        //     Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
+        //     Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
+        //     Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
+        // ],
+        intake: Intake::new(
             Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
-            Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-        ],
+            Motor::new(peripherals.port_12, Gearset::Blue, Direction::Forward),
+            AdiDigitalOut::new(peripherals.adi_c),
+            OpticalSensor::new(peripherals.port_5),
+            Duration::from_millis(150),
+            settings.clone(),
+        ),
         lift: AdiDigitalOut::new(peripherals.adi_a),
         duck_bill: AdiDigitalOut::new(peripherals.adi_b),
-        match_loader: AdiDigitalOut::new(peripherals.adi_c),
+        // match_loader: AdiDigitalOut::new(peripherals.adi_c),
         wing: AdiDigitalOut::new(peripherals.adi_d),
         otos: Otos::new(
             peripherals.port_2,
@@ -202,6 +193,7 @@ async fn main(peripherals: Peripherals) {
             ),
         )
         .await,
+        settings: settings.clone(),
     };
 
     robot.compete().await;
