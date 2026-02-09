@@ -1,6 +1,6 @@
 // Rewrite UOM implementation when std support gets stabilized
 
-use std::time::{Duration, Instant};
+use std::{cmp::Reverse, time::{Duration, Instant}};
 
 use log::{debug, info, warn};
 use uom::si::{
@@ -20,7 +20,7 @@ use crate::{
 
 pub struct MoveTo {
     linear: Pid,
-    angular: Pid,
+    sideways: Pid,
     tolerance: Length,
     velocity_tolerance: Velocity,
     turn_threshold: Length,
@@ -29,14 +29,14 @@ pub struct MoveTo {
 impl MoveTo {
     pub fn new(
         linear: Pid,
-        angular: Pid,
+        sideways: Pid,
         tolerance: Length,
         velocity_tolerance: Velocity,
         turn_threshold: Length,
     ) -> Self {
         Self {
             linear,
-            angular,
+            sideways,
             tolerance,
             velocity_tolerance,
             turn_threshold,
@@ -66,45 +66,44 @@ impl MoveTo {
                 (target.x - pose.x).get::<meter>(),
                 (target.y - pose.y).get::<meter>(),
             );
-            let distance = position_error.magnitude();
-            let linear_output = self
-                .linear
-                .output(distance, elapsed_time)
-                .clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE);
+            let mut distance = position_error.length();
             let target_h = Angle::new::<radian>(position_error.angle());
 
-            if distance.abs() < self.tolerance.get::<meter>()
-                && pose.vf.abs() < self.velocity_tolerance
-            {
-                info!("turn success");
-                break;
-            }
+            // if distance.abs() < self.tolerance.get::<meter>()
+            //     && pose.vf.abs() < self.velocity_tolerance
+            // {
+            //     info!("turn success");
+            //     break;
+            // }
 
             if start_time.elapsed() > timeout {
                 warn!("Moving failed");
                 break;
             }
-
             let mut herror = wrap(target_h - heading);
-            let scaling = herror.get::<radian>().cos();
+            let scaling = herror.get::<radian>().cos().abs();
 
-            debug!("a, s: {:.4}, {:.4}", herror.get::<degree>(), scaling);
+            let mut projected_cte = distance * herror.get::<radian>().sin();
+            // debug!("Projected_Cte : {:.4}", projected_cte);
 
-            if direction.is_reverse() || herror.abs() > Angle::new::<degree>(90.0) {
-                herror = wrap(herror + Angle::HALF_TURN);
+            if herror.abs() > Angle::HALF_TURN / 2.0 {
+                projected_cte *= -1.0;
+                distance *= -1.0;
             }
 
-            debug!("d, a, c: {:.4}, {:.4}", linear_output, herror.get::<degree>());
 
-            let angular_output = if distance < self.turn_threshold.get::<meter>() {
-                0.0
-            } else {
-                -self.angular.output(herror.get::<radian>(), elapsed_time)
-            };
+            let mut angular_output = self.sideways.output(-projected_cte, elapsed_time);
+            let mut linear_output = self
+                .linear
+                .output(distance, elapsed_time)
+                .clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE);
 
-            debug!("la ({:.4}, {:.4})", linear_output * scaling, angular_output);
-            debug!("lr ({:.4}, {:.4})", linear_output * scaling + angular_output, linear_output * scaling - angular_output);
-            debug!("");
+            // debug!("a, s: {:.4}, {:.4}", herror.get::<degree>(), scaling);
+            // debug!("d, a, c: {:.4}, {:.4}", linear_output, herror.get::<degree>());
+
+            // debug!("linear: {:.4}, angular: {:.4}", linear_output * scaling, angular_output);
+            // debug!("left: {:.4}, right: {:.4}", linear_output * scaling + angular_output, linear_output * scaling - angular_output);
+            debug!("Position: ({})", pose);
 
             dt.arcade(linear_output * scaling, angular_output);
         }

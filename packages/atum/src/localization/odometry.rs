@@ -3,8 +3,8 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
-
-use uom::si::{f64::Time, time::second};
+use log::debug;
+use uom::si::{angle::radian, f64::Time, time::second};
 use vexide::{
     task::{spawn, Task},
     time::sleep,
@@ -93,3 +93,6 @@ impl Odometry {
         *self.pose.borrow_mut() = pose; // Sets the position vector
     }
 }
+
+// Meal for 2: 2580 cal $12.50 -> 206.4 cal/$
+// Meal for 4: 3240 cal $20.83 -> 155.5 cal/$
