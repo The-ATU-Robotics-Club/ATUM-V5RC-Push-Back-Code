@@ -3,7 +3,7 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
-
+use log::debug;
 use uom::si::{angle::radian, f64::Time, time::second};
 use vexide::{
     task::{spawn, Task},
@@ -78,8 +78,8 @@ impl Odometry {
                         let dt = prev_time.elapsed();
                         Pose {
                             // Doing vector rotation for odom and adding to position
-                            x: prev.x + (heading_avg.cos() * dx + heading_avg.sin() * dy),
-                            y: prev.y + (-heading_avg.sin() * dx + heading_avg.cos() * dy),
+                            x: prev.x + (heading_avg.cos() * dx - heading_avg.sin() * dy),
+                            y: prev.y + (heading_avg.sin() * dx + heading_avg.cos() * dy),
                             h: imu.heading(),
                             vf: dx / Time::new::<second>(dt.as_secs_f64()),
                             vs: dy / Time::new::<second>(dt.as_secs_f64()),
@@ -102,3 +102,6 @@ impl Odometry {
         *self.pose.borrow_mut() = pose; // Sets the position vector
     }
 }
+
+// Meal for 2: 2580 cal $12.50 -> 206.4 cal/$
+// Meal for 4: 3240 cal $20.83 -> 155.5 cal/$
