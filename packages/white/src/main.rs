@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use atum::{
     controllers::pid::Pid,
@@ -7,7 +7,7 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::{linear::Linear, move_to::MoveTo, swing::Swing, turn::Turn},
-    subsystems::drivetrain::Drivetrain,
+    subsystems::{drivetrain::Drivetrain, intake::Intake, Color, RobotSettings},
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
@@ -26,7 +26,11 @@ use vexide::prelude::*;
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
-    intake: Vec<Motor>,
+    intake: Intake,
+    lift: AdiDigitalOut,
+    duck_bill: AdiDigitalOut,
+    // match_loader: AdiDigitalOut,
+    wing: AdiDigitalOut,
     // otos: Otos,
 }
 
@@ -245,36 +249,32 @@ impl Compete for Robot {
                     power: state.left_stick,
                     turn: state.right_stick,
                 },
-                intake_high: state.button_r1,
-                intake_low: state.button_r2,
-                outake_high: state.button_l1,
-                outake_low: state.button_l2,
-                lift: state.button_y,
-                duck_bill: state.button_right,
+                intake: state.button_r1,
+                outake: state.button_r2,
+                lift: state.button_right,
+                duck_bill: state.button_down,
+                swap_color: state.button_power,
+                enable_color: state.button_power,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
 
-            if mappings.intake_high.is_pressed() {
-                _ = self.intake[0].set_voltage(Motor::V5_MAX_VOLTAGE);
-                _ = self.intake[1].set_voltage(Motor::V5_MAX_VOLTAGE);
-            } else if mappings.intake_low.is_pressed() {
-                _ = self.intake[0].set_voltage(-Motor::V5_MAX_VOLTAGE);
-                _ = self.intake[1].set_voltage(-Motor::V5_MAX_VOLTAGE);
-            }
-            if mappings.outake_high.is_pressed() {
-                _ = self.intake[2].set_voltage(-Motor::EXP_MAX_VOLTAGE);
-            } else if mappings.outake_low.is_pressed() {
-                _ = self.intake[2].set_voltage(Motor::EXP_MAX_VOLTAGE);
+            if mappings.intake.is_pressed() {
+                self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
+            } else if mappings.outake.is_pressed() {
+                self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
+            } else {
+                self.intake.set_voltage(0.0);
             }
 
-            if !mappings.intake_high.is_pressed()
-                && !mappings.intake_low.is_pressed()
-                && !mappings.outake_high.is_pressed()
-                && !mappings.outake_low.is_pressed()
-            {
-                _ = self.intake[0].set_voltage(0.0);
-                _ = self.intake[1].set_voltage(0.0);
+            if mappings.lift.is_now_pressed() {
+                _ = self.lift.toggle();
+            }
+            if mappings.duck_bill.is_now_pressed() {
+                _ = self.duck_bill.toggle();
+            }
+            if state.button_y.is_now_pressed() {
+                _ = self.wing.toggle();
             }
 
             info!("Drivetrain: {}", self.drivetrain.pose());
@@ -351,6 +351,15 @@ async fn main(peripherals: Peripherals) {
 
     let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
 
+    let mut color_sort = OpticalSensor::new(peripherals.port_4);
+    _ = color_sort.set_led_brightness(1.0);
+    _ = color_sort.set_integration_time(Duration::from_millis(20));
+
+    let settings = Rc::new(RefCell::new(RobotSettings {
+        color: Color::Red,
+        enable_color: true,
+    }));
+
     let robot = Robot {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
@@ -404,11 +413,17 @@ async fn main(peripherals: Peripherals) {
             Length::new::<inch>(2.5),
             Length::new::<inch>(12.0),
         ),
-        intake: vec![
-            Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-            Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
-        ],
+        intake: Intake::new(
+            Motor::new(peripherals.port_1, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
+            AdiDigitalOut::new(peripherals.adi_e),
+            color_sort,
+            Duration::from_millis(100),
+            settings.clone(),
+        ),
+        lift: AdiDigitalOut::new(peripherals.adi_f),
+        duck_bill: AdiDigitalOut::new(peripherals.adi_g),
+        wing: AdiDigitalOut::new(peripherals.adi_h),
         // otos: Otos::new(
         //     peripherals.port_2,
         //     starting_position,
