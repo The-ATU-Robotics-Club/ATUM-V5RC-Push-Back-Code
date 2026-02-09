@@ -70,7 +70,7 @@ impl<T: Float + Copy + Mul<Output = T> + Sub<Output = T>> Vec2<T> {
     }
 }
 
-impl<T: Float + Copy + Mul<Output = T> + Add<Output = T>> Vec2<T> {
+impl<T: Copy + Mul<Output = T> + Add<Output = T>> Vec2<T> {
     pub fn dot(&self, other: Vec2<T>) -> T {
         self.x * other.x + self.y + other.y
     }

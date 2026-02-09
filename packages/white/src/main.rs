@@ -231,12 +231,12 @@ impl Compete for Robot {
             AngularVelocity::new::<degree_per_second>(5.0),
         );
 
-        sleep(Duration::from_millis(1500)).await;
-        self.drivetrain.set_pose(Pose::new(
-            Length::ZERO,
-            Length::ZERO,
-            Angle::ZERO,
-        ));
+        // sleep(Duration::from_millis(1500)).await;
+        // self.drivetrain.set_pose(Pose::new(
+        //     Length::ZERO,
+        //     Length::ZERO,
+        //     Angle::ZERO,
+        // ));
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -332,8 +332,8 @@ async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
     let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_11),
-        InertialSensor::new(peripherals.port_5),
+        InertialSensor::new(peripherals.port_9),
+        InertialSensor::new(peripherals.port_10),
     ]);
 
     imu.calibrate().await;
@@ -345,21 +345,21 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_3, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_4, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
                 ],
                 None,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
                 ],
                 None,
             ),
@@ -394,7 +394,7 @@ async fn main(peripherals: Peripherals) {
         ),
         intake: vec![
             Motor::new(peripherals.port_21, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_1, Gearset::Blue, Direction::Reverse),
             Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
         ],
         // otos: Otos::new(
