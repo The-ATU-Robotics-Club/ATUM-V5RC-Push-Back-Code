@@ -29,7 +29,7 @@ struct Robot {
     intake: Intake,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
-    // match_loader: AdiDigitalOut,
+    match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
     // otos: Otos,
 }
@@ -342,6 +342,8 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
+    let adi_expander = AdiExpander::new(peripherals.port_3);
+
     let mut imu = Imu::new(vec![
         InertialSensor::new(peripherals.port_9),
         InertialSensor::new(peripherals.port_10),
@@ -423,6 +425,7 @@ async fn main(peripherals: Peripherals) {
         ),
         lift: AdiDigitalOut::new(peripherals.adi_f),
         duck_bill: AdiDigitalOut::new(peripherals.adi_g),
+        match_loader: AdiDigitalOut::new(adi_expander.adi_a),
         wing: AdiDigitalOut::new(peripherals.adi_h),
         // otos: Otos::new(
         //     peripherals.port_2,
