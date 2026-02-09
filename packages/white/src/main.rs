@@ -231,12 +231,12 @@ impl Compete for Robot {
             AngularVelocity::new::<degree_per_second>(5.0),
         );
 
-        sleep(Duration::from_millis(1500)).await;
-        self.drivetrain.set_pose(Pose::new(
-            Length::ZERO,
-            Length::ZERO,
-            Angle::ZERO,
-        ));
+        // sleep(Duration::from_millis(1500)).await;
+        // self.drivetrain.set_pose(Pose::new(
+        //     Length::ZERO,
+        //     Length::ZERO,
+        //     Angle::ZERO,
+        // ));
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -343,8 +343,8 @@ async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
     let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_10),
         InertialSensor::new(peripherals.port_9),
+        InertialSensor::new(peripherals.port_10),
     ]);
 
     imu.calibrate().await;
@@ -366,7 +366,7 @@ async fn main(peripherals: Peripherals) {
             ),
             MotorGroup::new(
                 vec![
-                     Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),

@@ -1,7 +1,7 @@
 [package]
 name = "atum"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 vexide = { workspace = true }
@@ -9,5 +9,4 @@ log = { workspace = true }
 uom = { workspace = true }
 
 bytemuck = { version = "1.23.2", features = ["derive"] }
-nalgebra = { version = "0.34.0", default-features = false, features = ["alloc", "libm", "macros"] }
 num-traits = "0.2.19"

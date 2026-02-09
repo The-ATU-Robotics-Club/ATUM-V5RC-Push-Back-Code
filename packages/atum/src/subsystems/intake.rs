@@ -1,50 +1,72 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
+use log::{debug, info};
 use vexide::{
+    prelude::{AdiDigitalOut, Motor, OpticalSensor},
     task::{spawn, Task},
     time::sleep,
 };
 
-use crate::hardware::motor_group::MotorGroup;
-
-#[derive(Copy, Clone)]
-pub enum IntakeCommand {
-    ScoreHigh(f64),
-    ScoreMiddle(f64),
-    ScoreLow(f64),
-}
+use super::RobotSettings;
+use crate::subsystems::Color;
 
 pub struct Intake {
-    command: Rc<RefCell<Option<IntakeCommand>>>,
+    voltage: Rc<RefCell<f64>>,
     _task: Task<()>,
 }
 
 impl Intake {
-    pub fn new(mut motors: MotorGroup) -> Self {
-        let command = Rc::new(RefCell::new(None));
+    pub fn new(
+        mut top: Motor,
+        mut bottom: Motor,
+        mut door: AdiDigitalOut,
+        color_sort: OpticalSensor,
+        delay: Duration,
+        settings: Rc<RefCell<RobotSettings>>,
+    ) -> Self {
+        let voltage = Rc::new(RefCell::new(0.0));
 
         Self {
-            command: command.clone(),
+            voltage: voltage.clone(),
             _task: spawn(async move {
+                let mut ball_timer = Duration::ZERO;
+
                 loop {
-                    if let Some(command) = *command.borrow() {
-                        let voltages = match command {
-                            IntakeCommand::ScoreHigh(voltage) => {
-                                vec![-voltage, -voltage, voltage]
-                            }
-                            IntakeCommand::ScoreMiddle(voltage) => {
-                                vec![-voltage, voltage, voltage]
-                            }
-                            IntakeCommand::ScoreLow(voltage) => {
-                                vec![voltage, voltage, -voltage]
-                            }
+                    let voltage = *voltage.borrow();
+                    let settings = *settings.borrow();
+
+                    _ = top.set_voltage(voltage);
+                    _ = bottom.set_voltage(voltage);
+
+                    if settings.enable_color {
+                        // Red hue -> 0-60
+                        // Blue hue -> 120-240
+                        let (alliance, opposing) = match settings.color {
+                            Color::Red => (20.0..55.0, 70.0..210.0),
+                            Color::Blue => (70.0..210.0, 20.0..55.0),
                         };
 
-                        for (motor, voltage) in motors.iter_mut().zip(voltages) {
-                            _ = motor.set_voltage(voltage);
+                        let hue = color_sort.hue().unwrap_or_default();
+                        let proximity = color_sort.proximity().unwrap_or_default();
+
+                        if proximity > 0.1 {
+                            if alliance.contains(&hue) {
+                                info!("red: {}", proximity);
+                                sleep(delay).await;
+                                _ = door.set_low();
+                            } else if opposing.contains(&hue) {
+                                info!("blue: {}", proximity);
+                                _ = door.set_high();
+                            }
+                            ball_timer = Duration::ZERO;
+                        } else if ball_timer > Duration::from_millis(1000) {
+                            _ = door.set_low();
+                            ball_timer = Duration::ZERO;
+                        } else if door.level().is_ok_and(|x| x.is_high()) {
+                            ball_timer += Duration::from_millis(10);
                         }
-                    } else {
-                        motors.set_voltage(0.0);
+
+                        debug!("{}", proximity);
                     }
 
                     sleep(Duration::from_millis(10)).await;
@@ -53,7 +75,9 @@ impl Intake {
         }
     }
 
-    pub fn set_command(&self, command: Option<IntakeCommand>) {
-        self.command.replace(command);
+    pub fn set_voltage(&self, voltage: f64) -> f64 {
+        self.voltage.replace(voltage)
     }
+
+    pub fn test_door(&mut self) {}
 }

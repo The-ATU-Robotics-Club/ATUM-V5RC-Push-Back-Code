@@ -17,10 +17,12 @@ pub enum DriveMode {
 pub struct ControllerMappings {
     pub drive_mode: DriveMode,
 
-    pub intake_high: ButtonState,
-    pub intake_low: ButtonState,
-    pub outake_high: ButtonState,
-    pub outake_low: ButtonState,
+    pub intake: ButtonState,
+    pub outake: ButtonState,
     pub lift: ButtonState,
     pub duck_bill: ButtonState,
+    
+    // color sort stuff
+    pub swap_color: ButtonState,
+    pub enable_color: ButtonState,
 }
