@@ -38,7 +38,7 @@ struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        self.elims().await;
+        self.rushelims().await;
     }
 
     async fn driver(&mut self) {
