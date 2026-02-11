@@ -115,7 +115,7 @@ impl Compete for Robot {
                 self.drivetrain.set_pose(Pose::new(
                     Length::ZERO,
                     Length::ZERO,
-                    Angle::new::<degree>(180.0),
+                    Angle::ZERO,
                 ))
             }
 
@@ -156,6 +156,7 @@ impl Compete for Robot {
                     .drive_distance(
                         &mut self.drivetrain,
                         Length::new::<inch>(41.0),
+                        false,
                         Duration::from_millis(1000),
                     )
                     .await;

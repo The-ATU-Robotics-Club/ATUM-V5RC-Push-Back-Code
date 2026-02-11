@@ -33,15 +33,16 @@ impl Linear {
         &mut self,
         dt: &mut Drivetrain,
         point: Vec2<Length>,
+        chain: bool,
         timeout: Duration,
     ) {
         let point = Vec2::new(point.x.get::<meter>(), point.y.get::<meter>());
         let pose = Vec2::new(dt.pose().x.get::<meter>(), dt.pose().y.get::<meter>());
         let target_distance = Length::new::<meter>((point - pose).length());
-        self.drive_distance(dt, target_distance, timeout).await;
+        self.drive_distance(dt, target_distance, chain, timeout).await;
     }
 
-    pub async fn drive_distance(&mut self, dt: &mut Drivetrain, target: Length, timeout: Duration) {
+    pub async fn drive_distance(&mut self, dt: &mut Drivetrain, target: Length, chain: bool, timeout: Duration) {
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
@@ -70,6 +71,15 @@ impl Linear {
             {
                 info!("Time: {}", time.as_millis());
                 break;
+            }
+
+            if (error.abs() < self.tolerance * 2.0 && chain) {
+                info!("Chain Time: {}", time.as_millis());
+                break;
+            }
+
+            if(pose.vf.abs() < self.velocity_tolerance) {
+                info!("Time: {}", time.as_millis());
             }
 
             dt.set_voltages(output, output);

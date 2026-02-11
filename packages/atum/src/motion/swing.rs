@@ -68,6 +68,7 @@ impl Swing {
             dt.set_velocity(left.get::<meter>() as i32, right.get::<meter>() as i32);
 
         }
+        dt.set_voltages(0.0, 0.0);
     }
 }
 

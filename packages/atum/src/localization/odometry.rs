@@ -3,10 +3,10 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
-use log::debug;
-use uom::si::{angle::radian, f64::Time, time::second};
+
+use uom::si::{f64::Time, time::second};
 use vexide::{
-    task::{spawn, Task},
+    task::{Task, spawn},
     time::sleep,
 };
 
@@ -76,7 +76,6 @@ impl Odometry {
                             vs: dy / Time::new::<second>(dt),
                             omega: (dh / Time::new::<second>(dt)).into(),
                         }
-
                     });
                     prev_time = Instant::now();
                     sleep(Duration::from_millis(10)).await;
@@ -93,6 +92,3 @@ impl Odometry {
         *self.pose.borrow_mut() = pose; // Sets the position vector
     }
 }
-
-// Meal for 2: 2580 cal $12.50 -> 206.4 cal/$
-// Meal for 4: 3240 cal $20.83 -> 155.5 cal/$

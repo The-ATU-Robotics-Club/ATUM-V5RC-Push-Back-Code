@@ -80,7 +80,7 @@ impl MoveTo {
                 warn!("Moving failed");
                 break;
             }
-            let mut herror = wrap(target_h - heading);
+            let herror = wrap(target_h - heading);
             let scaling = herror.get::<radian>().cos().abs();
 
             let mut projected_cte = distance * herror.get::<radian>().sin();
@@ -92,8 +92,8 @@ impl MoveTo {
             }
 
 
-            let mut angular_output = self.sideways.output(-projected_cte, elapsed_time);
-            let mut linear_output = self
+            let angular_output = self.sideways.output(-projected_cte, elapsed_time);
+            let linear_output = self
                 .linear
                 .output(distance, elapsed_time)
                 .clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE);

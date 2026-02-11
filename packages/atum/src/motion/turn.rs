@@ -59,7 +59,7 @@ impl Turn {
             let omega = dt.pose().omega;
 
             debug!(
-                "(Heading, Velocity): ({}, {})",
+                "(Error, Velocity): ({}, {})",
                 error.get::<degree>(),
                 omega.get::<degree_per_second>()
             );
@@ -71,13 +71,17 @@ impl Turn {
                 );
                 break;
             }
+            
+            if error.abs() < self.tolerance {
+                debug!("time: {}",time.as_millis());
+            }
 
             if time > timeout {
                 warn!("Turn interrupted at: {}", starting_error.get::<degree>());
                 break;
             }
 
-            dt.set_voltages(output, -output);
+            dt.set_voltages(-output, output);
         }
 
         dt.set_voltages(0.0, 0.0);
