@@ -66,7 +66,7 @@ impl Intake {
                             ball_timer += Duration::from_millis(10);
                         }
 
-                        debug!("{}", proximity);
+                        // debug!("{}", proximity);
                     }
 
                     sleep(Duration::from_millis(10)).await;
