@@ -30,12 +30,9 @@ impl Odometry {
         Self {
             pose: pose.clone(),
             _task: spawn(async move {
-                let mut prev_time;
+                let mut prev_time = Instant::now();
                 let mut prev_heading = imu.heading();
                 loop {
-                    sleep(Duration::from_millis(10)).await;
-                    prev_time = Instant::now();
-
                     let ds1 = wheel_1.traveled();
                     let ds2 = wheel_2.traveled();
 
@@ -79,7 +76,10 @@ impl Odometry {
                             vs: dy / Time::new::<second>(dt),
                             omega: (dh / Time::new::<second>(dt)).into(),
                         }
+
                     });
+                    prev_time = Instant::now();
+                    sleep(Duration::from_millis(10)).await;
                 }
             }),
         }
