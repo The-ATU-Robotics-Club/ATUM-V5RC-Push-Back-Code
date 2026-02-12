@@ -1,20 +1,19 @@
 // Rewrite UOM implementation when std support gets stabilized
 
-use std::{cmp::Reverse, time::{Duration, Instant}};
+use std::time::{Duration, Instant};
 
 use log::{debug, info, warn};
 use uom::si::{
-    angle::{degree, radian},
+    angle::radian,
     f64::{Angle, Length, Velocity},
     length::meter,
 };
-use vexide::{
-    prelude::{Direction, Motor},
-    time::sleep,
-};
+use vexide::{prelude::Motor, time::sleep};
 
 use crate::{
-    controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain,
+    controllers::pid::Pid,
+    localization::vec2::Vec2,
+    subsystems::drivetrain::Drivetrain,
     utils::wrap,
 };
 
@@ -23,7 +22,6 @@ pub struct MoveTo {
     sideways: Pid,
     tolerance: Length,
     velocity_tolerance: Velocity,
-    turn_threshold: Length,
 }
 
 impl MoveTo {
@@ -32,14 +30,12 @@ impl MoveTo {
         sideways: Pid,
         tolerance: Length,
         velocity_tolerance: Velocity,
-        turn_threshold: Length,
     ) -> Self {
         Self {
             linear,
             sideways,
             tolerance,
             velocity_tolerance,
-            turn_threshold,
         }
     }
 
@@ -48,7 +44,6 @@ impl MoveTo {
         dt: &mut Drivetrain,
         target: Vec2<Length>,
         timeout: Duration,
-        direction: Direction,
     ) {
         let start_time = Instant::now();
         let mut prev_time = Instant::now();
@@ -69,43 +64,36 @@ impl MoveTo {
             let mut distance = position_error.length();
             let target_h = Angle::new::<radian>(position_error.angle());
 
-            // if distance.abs() < self.tolerance.get::<meter>()
-            //     && pose.vf.abs() < self.velocity_tolerance
-            // {
-            //     info!("turn success");
-            //     break;
-            // }
+            if distance.abs() < self.tolerance.get::<meter>()
+                && pose.vf.abs() < self.velocity_tolerance
+            {
+                info!("turn success");
+                break;
+            }
 
             if start_time.elapsed() > timeout {
                 warn!("Moving failed");
                 break;
             }
             let herror = wrap(target_h - heading);
-            let scaling = herror.get::<radian>().cos().abs();
 
             let mut projected_cte = distance * herror.get::<radian>().sin();
-            // debug!("Projected_Cte : {:.4}", projected_cte);
 
             if herror.abs() > Angle::HALF_TURN / 2.0 {
                 projected_cte *= -1.0;
                 distance *= -1.0;
             }
 
-
             let angular_output = self.sideways.output(-projected_cte, elapsed_time);
             let linear_output = self
                 .linear
                 .output(distance, elapsed_time)
-                .clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE);
+                .clamp(-Motor::V5_MAX_VOLTAGE, Motor::V5_MAX_VOLTAGE)
+                * herror.get::<radian>().cos().abs();
 
-            // debug!("a, s: {:.4}, {:.4}", herror.get::<degree>(), scaling);
-            // debug!("d, a, c: {:.4}, {:.4}", linear_output, herror.get::<degree>());
-
-            // debug!("linear: {:.4}, angular: {:.4}", linear_output * scaling, angular_output);
-            // debug!("left: {:.4}, right: {:.4}", linear_output * scaling + angular_output, linear_output * scaling - angular_output);
             debug!("Position: ({})", pose);
 
-            dt.arcade(linear_output * scaling, angular_output);
+            dt.arcade(linear_output, angular_output);
         }
 
         dt.set_voltages(0.0, 0.0);

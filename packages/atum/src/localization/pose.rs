@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use uom::{
+    ConstZero,
     si::{
         angle::degree,
         angular_velocity::degree_per_second,
@@ -8,7 +9,6 @@ use uom::{
         length::inch,
         velocity::inch_per_second,
     },
-    ConstZero,
 };
 
 #[derive(Clone, Copy, Default)]

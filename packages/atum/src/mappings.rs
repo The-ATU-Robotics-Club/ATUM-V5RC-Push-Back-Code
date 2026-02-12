@@ -21,7 +21,9 @@ pub struct ControllerMappings {
     pub outake: ButtonState,
     pub lift: ButtonState,
     pub duck_bill: ButtonState,
-    
+    pub wing: ButtonState,
+    pub match_load: ButtonState,
+
     // color sort stuff
     pub swap_color: ButtonState,
     pub enable_color: ButtonState,

@@ -1,10 +1,6 @@
 use std::time::{Duration, Instant};
 
-use vexide::{
-    smart::serial::SerialError,
-    prelude::SerialPort,
-    time::sleep,
-};
+use vexide::{prelude::SerialPort, smart::serial::SerialError, time::sleep};
 
 use super::packet::Packet;
 
@@ -15,10 +11,7 @@ pub struct SerialDevice {
 
 impl SerialDevice {
     pub fn new(serial: SerialPort, timeout: Duration) -> Self {
-        Self {
-            serial,
-            timeout,
-        }
+        Self { serial, timeout }
     }
 
     pub async fn msg(

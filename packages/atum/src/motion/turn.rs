@@ -71,9 +71,9 @@ impl Turn {
                 );
                 break;
             }
-            
+
             if error.abs() < self.tolerance {
-                debug!("time: {}",time.as_millis());
+                debug!("time: {}", time.as_millis());
             }
 
             if time > timeout {

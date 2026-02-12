@@ -1,9 +1,9 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use log::{debug, info};
+use log::info;
 use vexide::{
     prelude::{AdiDigitalOut, Motor, OpticalSensor},
-    task::{spawn, Task},
+    task::{Task, spawn},
     time::sleep,
 };
 
