@@ -223,25 +223,27 @@ impl Robot {
             .drive_distance(
                 dt,
                 Length::new::<inch>(33.0),
-                false,
+                true,
                 Duration::from_millis(1000),
             )
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(135.0), Duration::from_millis(750))
-            .await;
         self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
+        swing.swing_to(dt, Angle::new::<degree>(135.0), Length::new::<inch>(4.0), Duration::from_millis(1500)).await;
+        // turn.turn_to(dt, Angle::new::<degree>(135.0), Duration::from_millis(750))
+        //     .await;
+        // self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
+        // linear
+        //     .drive_distance(
+        //         dt,
+        //         Length::new::<inch>(4.0),
+        //         false,
+        //         Duration::from_millis(850),
+        //     )
+        //     .await;
         linear
             .drive_distance(
                 dt,
-                Length::new::<inch>(4.0),
-                false,
-                Duration::from_millis(850),
-            )
-            .await;
-        linear
-            .drive_distance(
-                dt,
-                Length::new::<inch>(-49.0),
+                Length::new::<inch>(-47.0),
                 false,
                 Duration::from_millis(1500),
             )
@@ -266,7 +268,7 @@ impl Robot {
                 Duration::from_millis(570),
             )
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(85.0), Duration::from_millis(625))
+        turn.turn_to(dt, Angle::new::<degree>(87.0), Duration::from_millis(850))
             .await;
         linear
             .drive_distance(
@@ -278,7 +280,7 @@ impl Robot {
             .await;
         sleep(Duration::from_millis(3000)).await;
 
-        info!("Time elapsed: {:?}", time.elapsed());
+        // info!("Time elapsed: {:?}", time.elapsed());
 
         swing
             .swing_to(
@@ -291,12 +293,12 @@ impl Robot {
         linear
             .drive_distance(
                 dt,
-                Length::new::<inch>(-5.0),
+                Length::new::<inch>(-6.0),
                 false,
                 Duration::from_millis(550),
             )
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(85.0), Duration::from_millis(850))
+        turn.turn_to(dt, Angle::new::<degree>(87.0), Duration::from_millis(850))
             .await;
         linear
             .drive_distance(
@@ -476,6 +478,50 @@ impl Robot {
         info!("Time elapsed: {:?}", time.elapsed());
         
 
+
+    }
+    pub async fn Skills(&mut self){
+        let mut linear = Linear::new(
+            LINEAR_PID,
+            Length::new::<inch>(0.5),
+            Velocity::new::<inch_per_second>(2.5),
+        );
+
+        let mut turn = Turn::new(
+            ANGULAR_PID,
+            Angle::new::<degree>(1.0),
+            AngularVelocity::new::<degree_per_second>(2.5),
+        );
+
+        let mut swing = Swing::new(
+            Pid::new(1000.0, 150.0, 0.0, 90.0),
+            Angle::new::<degree>(1.0),
+            AngularVelocity::new::<degree_per_second>(5.0),
+        );
+
+        let dt = &mut self.drivetrain;
+        dt.set_pose(Pose::new(
+            Length::new::<inch>(0.0),
+            Length::new::<inch>(0.0),
+            Angle::new::<degree>(0.0),
+        ));
+
+        let time = Instant::now();
+        linear.drive_distance(dt, Length::new::<inch>(35.0), true, Duration::from_millis(1000)).await;
+        swing.swing_to(dt, Angle::new::<degree>(90.0), Length::new::<inch>(7.0),Duration::from_millis(1000)).await;
+        self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
+
+        linear.drive_distance(dt, Length::new::<inch>(37.5),false, Duration::from_millis(1500)).await;
+        swing.swing_to(dt, Angle::HALF_TURN,Length::new::<inch>(6.0) ,Duration::from_millis(1500)).await;
+        sleep(Duration::from_millis(350)).await;
+        linear.drive_distance(dt, Length::new::<inch>(-12.0), false, Duration::from_millis(850)).await;
+        turn.turn_to(dt, Angle::new::<degree>(90.0), Duration::from_millis(1000)).await;
+        linear.drive_distance(dt, Length::new::<inch>(37.0), false,Duration::from_millis(1500)).await;
+        
+
+ 
+        
+        info!("Time elapsed: {:?}", time.elapsed());
 
     }
 

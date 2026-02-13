@@ -34,7 +34,7 @@ struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        let path = 4;
+        let path = 5;
 
         match path {
             0 => self.qual().await,
@@ -42,6 +42,7 @@ impl Compete for Robot {
             2 => self.safequals().await,
             3 => self.rushelims().await,
             4 => self.rushcontrol().await,
+            5 => self.Skills().await,
             _ => (),
         }
     }
