@@ -59,6 +59,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(45.0),
                 false,
+                1.0,
                 Duration::from_millis(1000),
             )
             .await;
@@ -68,6 +69,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-20.0),
                 false,
+                1.0,
                 Duration::from_millis(1000),
             )
             .await;
@@ -80,6 +82,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(20.0),
                 false,
+                1.0,
                 Duration::from_millis(1000),
             )
             .await;
@@ -119,6 +122,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(17.0),
                 false,
+                1.0,
                 Duration::from_millis(525),
             )
             .await;
@@ -135,6 +139,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(4.0),
                 false,
+                1.0,
                 Duration::from_millis(400),
             )
             .await;
@@ -144,6 +149,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-12.0),
                 false,
+                1.0,
                 Duration::from_millis(570),
             )
             .await;
@@ -154,6 +160,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(12.0),
                 false,
+                1.0,
                 Duration::from_millis(525),
             )
             .await;
@@ -174,6 +181,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-5.0),
                 false,
+                1.0,
                 Duration::from_millis(550),
             )
             .await;
@@ -184,6 +192,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(25.0),
                 false,
+                1.0,
                 Duration::from_millis(700),
             )
             .await;
@@ -224,6 +233,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(33.0),
                 true,
+                1.0,
                 Duration::from_millis(1000),
             )
             .await;
@@ -245,6 +255,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-47.0),
                 false,
+                1.0,
                 Duration::from_millis(1500),
             )
             .await;
@@ -256,6 +267,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(8.0),
                 false,
+                1.0,
                 Duration::from_millis(850),
             )
             .await;
@@ -265,6 +277,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-12.0),
                 false,
+                1.0,
                 Duration::from_millis(570),
             )
             .await;
@@ -275,6 +288,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(15.0),
                 false,
+                1.0,
                 Duration::from_millis(525),
             )
             .await;
@@ -295,6 +309,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-6.0),
                 false,
+                1.0,
                 Duration::from_millis(550),
             )
             .await;
@@ -305,6 +320,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(28.0),
                 false,
+                1.0,
                 Duration::from_millis(700),
             )
             .await;
@@ -345,6 +361,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(27.5),
                 true,
+                1.0,
                 Duration::from_millis(1500),
             )
             .await;
@@ -355,6 +372,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-10.5),
                 true,
+                1.0,
                 Duration::from_millis(750),
             )
             .await;
@@ -365,6 +383,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(40.0),
                 false,
+                1.0,
                 Duration::from_millis(1500),
             )
             .await;
@@ -375,6 +394,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(8.0),
                 true,
+                1.0,
                 Duration::from_millis(850),
             )
             .await;
@@ -385,6 +405,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-11.0),
                 false,
+                1.0,
                 Duration::from_millis(570),
             )
             .await;
@@ -395,6 +416,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(15.0),
                 false,
+                1.0,
                 Duration::from_millis(525),
             )
             .await;
@@ -415,6 +437,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(-5.0),
                 false,
+                1.0,
                 Duration::from_millis(850),
             )
             .await;
@@ -425,6 +448,7 @@ impl Robot {
                 dt,
                 Length::new::<inch>(28.0),
                 false,
+                1.0,
                 Duration::from_millis(700),
             )
             .await;
@@ -458,19 +482,19 @@ impl Robot {
             Angle::new::<degree>(0.0),
         ));
         let time = Instant::now();
-        linear.drive_distance(dt, Length::new::<inch>(24.0), true, Duration::from_millis(1000)).await;
+        linear.drive_distance(dt, Length::new::<inch>(24.0), true,1.0, Duration::from_millis(1000)).await;
         turn.turn_to(dt, Angle::new::<degree>(-90.0), Duration::from_millis(575)).await;
-        linear.drive_distance(dt, Length::new::<inch>(11.0), true, Duration::from_millis(1000)).await;
+        linear.drive_distance(dt, Length::new::<inch>(11.0), true,1.0, Duration::from_millis(1000)).await;
         sleep(Duration::from_millis(750)).await;
-        linear.drive_distance(dt, Length::new::<inch>(-16.0), true, Duration::from_millis(1000)).await;
+        linear.drive_distance(dt, Length::new::<inch>(-16.0), true,1.0, Duration::from_millis(1000)).await;
         turn.turn_to(dt,Angle::new::<degree>(89.0),Duration::from_millis(650)).await;
-        linear.drive_distance(dt, Length::new::<inch>(11.5), true, Duration::from_millis(1000)).await;
+        linear.drive_distance(dt, Length::new::<inch>(11.5), true,1.0, Duration::from_millis(1000)).await;
         sleep(Duration::from_millis(750)).await;
 
         swing.swing_to(dt, Angle::ZERO, Length::new::<inch>(2.0), Duration::from_millis(500)).await;
-        linear.drive_distance(dt, Length::new::<inch>(-13.0), true, Duration::from_millis(1000)).await;
+        linear.drive_distance(dt, Length::new::<inch>(-13.0), true, 1.0, Duration::from_millis(1000)).await;
         turn.turn_to(dt, Angle::new::<degree>(83.0), Duration::from_millis(575)).await;
-        linear.drive_distance(dt, Length::new::<inch>(26.0), true, Duration::from_millis(1000)).await;
+        linear.drive_distance(dt, Length::new::<inch>(26.0), true, 1.0, Duration::from_millis(1000)).await;
         
         //Activate Brakes here
 
@@ -507,17 +531,11 @@ impl Robot {
         ));
 
         let time = Instant::now();
-        linear.drive_distance(dt, Length::new::<inch>(35.0), true, Duration::from_millis(1000)).await;
-        swing.swing_to(dt, Angle::new::<degree>(90.0), Length::new::<inch>(7.0),Duration::from_millis(1000)).await;
-        self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-
-        linear.drive_distance(dt, Length::new::<inch>(37.5),false, Duration::from_millis(1500)).await;
-        swing.swing_to(dt, Angle::HALF_TURN,Length::new::<inch>(6.0) ,Duration::from_millis(1500)).await;
-        sleep(Duration::from_millis(350)).await;
-        linear.drive_distance(dt, Length::new::<inch>(-12.0), false, Duration::from_millis(850)).await;
+        linear.drive_distance(dt, Length::new::<inch>(19.0), true, 1.0, Duration::from_millis(1000)).await;
         turn.turn_to(dt, Angle::new::<degree>(90.0), Duration::from_millis(1000)).await;
-        linear.drive_distance(dt, Length::new::<inch>(37.0), false,Duration::from_millis(1500)).await;
-        
+        self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
+        linear.drive_distance(dt, Length::new::<inch>(65.0), false, 0.5, Duration::from_millis(2500)).await;
+        turn.turn_to(dt, Angle::new::<degree>(45.0), Duration::from_millis(1000)).await;
 
  
         

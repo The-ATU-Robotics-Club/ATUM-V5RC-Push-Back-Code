@@ -10,7 +10,7 @@ use uom::{
         velocity::inch_per_second,
     },
 };
-use vexide::time::sleep;
+use vexide::{prelude::Motor, time::sleep};
 
 use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
 
@@ -34,12 +34,13 @@ impl Linear {
         dt: &mut Drivetrain,
         point: Vec2<Length>,
         chain: bool,
+        speed: f64,
         timeout: Duration,
     ) {
         let point = Vec2::new(point.x.get::<meter>(), point.y.get::<meter>());
         let pose = Vec2::new(dt.pose().x.get::<meter>(), dt.pose().y.get::<meter>());
         let target_distance = Length::new::<meter>((point - pose).length());
-        self.drive_distance(dt, target_distance, chain, timeout)
+        self.drive_distance(dt, target_distance, chain,speed,timeout)
             .await;
     }
 
@@ -48,6 +49,7 @@ impl Linear {
         dt: &mut Drivetrain,
         target: Length,
         chain: bool,
+        speed: f64,
         timeout: Duration,
     ) {
         let mut time = Duration::ZERO;
@@ -65,7 +67,7 @@ impl Linear {
             let pose = dt.pose();
             traveled += pose.vf * Time::new::<second>(elapsed_time.as_secs_f64());
             let error = target - traveled;
-            let output = self.pid.output(error.get::<meter>(), elapsed_time);
+            let mut output = self.pid.output(error.get::<meter>(), elapsed_time);
 
             debug!(
                 "(Distance, Velocity): ({}, {})",
@@ -88,7 +90,9 @@ impl Linear {
             if pose.vf.abs() < self.velocity_tolerance {
                 info!("Time: {}", time.as_millis());
             }
-
+            if speed*Motor::V5_MAX_VOLTAGE< output{
+                output = speed*Motor::V5_MAX_VOLTAGE;
+            }
             dt.set_voltages(output, output);
         }
 
