@@ -93,7 +93,15 @@ impl MoveTo {
 
             debug!("Position: ({})", pose);
 
-            dt.arcade(linear_output, angular_output);
+            let [left, right] = desaturate(
+                [
+                    linear_output + angular_output,
+                    linear_output - angular_output,
+                ],
+                Motor::V5_MAX_VOLTAGE,
+            );
+
+            dt.set_voltages(left, right);
         }
 
         dt.set_voltages(0.0, 0.0);

@@ -65,7 +65,13 @@ impl Swing {
 
             let left = output * (radius - length / 2.0);
             let right = output * (radius + length / 2.0);
-            dt.set_velocity(left.get::<meter>() as i32, right.get::<meter>() as i32);
+
+            let [left, right] = desaturate(
+                [left.get::<meter>(), right.get::<meter>()],
+                Gearset::MAX_BLUE_RPM,
+            );
+
+            dt.set_velocity(left, right);
         }
 
         dt.set_voltages(0.0, 0.0);

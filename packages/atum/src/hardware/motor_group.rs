@@ -24,16 +24,16 @@ impl MotorGroup {
         }
     }
 
-    pub fn set_velocity(&mut self, velocity: i32) {
+    pub fn set_velocity(&mut self, velocity: f64) {
         for motor in self.motors.iter_mut() {
             match self.motor_controller {
                 Some(mut controller) => {
                     let motor_velocity = motor.velocity().unwrap_or_default();
-                    let voltage = controller.output(velocity as f64, motor_velocity, None);
+                    let voltage = controller.output(velocity, motor_velocity, None);
                     _ = motor.set_voltage(voltage);
                 }
                 None => {
-                    _ = motor.set_velocity(velocity);
+                    _ = motor.set_velocity(velocity as i32);
                 }
             }
         }
