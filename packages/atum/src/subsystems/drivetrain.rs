@@ -44,7 +44,7 @@ impl Drivetrain {
         self.right.set_voltage(right);
     }
 
-    pub fn set_velocity(&mut self, left: i32, right: i32) {
+    pub fn set_velocity(&mut self, left: f64, right: f64) {
         self.left.set_velocity(left);
         self.right.set_velocity(right);
     }
@@ -52,6 +52,7 @@ impl Drivetrain {
     pub fn arcade(&mut self, power: f64, turn: f64) {
         let left = power + turn;
         let right = power - turn;
+
         self.set_voltages(left, right);
     }
 

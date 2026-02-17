@@ -1,25 +1,25 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use atum::{
     controllers::pid::Pid,
     localization::pose::Pose,
     motion::{linear::Linear, move_to::MoveTo, swing::Swing, turn::Turn},
 };
-use log::info;
 use uom::{
     ConstZero,
     si::{
         angle::degree,
-        angular_velocity::{AngularVelocity, degree_per_second},
-        f64::{Angle, Length, Velocity},
+        f64::{Angle, Length},
         length::inch,
-        velocity::inch_per_second,
     },
 };
 use vexide::prelude::{Motor, sleep};
 
 const LINEAR_PID: Pid = Pid::new(46.0, 0.0, 3.95, 12.0);
 const ANGULAR_PID: Pid = Pid::new(19.0, 0.25, 1.4, 25.0);
+
+const _SETTLE_LIN_VEL: f64 = 2.5; // INCHES
+const _SETTLE_ANG_VEL: f64 = 1.0; // DEGREES
 
 use crate::Robot;
 
@@ -29,20 +29,11 @@ impl Robot {
             Pid::new(30.0, 1.0, 6.0, 12.0),
             Pid::new(21.0, 2.0, 0.0, 18.0),
             Length::new::<inch>(1.0),
-            Velocity::new::<inch_per_second>(2.5),
         );
 
-        let mut linear = Linear::new(
-            LINEAR_PID,
-            Length::new::<inch>(0.5),
-            Velocity::new::<inch_per_second>(2.5),
-        );
+        let mut linear = Linear::new(LINEAR_PID, Length::new::<inch>(0.5));
 
-        let mut turn = Turn::new(
-            ANGULAR_PID,
-            Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(1.0),
-        );
+        let mut turn = Turn::new(ANGULAR_PID, Angle::new::<degree>(1.0));
 
         let dt = &mut self.drivetrain;
 
@@ -64,7 +55,8 @@ impl Robot {
             .drive_distance(dt, Length::new::<inch>(-20.0))
             .await;
 
-        turn.turn_to(dt, Angle::new::<degree>(135.0), Duration::from_millis(1000))
+        turn.timeout(Duration::from_millis(1000))
+            .turn_to(dt, Angle::new::<degree>(135.0))
             .await;
 
         linear
@@ -74,22 +66,13 @@ impl Robot {
     }
 
     pub async fn elims(&mut self) {
-        let mut linear = Linear::new(
-            LINEAR_PID,
-            Length::new::<inch>(0.5),
-            Velocity::new::<inch_per_second>(2.5),
-        );
+        let mut linear = Linear::new(LINEAR_PID, Length::new::<inch>(0.5));
 
-        let mut turn = Turn::new(
-            ANGULAR_PID,
-            Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(2.5),
-        );
+        let mut turn = Turn::new(ANGULAR_PID, Angle::new::<degree>(1.0));
 
         let mut swing = Swing::new(
             Pid::new(1000.0, 150.0, 0.0, 90.0),
             Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(5.0),
         );
 
         let dt = &mut self.drivetrain;
@@ -106,12 +89,7 @@ impl Robot {
             .await;
 
         swing
-            .swing_to(
-                dt,
-                Angle::new::<degree>(-90.0),
-                Length::new::<inch>(-5.0),
-                Duration::from_millis(725),
-            )
+            .swing_to(dt, Angle::new::<degree>(-90.0), Length::new::<inch>(-5.0))
             .await;
 
         linear
@@ -125,7 +103,8 @@ impl Robot {
             .timeout(Duration::from_millis(570))
             .drive_distance(dt, Length::new::<inch>(-12.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(87.0), Duration::from_millis(625))
+        turn.timeout(Duration::from_millis(625))
+            .turn_to(dt, Angle::new::<degree>(87.0))
             .await;
         linear
             .timeout(Duration::from_millis(525))
@@ -133,20 +112,16 @@ impl Robot {
             .await;
         sleep(Duration::from_millis(3000)).await;
 
-
         swing
-            .swing_to(
-                dt,
-                Angle::ZERO,
-                Length::new::<inch>(7.0),
-                Duration::from_millis(550),
-            )
+            .timeout(Duration::from_millis(550))
+            .swing_to(dt, Angle::ZERO, Length::new::<inch>(7.0))
             .await;
         linear
             .timeout(Duration::from_millis(550))
             .drive_distance(dt, Length::new::<inch>(-5.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(87.0), Duration::from_millis(850))
+        turn.timeout(Duration::from_millis(850))
+            .turn_to(dt, Angle::new::<degree>(87.0))
             .await;
         linear
             .timeout(Duration::from_millis(700))
@@ -154,26 +129,16 @@ impl Robot {
             .await;
 
         _ = self.brake.set_high();
-
     }
 
     pub async fn safequals(&mut self) {
-        let mut linear = Linear::new(
-            LINEAR_PID,
-            Length::new::<inch>(0.5),
-            Velocity::new::<inch_per_second>(2.5),
-        );
+        let mut linear = Linear::new(LINEAR_PID, Length::new::<inch>(0.5));
 
-        let mut turn = Turn::new(
-            ANGULAR_PID,
-            Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(2.5),
-        );
+        let mut turn = Turn::new(ANGULAR_PID, Angle::new::<degree>(1.0));
 
         let mut swing = Swing::new(
             Pid::new(1000.0, 150.0, 0.0, 90.0),
             Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(5.0),
         );
 
         let dt = &mut self.drivetrain;
@@ -186,24 +151,21 @@ impl Robot {
 
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(33.0))
             .await;
         self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
         swing
-            .swing_to(
-                dt,
-                Angle::new::<degree>(135.0),
-                Length::new::<inch>(4.0),
-                Duration::from_millis(1500),
-            )
+            .timeout(Duration::from_millis(1500))
+            .swing_to(dt, Angle::new::<degree>(135.0), Length::new::<inch>(4.0))
             .await;
 
         linear
             .timeout(Duration::from_millis(1500))
             .drive_distance(dt, Length::new::<inch>(-47.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(-90.0), Duration::from_millis(850))
+        turn.timeout(Duration::from_millis(850))
+            .turn_to(dt, Angle::new::<degree>(-90.0))
             .await;
 
         self.intake.set_voltage(0.0);
@@ -217,7 +179,8 @@ impl Robot {
             .timeout(Duration::from_millis(570))
             .drive_distance(dt, Length::new::<inch>(-12.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(87.0), Duration::from_millis(850))
+        turn.timeout(Duration::from_millis(850))
+            .turn_to(dt, Angle::new::<degree>(87.0))
             .await;
 
         linear
@@ -227,19 +190,16 @@ impl Robot {
         sleep(Duration::from_millis(3000)).await;
 
         swing
-            .swing_to(
-                dt,
-                Angle::ZERO,
-                Length::new::<inch>(7.0),
-                Duration::from_millis(550),
-            )
+            .timeout(Duration::from_millis(550))
+            .swing_to(dt, Angle::ZERO, Length::new::<inch>(7.0))
             .await;
 
         linear
             .timeout(Duration::from_millis(550))
             .drive_distance(dt, Length::new::<inch>(-6.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(87.0), Duration::from_millis(850))
+        turn.timeout(Duration::from_millis(850))
+            .turn_to(dt, Angle::new::<degree>(87.0))
             .await;
         linear
             .timeout(Duration::from_millis(700))
@@ -248,22 +208,13 @@ impl Robot {
     }
 
     pub async fn rushelims(&mut self) {
-        let mut linear = Linear::new(
-            LINEAR_PID,
-            Length::new::<inch>(0.5),
-            Velocity::new::<inch_per_second>(2.5),
-        );
+        let mut linear = Linear::new(LINEAR_PID, Length::new::<inch>(0.5));
 
-        let mut turn = Turn::new(
-            ANGULAR_PID,
-            Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(2.5),
-        );
+        let mut turn = Turn::new(ANGULAR_PID, Angle::new::<degree>(1.0));
 
         let mut swing = Swing::new(
             Pid::new(1000.0, 150.0, 0.0, 90.0),
             Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(5.0),
         );
 
         let dt = &mut self.drivetrain;
@@ -276,7 +227,7 @@ impl Robot {
 
         linear
             .timeout(Duration::from_millis(1500))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(27.5))
             .await;
         self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
@@ -284,20 +235,22 @@ impl Robot {
 
         linear
             .timeout(Duration::from_millis(750))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(-10.5))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(-35.0), Duration::from_millis(1000))
+        turn.timeout(Duration::from_millis(1000))
+            .turn_to(dt, Angle::new::<degree>(-35.0))
             .await;
         linear
             .timeout(Duration::from_millis(1500))
             .drive_distance(dt, Length::new::<inch>(40.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(-92.0), Duration::from_millis(850))
+        turn.timeout(Duration::from_millis(850))
+            .turn_to(dt, Angle::new::<degree>(-92.0))
             .await;
         linear
             .timeout(Duration::from_millis(850))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(8.0))
             .await;
 
@@ -306,7 +259,8 @@ impl Robot {
             .timeout(Duration::from_millis(570))
             .drive_distance(dt, Length::new::<inch>(-11.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(87.0), Duration::from_millis(625))
+        turn.timeout(Duration::from_millis(625))
+            .turn_to(dt, Angle::new::<degree>(87.0))
             .await;
         linear
             .timeout(Duration::from_millis(525))
@@ -317,18 +271,15 @@ impl Robot {
         // info!("Time elapsed: {:?}", time.elapsed());
 
         swing
-            .swing_to(
-                dt,
-                Angle::ZERO,
-                Length::new::<inch>(7.0),
-                Duration::from_millis(750),
-            )
+            .timeout(Duration::from_millis(750))
+            .swing_to(dt, Angle::ZERO, Length::new::<inch>(7.0))
             .await;
         linear
             .timeout(Duration::from_millis(850))
             .drive_distance(dt, Length::new::<inch>(-5.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(90.0), Duration::from_millis(850))
+        turn.timeout(Duration::from_millis(850))
+            .turn_to(dt, Angle::new::<degree>(90.0))
             .await;
         linear
             .timeout(Duration::from_millis(700))
@@ -337,22 +288,13 @@ impl Robot {
     }
 
     pub async fn rushcontrol(&mut self) {
-        let mut linear = Linear::new(
-            LINEAR_PID,
-            Length::new::<inch>(0.5),
-            Velocity::new::<inch_per_second>(2.5),
-        );
+        let mut linear = Linear::new(LINEAR_PID, Length::new::<inch>(0.5));
 
-        let mut turn = Turn::new(
-            ANGULAR_PID,
-            Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(2.5),
-        );
+        let mut turn = Turn::new(ANGULAR_PID, Angle::new::<degree>(1.0));
 
         let mut swing = Swing::new(
             Pid::new(1000.0, 150.0, 0.0, 90.0),
             Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(5.0),
         );
 
         let dt = &mut self.drivetrain;
@@ -365,23 +307,25 @@ impl Robot {
 
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(24.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(-90.0), Duration::from_millis(575))
+        turn.timeout(Duration::from_millis(575))
+            .turn_to(dt, Angle::new::<degree>(-90.0))
             .await;
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(11.0))
             .await;
         sleep(Duration::from_millis(750)).await;
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(-16.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(89.0), Duration::from_millis(650))
+        turn.timeout(Duration::from_millis(650))
+            .turn_to(dt, Angle::new::<degree>(89.0))
             .await;
         linear
             .timeout(Duration::from_millis(1000))
@@ -390,36 +334,34 @@ impl Robot {
         sleep(Duration::from_millis(750)).await;
 
         swing
-            .swing_to(
-                dt,
-                Angle::ZERO,
-                Length::new::<inch>(2.0),
-                Duration::from_millis(500),
-            )
+            .timeout(Duration::from_millis(500))
+            .swing_to(dt, Angle::ZERO, Length::new::<inch>(2.0))
             .await;
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(-13.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(83.0), Duration::from_millis(575))
+        turn.timeout(Duration::from_millis(575))
+            .turn_to(dt, Angle::new::<degree>(83.0))
             .await;
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(26.0))
             .await;
 
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(24.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(-90.0), Duration::from_millis(575))
+        turn.timeout(Duration::from_millis(575))
+            .turn_to(dt, Angle::new::<degree>(-90.0))
             .await;
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(11.0))
             .await;
         sleep(Duration::from_millis(750)).await;
@@ -427,33 +369,31 @@ impl Robot {
             .timeout(Duration::from_millis(1000))
             .drive_distance(dt, Length::new::<inch>(-16.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(89.0), Duration::from_millis(650))
+        turn.timeout(Duration::from_millis(650))
+            .turn_to(dt, Angle::new::<degree>(89.0))
             .await;
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(11.5))
             .await;
         sleep(Duration::from_millis(750)).await;
 
         swing
-            .swing_to(
-                dt,
-                Angle::ZERO,
-                Length::new::<inch>(2.0),
-                Duration::from_millis(500),
-            )
+            .timeout(Duration::from_millis(500))
+            .swing_to(dt, Angle::ZERO, Length::new::<inch>(2.0))
             .await;
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(-13.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(83.0), Duration::from_millis(575))
+        turn.timeout(Duration::from_millis(575))
+            .turn_to(dt, Angle::new::<degree>(83.0))
             .await;
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(26.0))
             .await;
 
@@ -461,22 +401,13 @@ impl Robot {
     }
 
     pub async fn skills(&mut self) {
-        let mut linear = Linear::new(
-            LINEAR_PID,
-            Length::new::<inch>(0.5),
-            Velocity::new::<inch_per_second>(2.5),
-        );
+        let mut linear = Linear::new(LINEAR_PID, Length::new::<inch>(0.5));
 
-        let mut turn = Turn::new(
-            ANGULAR_PID,
-            Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(2.5),
-        );
+        let mut turn = Turn::new(ANGULAR_PID, Angle::new::<degree>(1.0));
 
-        let mut swing = Swing::new(
+        let _swing = Swing::new(
             Pid::new(1000.0, 150.0, 0.0, 90.0),
             Angle::new::<degree>(1.0),
-            AngularVelocity::new::<degree_per_second>(5.0),
         );
 
         let dt = &mut self.drivetrain;
@@ -488,10 +419,11 @@ impl Robot {
 
         linear
             .timeout(Duration::from_millis(1000))
-            .chain()
+            .chain(2.0)
             .drive_distance(dt, Length::new::<inch>(19.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(90.0), Duration::from_millis(1000))
+        turn.timeout(Duration::from_millis(1000))
+            .turn_to(dt, Angle::new::<degree>(90.0))
             .await;
         self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
 
@@ -500,7 +432,8 @@ impl Robot {
             .speed(0.5)
             .drive_distance(dt, Length::new::<inch>(65.0))
             .await;
-        turn.turn_to(dt, Angle::new::<degree>(45.0), Duration::from_millis(1000))
+        turn.timeout(Duration::from_millis(1000))
+            .turn_to(dt, Angle::new::<degree>(45.0))
             .await;
     }
 }

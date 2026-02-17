@@ -1,13 +1,12 @@
 use std::time::{Duration, Instant};
 
-use log::{debug, info};
+use log::{info};
 use uom::{
     ConstZero,
     si::{
         f64::{Length, Time, Velocity},
-        length::{inch, meter},
+        length::meter,
         time::second,
-        velocity::inch_per_second,
     },
 };
 use vexide::{prelude::Motor, time::sleep};
@@ -17,21 +16,21 @@ use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetr
 pub struct Linear {
     pid: Pid,
     tolerance: Length,
-    velocity_tolerance: Velocity,
+    velocity_tolerance: Option<Velocity>,
     timeout: Option<Duration>,
     speed: f64,
-    chain: bool,
+    tolerance_scale: f64,
 }
 
 impl Linear {
-    pub fn new(pid: Pid, tolerance: Length, velocity_tolerance: Velocity) -> Self {
+    pub fn new(pid: Pid, tolerance: Length) -> Self {
         Self {
             pid,
             tolerance,
-            velocity_tolerance,
+            velocity_tolerance: None,
             timeout: None,
             speed: Motor::V5_MAX_VOLTAGE,
-            chain: false,
+            tolerance_scale: 1.0,
         }
     }
 
@@ -62,7 +61,7 @@ impl Linear {
                 .output(error.get::<meter>(), elapsed_time)
                 .clamp(-self.speed, self.speed);
 
-            if self.is_settled(error.abs(), pose.vf.abs(), time) {
+            if self.is_settled(error, pose.vf, time) {
                 info!("Time: {}", time.as_millis());
                 break;
             }
@@ -70,20 +69,25 @@ impl Linear {
             dt.set_voltages(output, output);
         }
 
+        self.velocity_tolerance = None;
         self.timeout = None;
         self.speed = Motor::V5_MAX_VOLTAGE;
-        self.chain = false;
+        self.tolerance_scale = 1.0;
 
         dt.set_voltages(0.0, 0.0);
     }
 
     fn is_settled(&mut self, error: Length, velocity: Velocity, time: Duration) -> bool {
-        let within_tolerance = error < self.tolerance;
-        let within_velocity = velocity < self.velocity_tolerance;
+        let within_tolerance = error.abs() < self.tolerance * self.tolerance_scale;
+        let within_velocity = self.velocity_tolerance.is_none_or(|tolerance| velocity.abs() < tolerance);
         let timed_out = self.timeout.is_some_and(|timeout| time > timeout);
-        let chained = self.chain && error < self.tolerance * 2.0;
 
-        (within_tolerance && within_velocity) || timed_out || chained
+        (within_tolerance && within_velocity) || timed_out
+    }
+
+    pub fn settle_velocity(&mut self, velocity: Velocity) -> &mut Self {
+        self.velocity_tolerance = Some(velocity);
+        self
     }
 
     pub fn timeout(&mut self, duration: Duration) -> &mut Self {
@@ -96,8 +100,8 @@ impl Linear {
         self
     }
 
-    pub fn chain(&mut self) -> &mut Self {
-        self.chain = true;
+    pub fn chain(&mut self, scale: f64) -> &mut Self {
+        self.tolerance_scale = scale;
         self
     }
 }
