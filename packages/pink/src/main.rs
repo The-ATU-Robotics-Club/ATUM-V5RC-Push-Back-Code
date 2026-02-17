@@ -1,6 +1,6 @@
 mod autos;
 
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
 
 use atum::{
     hardware::{imu::Imu, motor_group::MotorGroup, tracking_wheel::TrackingWheel},
@@ -34,6 +34,7 @@ struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
+        let time = Instant::now();
         let path = 5;
 
         match path {
@@ -42,9 +43,11 @@ impl Compete for Robot {
             2 => self.safequals().await,
             3 => self.rushelims().await,
             4 => self.rushcontrol().await,
-            5 => self.Skills().await,
+            5 => self.skills().await,
             _ => (),
         }
+
+        info!("Time elapsed: {:?}", time.elapsed());
     }
 
     async fn driver(&mut self) {
