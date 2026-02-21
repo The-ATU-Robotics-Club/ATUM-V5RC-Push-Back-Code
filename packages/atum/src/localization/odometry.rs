@@ -20,13 +20,11 @@ pub struct Odometry {
 
 impl Odometry {
     pub fn new(
-        starting_pose: Pose,
+        pose: Rc<RefCell<Pose>>,
         mut wheel_1: TrackingWheel,
         mut wheel_2: TrackingWheel,
         imu: Imu,
     ) -> Self {
-        let pose = Rc::new(RefCell::new(starting_pose));
-
         Self {
             pose: pose.clone(),
             _task: spawn(async move {
