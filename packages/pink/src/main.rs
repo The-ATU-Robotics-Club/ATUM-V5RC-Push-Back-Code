@@ -1,4 +1,4 @@
-mod autos;
+mod autons;
 
 use std::{
     cell::RefCell,
@@ -44,7 +44,7 @@ impl Compete for Robot {
         let path = 5;
 
         match path {
-            0 => self.qual().await,
+            0 => self.quals().await,
             1 => self.elims().await,
             2 => self.safequals().await,
             3 => self.rushelims().await,
