@@ -7,13 +7,15 @@ use std::{
 };
 
 use atum::{
+    backend::start_ui,
     controllers::pid::Pid,
     hardware::{imu::Imu, motor_group::MotorGroup, tracking_wheel::TrackingWheel},
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::move_to::MoveTo,
-    subsystems::{Color, RobotSettings, drivetrain::Drivetrain, intake::Intake},
+    settings::{Color, Settings},
+    subsystems::{drivetrain::Drivetrain, intake::Intake},
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
@@ -36,20 +38,21 @@ struct Robot {
     match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
     brake: AdiDigitalOut,
+    settings: Rc<RefCell<Settings>>,
 }
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
         let time = Instant::now();
-        let path = 5;
+        let route = self.settings.borrow().index;
 
-        match path {
-            0 => self.qual().await,
-            1 => self.elims().await,
-            2 => self.safequals().await,
-            3 => self.rushelims().await,
-            4 => self.rushcontrol().await,
-            5 => self.skills().await,
+        match route {
+            1 => self.qual().await,
+            2 => self.elims().await,
+            3 => self.safequals().await,
+            4 => self.rushelims().await,
+            5 => self.rushcontrol().await,
+            6 => self.skills().await,
             _ => (),
         }
 
@@ -98,6 +101,16 @@ impl Compete for Robot {
 
             if mappings.match_load.is_now_pressed() {
                 _ = self.match_loader.toggle();
+            }
+
+            // run autonomous when button is pressed to prevent the need of a competition switch
+            if self.settings.borrow().test_auton {
+                {
+                    let mut settings = RefCell::borrow_mut(&self.settings);
+                    settings.test_auton = false;
+                }
+
+                self.autonomous().await;
             }
 
             if state.button_x.is_pressed() {
@@ -152,9 +165,11 @@ async fn main(peripherals: Peripherals) {
     _ = color_sort.set_led_brightness(1.0);
     _ = color_sort.set_integration_time(Duration::from_millis(20));
 
-    let settings = Rc::new(RefCell::new(RobotSettings {
+    let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        enable_color: true,
+        index: 0,
+        test_auton: false,
+        enable_sort: true,
     }));
 
     let robot = Robot {
@@ -222,7 +237,10 @@ async fn main(peripherals: Peripherals) {
         match_loader: AdiDigitalOut::new(adi_expander.adi_a),
         wing: AdiDigitalOut::new(peripherals.adi_h),
         brake: AdiDigitalOut::new(adi_expander.adi_b),
+        settings: settings.clone(),
     };
+
+    start_ui(peripherals.display, settings);
 
     robot.compete().await;
 }
