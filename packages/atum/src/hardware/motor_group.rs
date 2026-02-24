@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use vexide::prelude::Motor;
 
@@ -29,7 +29,7 @@ impl MotorGroup {
             match self.motor_controller {
                 Some(mut controller) => {
                     let motor_velocity = motor.velocity().unwrap_or_default();
-                    let voltage = controller.output(velocity, motor_velocity, None);
+                    let voltage = controller.output(velocity, motor_velocity, 0.0);
                     _ = motor.set_voltage(voltage);
                 }
                 None => {
@@ -72,19 +72,36 @@ pub struct MotorController {
     ks: f64,
     kv: f64,
     ka: f64,
+    time: Instant,
 }
 
 impl MotorController {
     pub fn new(pid: Pid, ks: f64, kv: f64, ka: f64) -> Self {
-        Self { pid, ks, kv, ka }
+        Self {
+            pid,
+            ks,
+            kv,
+            ka,
+            time: Instant::now(),
+        }
     }
 
-    pub fn output(&mut self, target_rpm: f64, actual_rpm: f64, acceleration: Option<f64>) -> f64 {
+    pub fn output(&mut self, target_rpm: f64, actual_rpm: f64, acceleration: f64) -> f64 {
+        let now = Instant::now();
+        let dt = now.duration_since(self.time);
+        self.time = now;
+
         let error = target_rpm - actual_rpm;
 
-        let ff = self.kv + self.ks + acceleration.unwrap_or_default() * self.ka;
-        // change duration to a non-const using Instant
-        let pid = self.pid.output(error, Duration::from_millis(10));
+        let ff = if target_rpm.abs() > 1e-6 {
+            self.ks * target_rpm.signum()
+                + self.kv * target_rpm
+                + self.ka * acceleration
+        } else {
+            0.0
+        };
+
+        let pid = self.pid.output(error, dt);
 
         ff + pid
     }
