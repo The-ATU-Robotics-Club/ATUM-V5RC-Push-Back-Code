@@ -246,5 +246,16 @@ async fn main(peripherals: Peripherals) {
     })
     .detach();
 
-    start_ui(peripherals.display, settings.clone());
+    start_ui(
+        peripherals.display,
+        vec![
+            "Select Auton",
+            "elims",
+            "quals",
+            "rush control",
+            "rush elims",
+            "safe quals",
+        ],
+        settings.clone(),
+    );
 }

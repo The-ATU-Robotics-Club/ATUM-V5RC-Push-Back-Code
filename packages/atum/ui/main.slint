@@ -36,7 +36,8 @@ component SideBarIcon inherits Rectangle {
 
 /// Main application window
 export component AppWindow inherits Window {
-    in-out property<int> active-page: 0;
+    out property<int> active-page: 0;
+    in property<[string]> paths;
 
     width: 480px;
     height: 240px;
@@ -82,6 +83,7 @@ export component AppWindow inherits Window {
 
                 path-selector := SelectorPage {
                     property<int> pageNumber: 1;
+                    paths: root.paths;
                     y: calcPageY(pageNumber);
                     opacity: root.active-page == pageNumber ? 1 : 0;
                     animate y {

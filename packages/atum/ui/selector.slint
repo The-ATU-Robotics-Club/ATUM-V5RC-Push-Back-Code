@@ -20,6 +20,8 @@ export global Selector {
 }
 
 export component SelectorPage inherits Page {
+    in property <[string]> paths;
+
     HorizontalLayout {
         spacing: 140px;
 
@@ -36,14 +38,7 @@ export component SelectorPage inherits Page {
             mode_cb := ComboBox {
                 width: button-width;
                 height: button-height;
-                model: [
-                    "Select Auton",
-                    "Left",
-                    "Left other path",
-                    "Goal Rush",
-                    "Right",
-                    "Skills",
-                ];
+                model: root.paths;
             }
 
             // Button to toggle alliance color (Red/Blue)

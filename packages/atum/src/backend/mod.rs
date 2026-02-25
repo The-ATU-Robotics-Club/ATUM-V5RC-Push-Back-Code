@@ -1,5 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
+use slint::{ModelRc, SharedString, VecModel};
 use vexide::prelude::Display;
 use vexide_slint::initialize_slint_platform;
 
@@ -7,10 +8,21 @@ use crate::settings::{Color, Settings};
 
 slint::include_modules!();
 
-pub fn start_ui(display: Display, settings: Rc<RefCell<Settings>>) {
+pub fn start_ui(display: Display, paths: Vec<&str>, settings: Rc<RefCell<Settings>>) {
     initialize_slint_platform(display);
 
     let app = AppWindow::new().unwrap();
+
+    // Convert backend paths into a Slint model
+    let modes: Vec<SharedString> = paths
+        .into_iter()
+        .map(SharedString::from)
+        .collect();
+
+    let model = ModelRc::new(VecModel::from(modes));
+
+    // Set the property on the component
+    app.set_paths(model);
 
     app.global::<Selector>().on_autonomous({
         let settings = settings.clone();
