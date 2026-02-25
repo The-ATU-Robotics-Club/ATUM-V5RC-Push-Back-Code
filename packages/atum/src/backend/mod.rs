@@ -1,6 +1,6 @@
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::{cell::RefCell, rc::Rc};
 
-use vexide::{prelude::{spawn, Display}, time::sleep};
+use vexide::prelude::Display;
 use vexide_slint::initialize_slint_platform;
 
 use crate::settings::{Color, Settings};
@@ -16,7 +16,6 @@ pub fn start_ui(display: Display, settings: Rc<RefCell<Settings>>) {
         let settings = settings.clone();
 
         move |autonomous| {
-            println!("save");
             let index = autonomous.index as usize;
 
             let mut settings = settings.borrow_mut();
@@ -32,7 +31,6 @@ pub fn start_ui(display: Display, settings: Rc<RefCell<Settings>>) {
         let settings = settings.clone();
 
         move || {
-            println!("test");
             let mut settings = settings.borrow_mut();
             settings.test_auton = true;
         }
