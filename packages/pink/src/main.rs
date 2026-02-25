@@ -1,4 +1,4 @@
-mod autos;
+mod autons;
 
 use std::{
     cell::RefCell,
@@ -70,10 +70,11 @@ impl Compete for Robot {
                 },
                 intake: state.button_r1,
                 outake: state.button_r2,
-                lift: state.button_right,
-                duck_bill: state.button_down,
-                wing: state.button_b,
-                match_load: state.button_a,
+                lift: state.button_y,
+                duck_bill: state.button_l1,
+                wing: state.button_l2,
+                match_load: state.button_right,
+                brake: state.button_b,
                 swap_color: state.button_power,
                 enable_color: state.button_power,
             };
@@ -96,10 +97,6 @@ impl Compete for Robot {
                 _ = self.duck_bill.toggle();
             }
 
-            if mappings.wing.is_now_pressed() {
-                _ = self.wing.toggle();
-            }
-
             if mappings.match_load.is_now_pressed() {
                 _ = self.match_loader.toggle();
             }
@@ -112,6 +109,20 @@ impl Compete for Robot {
                 }
 
                 self.autonomous().await;
+            }
+          
+            if mappings.wing.is_pressed() {
+                _ = self.wing.set_low();
+            } else if self.lift.level().is_ok_and(|level| level.is_high()) {
+                _ = self.wing.set_high();
+            } else {
+                _ = self.wing.set_low();
+            }
+
+            if mappings.brake.is_pressed() {
+                _ = self.brake.set_high();
+            } else {
+                _ = self.brake.set_low();
             }
 
             if state.button_x.is_pressed() {
@@ -160,7 +171,7 @@ async fn main(peripherals: Peripherals) {
 
     imu.calibrate().await;
 
-    let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
+    let starting_position = Rc::new(RefCell::new(Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO)));
 
     let mut color_sort = OpticalSensor::new(peripherals.port_4);
     _ = color_sort.set_led_brightness(1.0);
@@ -197,7 +208,7 @@ async fn main(peripherals: Peripherals) {
                 None,
             ),
             Odometry::new(
-                starting_position,
+                starting_position.clone(),
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
