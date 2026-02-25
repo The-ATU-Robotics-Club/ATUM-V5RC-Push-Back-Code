@@ -1,6 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use vexide::prelude::{spawn, Display};
+use vexide::{prelude::{spawn, Display}, time::sleep};
 use vexide_slint::initialize_slint_platform;
 
 use crate::settings::{Color, Settings};
@@ -13,10 +13,10 @@ pub fn start_ui(display: Display, settings: Rc<RefCell<Settings>>) {
     let app = AppWindow::new().unwrap();
 
     app.global::<Selector>().on_autonomous({
-        let ui_handler = app.as_weak();
         let settings = settings.clone();
 
         move |autonomous| {
+            println!("save");
             let index = autonomous.index as usize;
 
             let mut settings = settings.borrow_mut();
@@ -32,14 +32,12 @@ pub fn start_ui(display: Display, settings: Rc<RefCell<Settings>>) {
         let settings = settings.clone();
 
         move || {
+            println!("test");
             let mut settings = settings.borrow_mut();
             settings.test_auton = true;
         }
     });
 
-    spawn(async move {
-        _ = app.show();
-        _ = slint::run_event_loop();
-    })
-    .detach();
+    _ = app.show();
+    _ = slint::run_event_loop();
 }

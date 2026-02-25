@@ -18,7 +18,7 @@ use atum::{
     subsystems::{drivetrain::Drivetrain, intake::Intake},
     theme::STOUT_ROBOT,
 };
-use log::{LevelFilter, info};
+use log::{LevelFilter, debug, info};
 use uom::{
     ConstZero,
     si::{
@@ -43,6 +43,7 @@ struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
+        println!("autnomous");
         let time = Instant::now();
         let route = self.settings.borrow().index;
 
@@ -153,8 +154,8 @@ async fn main(peripherals: Peripherals) {
     let adi_expander = AdiExpander::new(peripherals.port_3);
 
     let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_9),
-        InertialSensor::new(peripherals.port_10),
+        InertialSensor::new(peripherals.port_5),
+        InertialSensor::new(peripherals.port_15),
     ]);
 
     imu.calibrate().await;
@@ -177,21 +178,21 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
                 ],
                 None,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
                 ],
                 None,
             ),
@@ -240,7 +241,10 @@ async fn main(peripherals: Peripherals) {
         settings: settings.clone(),
     };
 
-    start_ui(peripherals.display, settings);
+    spawn(async move {
+        robot.compete().await;
+    })
+    .detach();
 
-    robot.compete().await;
+    start_ui(peripherals.display, settings.clone());
 }
