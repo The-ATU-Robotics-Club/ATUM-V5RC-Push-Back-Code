@@ -9,7 +9,11 @@ use std::{
 use atum::{
     backend::start_ui,
     controllers::pid::Pid,
-    hardware::{imu::Imu, motor_group::MotorGroup, tracking_wheel::TrackingWheel},
+    hardware::{
+        imu::Imu,
+        motor_group::{MotorController, MotorGroup},
+        tracking_wheel::TrackingWheel,
+    },
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
@@ -18,7 +22,7 @@ use atum::{
     subsystems::{drivetrain::Drivetrain, intake::Intake},
     theme::STOUT_ROBOT,
 };
-use log::{LevelFilter, debug, info};
+use log::{LevelFilter, info};
 use uom::{
     ConstZero,
     si::{
@@ -48,7 +52,7 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.qual().await,
+            1 => self.quals().await,
             2 => self.elims().await,
             3 => self.safequals().await,
             4 => self.rushelims().await,
@@ -77,6 +81,7 @@ impl Compete for Robot {
                 brake: state.button_b,
                 swap_color: state.button_power,
                 enable_color: state.button_power,
+                back_door: state.button_left,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
@@ -91,6 +96,8 @@ impl Compete for Robot {
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
+                let mut settings = self.settings.borrow_mut();
+                settings.enable_sort = !settings.enable_sort;
             }
 
             if mappings.duck_bill.is_now_pressed() {
@@ -101,16 +108,6 @@ impl Compete for Robot {
                 _ = self.match_loader.toggle();
             }
 
-            // run autonomous when button is pressed to prevent the need of a competition switch
-            if self.settings.borrow().test_auton {
-                {
-                    let mut settings = RefCell::borrow_mut(&self.settings);
-                    settings.test_auton = false;
-                }
-
-                self.autonomous().await;
-            }
-          
             if mappings.wing.is_pressed() {
                 _ = self.wing.set_low();
             } else if self.lift.level().is_ok_and(|level| level.is_high()) {
@@ -123,6 +120,19 @@ impl Compete for Robot {
                 _ = self.brake.set_high();
             } else {
                 _ = self.brake.set_low();
+            }
+
+            if mappings.enable_color.is_now_pressed() {
+                let mut settings = self.settings.borrow_mut();
+                settings.enable_sort = !settings.enable_sort;
+            }
+
+            self.settings.borrow_mut().color_override = mappings.back_door.is_now_pressed();
+
+            // run autonomous when button is pressed to prevent the need of a competition switch
+            if self.settings.borrow().test_auton {
+                self.autonomous().await;
+                self.settings.borrow_mut().test_auton = false;
             }
 
             if state.button_x.is_pressed() {
@@ -151,7 +161,7 @@ impl Compete for Robot {
                 }
             }
 
-            info!("Drivetrain: {}", self.drivetrain.pose());
+            // info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
@@ -162,27 +172,39 @@ impl Compete for Robot {
 async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
-    let adi_expander = AdiExpander::new(peripherals.port_3);
+    // RADIO PORTS DO NOT REMOVE
+    drop(peripherals.port_1);
+    drop(peripherals.port_21);
+
+    let adi_expander = AdiExpander::new(peripherals.port_2);
 
     let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_5),
+        InertialSensor::new(peripherals.port_14),
         InertialSensor::new(peripherals.port_15),
     ]);
 
+    let mut color_sort = OpticalSensor::new(peripherals.port_3);
     imu.calibrate().await;
 
-    let starting_position = Rc::new(RefCell::new(Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO)));
-
-    let mut color_sort = OpticalSensor::new(peripherals.port_4);
     _ = color_sort.set_led_brightness(1.0);
     _ = color_sort.set_integration_time(Duration::from_millis(20));
+
+    let starting_position = Rc::new(RefCell::new(Pose::default()));
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
         index: 0,
         test_auton: false,
         enable_sort: true,
+        color_override: false,
     }));
+
+    let motor_controller = Some(MotorController::new(
+        Pid::new(0.025, 0.0, 0.01, 0.014),
+        0.83,
+        0.0167,
+        0.0,
+    ));
 
     let robot = Robot {
         controller: peripherals.primary_controller,
@@ -195,7 +217,7 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
                 ],
-                None,
+                motor_controller,
             ),
             MotorGroup::new(
                 vec![
@@ -205,7 +227,7 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
                 ],
-                None,
+                motor_controller,
             ),
             Odometry::new(
                 starting_position.clone(),
@@ -237,17 +259,17 @@ async fn main(peripherals: Peripherals) {
             Length::new::<inch>(12.0),
         ),
         intake: Intake::new(
-            Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-            AdiDigitalOut::new(peripherals.adi_e),
+            Motor::new(peripherals.port_4, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+            AdiDigitalOut::new(peripherals.adi_f),
             color_sort,
-            Duration::from_millis(100),
+            Duration::from_millis(60),
             settings.clone(),
         ),
-        lift: AdiDigitalOut::new(peripherals.adi_f),
-        duck_bill: AdiDigitalOut::new(peripherals.adi_g),
+        lift: AdiDigitalOut::new(peripherals.adi_g),
+        duck_bill: AdiDigitalOut::new(peripherals.adi_h),
         match_loader: AdiDigitalOut::new(adi_expander.adi_a),
-        wing: AdiDigitalOut::new(peripherals.adi_h),
+        wing: AdiDigitalOut::new(peripherals.adi_e),
         brake: AdiDigitalOut::new(adi_expander.adi_b),
         settings: settings.clone(),
     };

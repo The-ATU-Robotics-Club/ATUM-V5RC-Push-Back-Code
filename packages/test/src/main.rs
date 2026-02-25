@@ -15,13 +15,10 @@ use atum::{
     subsystems::{drivetrain::Drivetrain, intake::Intake},
 };
 use log::{LevelFilter, info};
-use uom::{
-    ConstZero,
-    si::{
-        angle::degree,
-        f64::{Angle, Length},
-        length::{inch, millimeter},
-    },
+use uom::si::{
+    angle::degree,
+    f64::{Angle, Length},
+    length::{inch, millimeter},
 };
 use vexide::prelude::*;
 
@@ -52,6 +49,8 @@ impl Compete for Robot {
                 match_load: state.button_a,
                 swap_color: state.button_power,
                 enable_color: state.button_power,
+                brake: state.button_power,
+                back_door: state.button_power,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
@@ -80,7 +79,7 @@ async fn main(peripherals: Peripherals) {
 
     imu.calibrate().await;
 
-    let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
+    let starting_position = Rc::new(RefCell::new(Pose::default()));
 
     let mut color_sort = OpticalSensor::new(peripherals.port_4);
     _ = color_sort.set_led_brightness(1.0);
@@ -91,6 +90,7 @@ async fn main(peripherals: Peripherals) {
         index: 0,
         test_auton: false,
         enable_sort: false,
+        color_override: false,
     }));
 
     let robot = Robot {
@@ -101,7 +101,7 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_3, Gearset::Blue, Direction::Reverse),
                 ],
                 Some(MotorController::new(
                     Pid::new(0.0, 0.0, 0.0, 0.0),
@@ -162,5 +162,5 @@ async fn main(peripherals: Peripherals) {
     })
     .detach();
 
-    start_ui(peripherals.display, settings.clone());
+    start_ui(peripherals.display, vec![], settings.clone());
 }

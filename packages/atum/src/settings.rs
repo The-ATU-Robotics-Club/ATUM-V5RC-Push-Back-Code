@@ -6,6 +6,7 @@ pub struct Settings {
     pub index: usize,
     pub test_auton: bool,
     pub enable_sort: bool,
+    pub color_override: bool,
 }
 
 #[derive(Clone, Copy)]

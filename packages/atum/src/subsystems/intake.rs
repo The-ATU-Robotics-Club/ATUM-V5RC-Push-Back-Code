@@ -7,7 +7,7 @@ use vexide::{
     time::sleep,
 };
 
-use crate::settings::{Color, Settings};
+use crate::settings::Settings;
 
 pub struct Intake {
     voltage: Rc<RefCell<f64>>,
@@ -29,28 +29,40 @@ impl Intake {
             voltage: voltage.clone(),
             _task: spawn(async move {
                 let mut ball_timer = Duration::ZERO;
+                let mut balls_collected = 0;
 
                 loop {
                     let voltage = *voltage.borrow();
                     let settings = *settings.borrow();
 
-                    _ = top.set_voltage(voltage);
                     _ = bottom.set_voltage(voltage);
+
+                    // ADD THIS LATER
+                    if balls_collected < u64::MAX {
+                        _ = top.set_voltage(voltage);
+                    } else {
+                        _ = top.set_voltage(0.0);
+                    }
+
+                    if settings.color_override {
+                        _ = door.toggle();
+                    }
 
                     if settings.enable_sort {
                         let alliance = settings.color.hue_range();
-                        let opposing = (!settings.color).hue_range();
+                        let opposing = (!settings.color).hue_range(); 
 
                         let hue = color_sort.hue().unwrap_or_default();
                         let proximity = color_sort.proximity().unwrap_or_default();
 
-                        if proximity > 0.1 {
+                        if proximity > 0.5 {
                             if alliance.contains(&hue) {
-                                info!("red: {}", proximity);
+                                info!("alliance: {}", proximity);
                                 sleep(delay).await;
                                 _ = door.set_low();
+                                balls_collected += 1;
                             } else if opposing.contains(&hue) {
-                                info!("blue: {}", proximity);
+                                info!("opposing: {}", proximity);
                                 _ = door.set_high();
                             }
                             ball_timer = Duration::ZERO;
@@ -61,7 +73,7 @@ impl Intake {
                             ball_timer += Duration::from_millis(10);
                         }
 
-                        // debug!("{}", proximity);
+                        // info!("{}", proximity);
                     }
 
                     sleep(Duration::from_millis(10)).await;

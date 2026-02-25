@@ -24,6 +24,7 @@ pub struct ControllerMappings {
     pub wing: ButtonState,
     pub match_load: ButtonState,
     pub brake: ButtonState,
+    pub back_door: ButtonState,
 
     // color sort stuff
     pub swap_color: ButtonState,
