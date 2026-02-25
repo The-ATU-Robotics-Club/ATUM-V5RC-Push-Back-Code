@@ -7,16 +7,18 @@ use std::{
 };
 
 use atum::{
+    backend::start_ui,
     controllers::pid::Pid,
     hardware::{imu::Imu, motor_group::MotorGroup, tracking_wheel::TrackingWheel},
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     motion::move_to::MoveTo,
-    subsystems::{Color, RobotSettings, drivetrain::Drivetrain, intake::Intake},
+    settings::{Color, Settings},
+    subsystems::{drivetrain::Drivetrain, intake::Intake},
     theme::STOUT_ROBOT,
 };
-use log::{LevelFilter, info};
+use log::{LevelFilter, debug, info};
 use uom::{
     ConstZero,
     si::{
@@ -36,21 +38,22 @@ struct Robot {
     match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
     brake: AdiDigitalOut,
-    pose: Rc<RefCell<Pose>>,
+    settings: Rc<RefCell<Settings>>,
 }
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
+        println!("autnomous");
         let time = Instant::now();
-        let path = 5;
+        let route = self.settings.borrow().index;
 
-        match path {
-            0 => self.quals().await,
-            1 => self.elims().await,
-            2 => self.safequals().await,
-            3 => self.rushelims().await,
-            4 => self.rushcontrol().await,
-            5 => self.skills().await,
+        match route {
+            1 => self.qual().await,
+            2 => self.elims().await,
+            3 => self.safequals().await,
+            4 => self.rushelims().await,
+            5 => self.rushcontrol().await,
+            6 => self.skills().await,
             _ => (),
         }
 
@@ -98,6 +101,16 @@ impl Compete for Robot {
                 _ = self.match_loader.toggle();
             }
 
+            // run autonomous when button is pressed to prevent the need of a competition switch
+            if self.settings.borrow().test_auton {
+                {
+                    let mut settings = RefCell::borrow_mut(&self.settings);
+                    settings.test_auton = false;
+                }
+
+                self.autonomous().await;
+            }
+          
             if mappings.wing.is_pressed() {
                 _ = self.wing.set_low();
             } else if self.lift.level().is_ok_and(|level| level.is_high()) {
@@ -152,8 +165,8 @@ async fn main(peripherals: Peripherals) {
     let adi_expander = AdiExpander::new(peripherals.port_3);
 
     let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_9),
-        InertialSensor::new(peripherals.port_10),
+        InertialSensor::new(peripherals.port_5),
+        InertialSensor::new(peripherals.port_15),
     ]);
 
     imu.calibrate().await;
@@ -164,9 +177,11 @@ async fn main(peripherals: Peripherals) {
     _ = color_sort.set_led_brightness(1.0);
     _ = color_sort.set_integration_time(Duration::from_millis(20));
 
-    let settings = Rc::new(RefCell::new(RobotSettings {
+    let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        enable_color: true,
+        index: 0,
+        test_auton: false,
+        enable_sort: true,
     }));
 
     let robot = Robot {
@@ -174,21 +189,21 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
                 ],
                 None,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
                 ],
                 None,
             ),
@@ -234,8 +249,24 @@ async fn main(peripherals: Peripherals) {
         match_loader: AdiDigitalOut::new(adi_expander.adi_a),
         wing: AdiDigitalOut::new(peripherals.adi_h),
         brake: AdiDigitalOut::new(adi_expander.adi_b),
-        pose: starting_position,
+        settings: settings.clone(),
     };
 
-    robot.compete().await;
+    spawn(async move {
+        robot.compete().await;
+    })
+    .detach();
+
+    start_ui(
+        peripherals.display,
+        vec![
+            "Select Auton",
+            "elims",
+            "quals",
+            "rush control",
+            "rush elims",
+            "safe quals",
+        ],
+        settings.clone(),
+    );
 }

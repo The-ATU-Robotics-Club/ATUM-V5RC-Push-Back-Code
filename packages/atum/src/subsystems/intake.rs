@@ -7,8 +7,7 @@ use vexide::{
     time::sleep,
 };
 
-use super::RobotSettings;
-use crate::subsystems::Color;
+use crate::settings::{Color, Settings};
 
 pub struct Intake {
     voltage: Rc<RefCell<f64>>,
@@ -22,7 +21,7 @@ impl Intake {
         mut door: AdiDigitalOut,
         color_sort: OpticalSensor,
         delay: Duration,
-        settings: Rc<RefCell<RobotSettings>>,
+        settings: Rc<RefCell<Settings>>,
     ) -> Self {
         let voltage = Rc::new(RefCell::new(0.0));
 
@@ -38,13 +37,9 @@ impl Intake {
                     _ = top.set_voltage(voltage);
                     _ = bottom.set_voltage(voltage);
 
-                    if settings.enable_color {
-                        // Red hue -> 0-60
-                        // Blue hue -> 120-240
-                        let (alliance, opposing) = match settings.color {
-                            Color::Red => (20.0..55.0, 70.0..210.0),
-                            Color::Blue => (70.0..210.0, 20.0..55.0),
-                        };
+                    if settings.enable_sort {
+                        let alliance = settings.color.hue_range();
+                        let opposing = (!settings.color).hue_range();
 
                         let hue = color_sort.hue().unwrap_or_default();
                         let proximity = color_sort.proximity().unwrap_or_default();

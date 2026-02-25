@@ -1,0 +1,58 @@
+import { Palette } from "std-widgets.slint";
+
+export global Palette {
+    out property <color> background: #2d2d32;
+    out property <color> primary: #141313;
+    out property <color> text-primary: #F4F6FF;
+
+    // Button icon colors
+    out property <color> active-page-icon-color: #6284FF;
+    out property <color> inactive-page-icon-color: #BDC0D1;
+
+    out property <color> control-secondary: #6284FF;
+
+    out property <length> base-font-size: 16px;
+    out property <length> side-bar-width: 50px;
+}
+
+export component Page inherits Rectangle {
+    in property <string> header <=> h.text;
+    in property <bool> has-back-button: false;
+
+    callback back;
+
+    background: Palette.background;
+    visible: self.opacity > 0;
+
+    TouchArea { } // protect underneath controls
+
+    if (root.has-back-button) : Image {
+        x:0;
+        source: @image-url("images/back.png");
+        image-fit: contain;
+        colorize: Palette.control-secondary;
+        y: h.y + (h.height - self.height) / 2;
+        width: 14px;
+        height: 24px;
+    
+        TouchArea {
+            clicked => { root.back() }
+            x: -14px;
+            height: 200%;
+            width: self.height;
+        }
+    }
+
+    h := Text {
+        font-weight: 900;
+        font-size: Palette.base-font-size * 2;
+        color: Palette.text-primary;
+        y: 46px - self.font-size;
+        x: root.has-back-button ? 24px + 16px : 0px;
+        // Allow clicking on the title as well to get back easier when just
+        // using fingers on a small screen.
+        if (root.has-back-button) : TouchArea {
+            clicked => { root.back() }
+        }
+    }
+}

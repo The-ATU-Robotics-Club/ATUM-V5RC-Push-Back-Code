@@ -10,3 +10,14 @@ uom = { workspace = true }
 
 bytemuck = { version = "1.23.2", features = ["derive"] }
 num-traits = "0.2.19"
+
+slint = { version = "=1.14.1", default-features = false, features = [
+  "compat-1-2",
+  "renderer-software",
+  "libm",
+  "unsafe-single-threaded",
+] }
+vexide-slint = { git = "https://github.com/vexide/vexide-slint" }
+
+[build-dependencies]
+slint-build = "=1.14.1"

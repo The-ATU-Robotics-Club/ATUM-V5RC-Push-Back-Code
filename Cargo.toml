@@ -9,3 +9,10 @@ vexide = { version = "0.8.0", features = ["full", "default-sdk", "vex-sdk-mock"]
 atum = { path = "packages/atum" }
 uom = { version = "0.37.0", default-features = false, features = ["autoconvert", "f64", "si", "std"] }
 log = "0.4.28"
+
+[profile.release]
+opt-level = "z"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

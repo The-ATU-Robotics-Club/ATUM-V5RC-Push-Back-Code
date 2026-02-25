@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
 use atum::{
+    backend::start_ui,
     controllers::pid::Pid,
     hardware::{
         imu::Imu,
@@ -10,7 +11,8 @@ use atum::{
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    subsystems::{Color, RobotSettings, drivetrain::Drivetrain, intake::Intake},
+    settings::{Color, Settings},
+    subsystems::{drivetrain::Drivetrain, intake::Intake},
 };
 use log::{LevelFilter, info};
 use uom::{
@@ -84,9 +86,11 @@ async fn main(peripherals: Peripherals) {
     _ = color_sort.set_led_brightness(1.0);
     _ = color_sort.set_integration_time(Duration::from_millis(20));
 
-    let settings = Rc::new(RefCell::new(RobotSettings {
+    let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        enable_color: true,
+        index: 0,
+        test_auton: false,
+        enable_sort: false,
     }));
 
     let robot = Robot {
@@ -153,5 +157,10 @@ async fn main(peripherals: Peripherals) {
         ),
     };
 
-    robot.compete().await;
+    spawn(async move {
+        robot.compete().await;
+    })
+    .detach();
+
+    start_ui(peripherals.display, settings.clone());
 }
