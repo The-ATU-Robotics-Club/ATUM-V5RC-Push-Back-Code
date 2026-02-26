@@ -6,7 +6,7 @@ use uom::si::{
     angular_velocity::degree_per_second,
     f64::{Angle, AngularVelocity, Length},
 };
-use vexide::time::sleep;
+use vexide::{prelude::Motor, time::sleep};
 
 use crate::{
     controllers::pid::Pid,
@@ -20,6 +20,7 @@ pub struct Turn {
     tolerance: Angle,
     velocity_tolerance: Option<AngularVelocity>,
     timeout: Option<Duration>,
+    speed: f64,
     tolerance_scale: f64,
 }
 
@@ -30,6 +31,7 @@ impl Turn {
             tolerance,
             velocity_tolerance: None,
             timeout: None,
+            speed: Motor::V5_MAX_VOLTAGE * 0.65,
             tolerance_scale: 1.0,
         }
     }
@@ -58,7 +60,7 @@ impl Turn {
 
             let heading = dt.pose().h;
             let error = wrap(target - heading);
-            let output = self.pid.output(error.get::<radian>(), elapsed_time);
+            let output = self.pid.output(error.get::<radian>(), elapsed_time).clamp(-self.speed, self.speed);
             let omega = dt.pose().omega;
 
             debug!(
