@@ -17,7 +17,7 @@ pub enum Color {
 
 impl Color {
     pub const RED_HUE: Range<f64> = 20.0..55.0;
-    pub const BLUE_HUE: Range<f64> = 70.0..210.0;
+    pub const BLUE_HUE: Range<f64> = 70.0..275.0;
 
     pub fn hue_range(&self) -> Range<f64> {
         match self {

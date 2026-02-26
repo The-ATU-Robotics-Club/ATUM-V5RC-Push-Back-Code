@@ -36,17 +36,19 @@ impl Intake {
                     let settings = *settings.borrow();
 
                     _ = bottom.set_voltage(voltage);
+                    _ = top.set_voltage(voltage);
 
                     // ADD THIS LATER
-                    if balls_collected < u64::MAX {
-                        _ = top.set_voltage(voltage);
-                    } else {
-                        _ = top.set_voltage(0.0);
-                    }
+                    // if balls_collected < u64::MAX {
+                    //     _ = top.set_voltage(voltage);
+                    // } else {
+                    //     _ = top.set_voltage(0.0);
+                    // }
 
                     if settings.color_override {
                         _ = door.toggle();
                     }
+                    info!("Color Sort Proximity: {}", color_sort.proximity().unwrap_or_default());
 
                     if settings.enable_sort {
                         let alliance = settings.color.hue_range();
@@ -54,8 +56,8 @@ impl Intake {
 
                         let hue = color_sort.hue().unwrap_or_default();
                         let proximity = color_sort.proximity().unwrap_or_default();
-
-                        if proximity > 0.5 {
+                        
+                        if proximity > 0.3 {
                             if alliance.contains(&hue) {
                                 info!("alliance: {}", proximity);
                                 sleep(delay).await;

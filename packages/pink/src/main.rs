@@ -17,7 +17,7 @@ use atum::{
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    motion::move_to::MoveTo,
+    motion::{linear::Linear, move_to::MoveTo, turn::Turn},
     settings::{Color, Settings},
     subsystems::{drivetrain::Drivetrain, intake::Intake},
     theme::STOUT_ROBOT,
@@ -27,8 +27,10 @@ use uom::{
     ConstZero,
     si::{
         angle::degree,
-        f64::{Angle, Length},
+        angular_velocity::{AngularVelocity, degree_per_second},
+        f64::{Angle, Length, Velocity},
         length::{inch, millimeter},
+        velocity::inch_per_second,
     },
 };
 use vexide::prelude::*;
@@ -42,6 +44,7 @@ struct Robot {
     match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
     brake: AdiDigitalOut,
+    pose: Rc<RefCell<Pose>>,
     settings: Rc<RefCell<Settings>>,
 }
 
@@ -52,11 +55,11 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.quals().await,
-            2 => self.elims().await,
-            3 => self.safequals().await,
+            1 => self.elims().await,
+            2 => self.quals().await,
+            3 => self.rushcontrol().await,
             4 => self.rushelims().await,
-            5 => self.rushcontrol().await,
+            5 => self.safequals().await,
             6 => self.skills().await,
             _ => (),
         }
@@ -81,7 +84,7 @@ impl Compete for Robot {
                 brake: state.button_b,
                 swap_color: state.button_power,
                 enable_color: state.button_power,
-                back_door: state.button_left,
+                back_door: state.button_a,
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
@@ -138,10 +141,11 @@ impl Compete for Robot {
             if state.button_x.is_pressed() {
                 if state.button_down.is_pressed() {
                     self.drivetrain.set_pose(Pose::new(
-                        Length::new::<inch>(0.0),
-                        Length::new::<inch>(0.0),
-                        Angle::HALF_TURN,
+                        Length::new::<inch>(97.0),
+                        Length::new::<inch>(21.5),
+                        Angle::ZERO,
                     ));
+                    // self.drivetrain.set_pose(Pose::default());
                 }
 
                 if state.button_right.is_pressed() {
@@ -178,6 +182,7 @@ async fn main(peripherals: Peripherals) {
 
     let adi_expander = AdiExpander::new(peripherals.port_2);
 
+    // TODO - make imu calibrate at the same time
     let mut imu = Imu::new(vec![
         InertialSensor::new(peripherals.port_14),
         InertialSensor::new(peripherals.port_15),
@@ -186,8 +191,10 @@ async fn main(peripherals: Peripherals) {
     let mut color_sort = OpticalSensor::new(peripherals.port_3);
     imu.calibrate().await;
 
+    // figure out why first command does not apply
     _ = color_sort.set_led_brightness(1.0);
     _ = color_sort.set_integration_time(Duration::from_millis(20));
+    _ = color_sort.set_led_brightness(1.0);
 
     let starting_position = Rc::new(RefCell::new(Pose::default()));
 
@@ -238,7 +245,7 @@ async fn main(peripherals: Peripherals) {
                     Length::new::<millimeter>(60.0),
                     Vec2::new(
                         Length::new::<inch>(-5.93824103),
-                        Length::new::<inch>(-1.00288550),
+                        Length::new::<inch>(1.00288550),
                     ),
                     Angle::new::<degree>(45.0),
                 ),
@@ -249,7 +256,7 @@ async fn main(peripherals: Peripherals) {
                     Length::new::<millimeter>(60.0),
                     Vec2::new(
                         Length::new::<inch>(-5.93824103),
-                        Length::new::<inch>(1.00288550),
+                        Length::new::<inch>(-1.00288550),
                     ),
                     Angle::new::<degree>(-45.0),
                 ),
@@ -263,7 +270,7 @@ async fn main(peripherals: Peripherals) {
             Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
             AdiDigitalOut::new(peripherals.adi_f),
             color_sort,
-            Duration::from_millis(60),
+            Duration::from_millis(0),
             settings.clone(),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_g),
@@ -271,6 +278,7 @@ async fn main(peripherals: Peripherals) {
         match_loader: AdiDigitalOut::new(adi_expander.adi_a),
         wing: AdiDigitalOut::new(peripherals.adi_e),
         brake: AdiDigitalOut::new(adi_expander.adi_b),
+        pose: starting_position,
         settings: settings.clone(),
     };
 
