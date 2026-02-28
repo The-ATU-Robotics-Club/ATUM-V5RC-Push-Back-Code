@@ -20,6 +20,7 @@ pub struct MoveTo {
     velocity_tolerance: Option<Velocity>,
     timeout: Option<Duration>,
     tolerance_scale: f64,
+    speed: f64
 }
 
 impl MoveTo {
@@ -31,6 +32,7 @@ impl MoveTo {
             velocity_tolerance: None,
             timeout: None,
             tolerance_scale: 1.0,
+            speed: 1.0,
         }
     }
 
@@ -93,7 +95,7 @@ impl MoveTo {
                 Motor::V5_MAX_VOLTAGE,
             );
 
-            dt.set_voltages(left, right);
+            dt.set_voltages(left * self.speed, right * self.speed);
         }
 
         self.timeout = None;
@@ -105,6 +107,11 @@ impl MoveTo {
 
     pub fn timeout(&mut self, duration: Duration) -> &mut Self {
         self.timeout = Some(duration);
+        self
+    }
+
+    pub fn speed(&mut self, speed: f64) -> &mut Self {
+        self.speed = speed;
         self
     }
 

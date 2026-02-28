@@ -31,8 +31,9 @@ impl Turn {
             tolerance,
             velocity_tolerance: None,
             timeout: None,
-            speed: Motor::V5_MAX_VOLTAGE * 0.65,
+            speed: Motor::V5_MAX_VOLTAGE * 0.6,
             tolerance_scale: 1.0,
+
         }
     }
 
@@ -40,9 +41,15 @@ impl Turn {
         &mut self,
         dt: &mut Drivetrain,
         point: Vec2<Length>,
+        reverse: bool,
     ) {
         let pose = dt.pose();
-        let target = angular_distance(pose, point);
+        let mut target = angular_distance(pose, point);
+
+        if reverse {
+            target += Angle::HALF_TURN;
+        }
+        
         self.turn_to(dt, target).await;
     }
 

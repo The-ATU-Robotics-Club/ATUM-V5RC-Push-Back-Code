@@ -34,10 +34,15 @@ impl Linear {
         }
     }
 
-    pub async fn drive_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<Length>) {
+    pub async fn drive_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<Length>, reverse:bool) {
         let point = Vec2::new(point.x.get::<meter>(), point.y.get::<meter>());
         let pose = Vec2::new(dt.pose().x.get::<meter>(), dt.pose().y.get::<meter>());
-        let target_distance = Length::new::<meter>((point - pose).length());
+        let mut target_distance = Length::new::<meter>((point - pose).length());
+        
+        if reverse {
+            target_distance*= -1.0;
+        }
+
         self.drive_distance(dt, target_distance).await;
     }
 
