@@ -1,12 +1,24 @@
-use std::{cell::RefCell, rc::Rc, time::Duration};
+mod autons;
 
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    time::{Duration, Instant},
+};
 use atum::{
-    hardware::{imu::Imu, motor_group::MotorGroup, tracking_wheel::TrackingWheel},
+    backend::start_ui,
+    controllers::pid::Pid,
+    hardware::{
+        imu::Imu,
+        motor_group::{MotorController, MotorGroup},
+        tracking_wheel::TrackingWheel,
+    },
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    settings::{Color, Settings},
-    subsystems::{drivetrain::Drivetrain, intake::Intake},
+    motion::move_to::MoveTo,
+    settings::{self, Color, Settings},
+    subsystems::{drivetrain::Drivetrain, intake::{DoorCommands, Intake}},
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
@@ -28,13 +40,35 @@ struct Robot {
     duck_bill: AdiDigitalOut,
     match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
+    brake: AdiDigitalOut,
+    pose: Rc<RefCell<Pose>>,
+    settings: Rc<RefCell<Settings>>,
 }
 
 impl Compete for Robot {
-    async fn autonomous(&mut self) {}
+    async fn autonomous(&mut self) {
+        println!("autnomous");
+        let time = Instant::now();
+        let route = self.settings.borrow().index;
+        self.settings.borrow_mut().enable_sort = DoorCommands::On;
+
+
+        match route {
+            1 => self.rushelims().await,
+            2 => self.safetyskills().await,
+            3 => self.rushblock().await,
+            4 => self.foursix().await,
+            5 => self.skills().await,
+            _ => (),
+        }
+
+        info!("Time elapsed: {:?}", time.elapsed());
+    }
 
     async fn driver(&mut self) {
+        // self.rushelims().await;
         loop {
+
             let state = self.controller.state().unwrap_or_default();
             let mappings = ControllerMappings {
                 drive_mode: DriveMode::Arcade {
@@ -43,12 +77,15 @@ impl Compete for Robot {
                 },
                 intake: state.button_r1,
                 outake: state.button_r2,
-                lift: state.button_right,
-                duck_bill: state.button_down,
-                wing: state.button_b,
-                match_load: state.button_a,
-                swap_color: state.button_power,
-                enable_color: state.button_power,
+                lift: state.button_y,
+                duck_bill: state.button_l2,
+                wing: state.button_l1,
+                match_load: state.button_right,
+                brake: state.button_b,
+                swap_color: state.button_left,
+                enable_color: state.button_x,
+                back_door: state.button_a,
+                
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
@@ -63,75 +100,120 @@ impl Compete for Robot {
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
+                let mut setting  = self.settings.borrow_mut();
+                setting.enable_sort = match setting.enable_sort {
+                    DoorCommands::On => DoorCommands::Off,
+                    DoorCommands::Off => DoorCommands::On,
+                    _ => setting.enable_sort // keep the command
+                }
             }
-            if mappings.duck_bill.is_now_pressed() {
-                _ = self.duck_bill.toggle();
+
+            if mappings.duck_bill.is_pressed() {
+                _ = self.duck_bill.set_high();
+            } else {
+                _ = self.duck_bill.set_low();
             }
-            if mappings.wing.is_now_pressed() {
-                _ = self.wing.toggle();
+
+            if mappings.wing.is_pressed() {
+                _ = self.wing.set_low();
+            } else if self.lift.level().is_ok_and(|level| level.is_high()) {
+                _ = self.wing.set_high();
+            } else {
+                _ = self.wing.set_low();
             }
+
             if mappings.match_load.is_now_pressed() {
                 _ = self.match_loader.toggle();
             }
 
-            info!("Drivetrain: {}", self.drivetrain.pose());
+            if mappings.enable_color.is_now_pressed() {
+                let mut setting  = self.settings.borrow_mut();
+                setting.enable_sort = match setting.enable_sort {
+                    DoorCommands::ForceOff => DoorCommands::On,
+                    _ => DoorCommands::ForceOff,
+                }
+            }
+
+            if mappings.swap_color.is_now_pressed() {
+                let mut setting  = self.settings.borrow_mut();
+                setting.color = !setting.color;
+            }
+
+            if mappings.brake.is_now_pressed() {
+                _ = self.brake.toggle();
+            }
+            
+            if self.settings.borrow().test_auton {
+                self.autonomous().await;
+                self.settings.borrow_mut().test_auton = false;
+            }
+            
+            // info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
     }
-}
 
+}
 #[vexide::main(banner(theme = STOUT_ROBOT))]
 async fn main(peripherals: Peripherals) {
     Logger.init(LevelFilter::Trace).unwrap();
 
     let adi_expander = AdiExpander::new(peripherals.port_3);
 
+    let mut color_sort = OpticalSensor::new(peripherals.port_17);
+    _ = color_sort.set_led_brightness(1.0);
+    _ = color_sort.set_integration_time(Duration::from_millis(10));
+
     let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_9),
-        InertialSensor::new(peripherals.port_10),
+        InertialSensor::new(peripherals.port_19),
+        InertialSensor::new(peripherals.port_18),
     ]);
 
     imu.calibrate().await;
 
-    let starting_position = Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO);
+    let starting_position = Rc::new(RefCell::new(Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO)));
 
-    let mut color_sort = OpticalSensor::new(peripherals.port_4);
-    _ = color_sort.set_led_brightness(1.0);
-    _ = color_sort.set_integration_time(Duration::from_millis(20));
-
-    let settings = Rc::new(RefCell::new(Settings {
+    let mut settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        enable_sort: true,
+        enable_sort: DoorCommands::ForceOff,
+        color_override: false,
     }));
+
+    let motor_controller = Some(MotorController::new(
+        Pid::new(0.025, 0.0, 0.01, 0.014),
+        0.83,
+        0.0167,
+        0.0,
+    ));
 
     let robot = Robot {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
                 ],
-                None,
+                motor_controller,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_4, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_2, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
                 ],
-                None,
+                motor_controller,
             ),
             Odometry::new(
-                starting_position,
+                starting_position.clone(),
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
@@ -160,18 +242,37 @@ async fn main(peripherals: Peripherals) {
             Length::new::<inch>(12.0),
         ),
         intake: Intake::new(
-            Motor::new(peripherals.port_1, Gearset::Blue, Direction::Reverse),
-            Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
             AdiDigitalOut::new(peripherals.adi_e),
             color_sort,
-            Duration::from_millis(100),
+            Duration::from_millis(80),
             settings.clone(),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_f),
         duck_bill: AdiDigitalOut::new(peripherals.adi_g),
         match_loader: AdiDigitalOut::new(adi_expander.adi_a),
         wing: AdiDigitalOut::new(peripherals.adi_h),
+        brake: AdiDigitalOut::new(adi_expander.adi_b),
+        pose: starting_position,
+        settings: settings.clone(),
     };
 
-    robot.compete().await;
+    spawn(async move {
+        robot.compete().await;
+    })
+    .detach();
+
+    start_ui(
+        peripherals.display,
+        vec![
+            "Select Auton",
+            "Rush Elims",
+            "Safety Skills",
+            "Rush Block",
+            "Four + Six",
+            "Skills",
+        ],
+        settings.clone(),
+    );
 }

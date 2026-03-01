@@ -18,3 +18,5 @@ atum = { workspace = true }
 vexide = { workspace = true }
 uom = { workspace = true }
 log = { workspace = true }
+
+futures-lite = "2"
