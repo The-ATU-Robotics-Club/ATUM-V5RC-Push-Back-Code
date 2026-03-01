@@ -1,11 +1,13 @@
 use std::ops::{Not, Range};
 
+use crate::subsystems::intake::DoorCommands;
+
 #[derive(Clone, Copy)]
 pub struct Settings {
     pub color: Color,
     pub index: usize,
     pub test_auton: bool,
-    pub enable_sort: bool,
+    pub enable_sort: DoorCommands,
     pub color_override: bool,
 }
 
@@ -16,8 +18,8 @@ pub enum Color {
 }
 
 impl Color {
-    pub const RED_HUE: Range<f64> = 20.0..55.0;
-    pub const BLUE_HUE: Range<f64> = 70.0..275.0;
+    pub const RED_HUE: Range<f64> = 0.0..55.0;
+    pub const BLUE_HUE: Range<f64> = 70.0..300.0;
 
     pub fn hue_range(&self) -> Range<f64> {
         match self {

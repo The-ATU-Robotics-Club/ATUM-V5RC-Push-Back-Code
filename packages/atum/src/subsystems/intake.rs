@@ -9,6 +9,15 @@ use vexide::{
 
 use crate::settings::Settings;
 
+#[derive(Clone, Copy)]
+pub enum DoorCommands {
+    On,
+    Off,
+    ForceOff,
+    Open,  // for autonomous
+    Close, //    ^^^
+}
+
 pub struct Intake {
     voltage: Rc<RefCell<f64>>,
     _task: Task<()>,
@@ -29,40 +38,45 @@ impl Intake {
             voltage: voltage.clone(),
             _task: spawn(async move {
                 let mut ball_timer = Duration::ZERO;
-                let mut balls_collected = 0;
+                // let mut balls_collected = 0;
 
                 loop {
                     let voltage = *voltage.borrow();
-                    let settings = *settings.borrow();
+                    let color_settings = *settings.borrow();
 
                     _ = bottom.set_voltage(voltage);
                     _ = top.set_voltage(voltage);
 
-                    // ADD THIS LATER
-                    // if balls_collected < u64::MAX {
-                    //     _ = top.set_voltage(voltage);
-                    // } else {
-                    //     _ = top.set_voltage(0.0);
-                    // }
+                    settings.borrow_mut().enable_sort = match color_settings.enable_sort {
+                        DoorCommands::Open => {
+                            _ = door.set_high();
+                            DoorCommands::On
+                        }
+                        DoorCommands::Close => {
+                            _ = door.set_low();
+                            DoorCommands::On
+                        }
+                        _ => color_settings.enable_sort,
+                    };
 
-                    if settings.color_override {
+                    if color_settings.color_override {
                         _ = door.toggle();
                     }
-                    info!("Color Sort Proximity: {}", color_sort.proximity().unwrap_or_default());
 
-                    if settings.enable_sort {
-                        let alliance = settings.color.hue_range();
-                        let opposing = (!settings.color).hue_range(); 
+                    if matches!(color_settings.enable_sort, DoorCommands::On) {
+                        let alliance = color_settings.color.hue_range();
+                        let opposing = (!color_settings.color).hue_range();
 
                         let hue = color_sort.hue().unwrap_or_default();
                         let proximity = color_sort.proximity().unwrap_or_default();
-                        
+
                         if proximity > 0.3 {
+                            info!("hue: {hue}");
                             if alliance.contains(&hue) {
                                 info!("alliance: {}", proximity);
                                 sleep(delay).await;
                                 _ = door.set_low();
-                                balls_collected += 1;
+                                // balls_collected += 1;
                             } else if opposing.contains(&hue) {
                                 info!("opposing: {}", proximity);
                                 _ = door.set_high();
