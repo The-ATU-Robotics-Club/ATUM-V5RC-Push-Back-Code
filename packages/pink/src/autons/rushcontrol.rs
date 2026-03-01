@@ -3,7 +3,7 @@ use std::time::Duration;
 use atum::{
     controllers::pid::Pid,
     localization::{pose::Pose, vec2::Vec2},
-    motion::{linear::Linear, move_to::MoveTo, swing::Swing, turn::Turn},
+    motion::{linear::Linear, move_to::MoveTo, swing::Swing, turn::Turn}, subsystems::intake::DoorCommands,
 };
 use futures_lite::future::zip;
 use uom::{
@@ -20,9 +20,7 @@ use vexide::prelude::{Motor, sleep};
 
 use crate::{
     Robot,
-    autons::{
-        ANGULAR_PID, LINEAR_PID, RED_RIGHT_GOAL, RED_RIGHT_LOADER, SETTLE_ANG_VEL, vec2_length,
-    },
+    autons::{ANGULAR_PID, LINEAR_PID, RED_RIGHT_GOAL, RED_RIGHT_LOADER, vec2_length},
 };
 
 impl Robot {
@@ -48,13 +46,20 @@ impl Robot {
             Angle::ZERO,
         ));
 
+        self.settings.borrow_mut().enable_sort = DoorCommands::Open;
+
         // Drive to the match loader
-        linear.drive_distance(dt, Length::new::<inch>(22.0)).await;
+        linear
+            .timeout(Duration::from_millis(1000))
+            .drive_distance(dt, Length::new::<inch>(23.0))
+            .await;
+
+        self.settings.borrow_mut().enable_sort = DoorCommands::Close;
 
         turn.timeout(Duration::from_millis(1000))
             .settle_velocity(AngularVelocity::new::<degree_per_second>(10.0))
             // .turn_to(dt, Angle::new::<degree>(-90.0))
-            .turn_to_point(dt, vec2_length(RED_RIGHT_LOADER))
+            .turn_to_point(dt, vec2_length(RED_RIGHT_LOADER), false)
             .await;
 
         // Grab balls from match loader
@@ -65,21 +70,21 @@ impl Robot {
             .timeout(Duration::from_millis(7500))
             .speed(0.3)
             // .drive_to_point(&mut self.drivetrain, vec2_length(RED_RIGHT_LOADER))
-            .drive_distance(dt, Length::new::<inch>(12.0))
+            .drive_distance(dt, Length::new::<inch>(13.0))
             .await;
 
         // Drive to goal
-        linear.drive_distance(dt, Length::new::<inch>(-5.0)).await;
+        linear.drive_distance(dt, Length::new::<inch>(-7.5)).await;
         self.intake.set_voltage(0.0);
         _ = self.match_loader.set_low();
         sleep(Duration::from_millis(500)).await; // wait for balls to settle in robot
         _ = self.lift.set_high();
         _ = self.wing.set_high();
-        self.settings.borrow_mut().enable_sort = false;
+        self.settings.borrow_mut().enable_sort = DoorCommands::Off;
         turn.settle_velocity(AngularVelocity::new::<degree_per_second>(10.0))
             .timeout(Duration::from_millis(1000))
             // .turn_to(dt, Angle::new::<degree>(90.0))
-            .turn_to_point(dt, vec2_length(RED_RIGHT_GOAL))
+            .turn_to_point(dt, vec2_length(RED_RIGHT_GOAL), false)
             .await;
 
         // Score on goal
@@ -87,7 +92,6 @@ impl Robot {
         zip(
             async {
                 move_to
-                    .speed(0.25)
                     .timeout(Duration::from_millis(5000))
                     .move_to_point(dt, vec2_length(RED_RIGHT_GOAL))
                     .await;
@@ -109,13 +113,16 @@ impl Robot {
 
         // Back up and shove balls into goal
         _ = self.duck_bill.set_low();
-        linear.timeout(Duration::from_millis(1000)).drive_distance(dt, Length::new::<inch>(-5.0)).await;
+        linear
+            .timeout(Duration::from_millis(1000))
+            .drive_distance(dt, Length::new::<inch>(-5.0))
+            .await;
         swing
             .timeout(Duration::from_millis(750))
             .swing_to(dt, Angle::ZERO, Length::new::<inch>(5.0))
             .await;
 
-        linear.drive_distance(dt, Length::new::<inch>(-6.5)).await;
+        linear.timeout(Duration::from_millis(1000)).drive_distance(dt, Length::new::<inch>(-6.5)).await;
         turn.timeout(Duration::from_millis(1500))
             .settle_velocity(AngularVelocity::new::<degree_per_second>(10.0))
             // .chain(5.0)
@@ -123,11 +130,11 @@ impl Robot {
             .await;
         _ = self.wing.set_low();
 
-        let target = Vec2::new(
-            dt.pose().x,
-            dt.pose().y + Length::new::<inch>(30.0),
-        );
-        move_to.move_to_point(dt, target).await;
+        let target = vec2_length(Vec2::new(108.0, 62.0));
+        move_to
+            .timeout(Duration::from_millis(1500))
+            .move_to_point(dt, target)
+            .await;
 
         _ = self.brake.set_high();
         sleep(Duration::from_millis(2500)).await;

@@ -17,9 +17,8 @@ use atum::{
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    motion::{linear::Linear, move_to::MoveTo, turn::Turn},
     settings::{Color, Settings},
-    subsystems::{drivetrain::Drivetrain, intake::Intake},
+    subsystems::{drivetrain::Drivetrain, intake::{DoorCommands, Intake}},
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
@@ -27,10 +26,8 @@ use uom::{
     ConstZero,
     si::{
         angle::degree,
-        angular_velocity::{AngularVelocity, degree_per_second},
-        f64::{Angle, Length, Velocity},
+        f64::{Angle, Length},
         length::{inch, millimeter},
-        velocity::inch_per_second,
     },
 };
 use vexide::prelude::*;
@@ -50,17 +47,12 @@ struct Robot {
 
 impl Compete for Robot {
     async fn autonomous(&mut self) {
-        println!("autnomous");
         let time = Instant::now();
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.elims().await,
-            2 => self.quals().await,
-            3 => self.rushcontrol().await,
-            4 => self.rushelims().await,
-            5 => self.safequals().await,
-            6 => self.skills().await,
+            1 => self.rushcontrol().await,
+            2 => self.skills().await,
             _ => (),
         }
 
@@ -82,8 +74,8 @@ impl Compete for Robot {
                 wing: state.button_l2,
                 match_load: state.button_right,
                 brake: state.button_b,
-                swap_color: state.button_power,
-                enable_color: state.button_power,
+                swap_color: state.button_left,
+                enable_color: state.button_x,
                 back_door: state.button_a,
             };
 
@@ -100,11 +92,17 @@ impl Compete for Robot {
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
                 let mut settings = self.settings.borrow_mut();
-                settings.enable_sort = !settings.enable_sort;
+                settings.enable_sort = match settings.enable_sort {
+                    DoorCommands::On => DoorCommands::Off,
+                    DoorCommands::Off => DoorCommands::On,
+                    _ => settings.enable_sort,
+                };
             }
 
-            if mappings.duck_bill.is_now_pressed() {
-                _ = self.duck_bill.toggle();
+            if mappings.duck_bill.is_pressed() {
+                _ = self.duck_bill.set_high();
+            } else {
+                _ = self.duck_bill.set_low();
             }
 
             if mappings.match_load.is_now_pressed() {
@@ -127,7 +125,15 @@ impl Compete for Robot {
 
             if mappings.enable_color.is_now_pressed() {
                 let mut settings = self.settings.borrow_mut();
-                settings.enable_sort = !settings.enable_sort;
+                settings.enable_sort = match settings.enable_sort {
+                    DoorCommands::ForceOff => DoorCommands::On,
+                    _ => DoorCommands::ForceOff,
+                };
+            }
+
+            if mappings.swap_color.is_now_pressed() {
+                let mut settings = self.settings.borrow_mut();
+                settings.color = !settings.color;
             }
 
             self.settings.borrow_mut().color_override = mappings.back_door.is_now_pressed();
@@ -147,25 +153,9 @@ impl Compete for Robot {
                     ));
                     // self.drivetrain.set_pose(Pose::default());
                 }
-
-                if state.button_right.is_pressed() {
-                    let mut move_to = MoveTo::new(
-                        Pid::new(30.0, 2.0, 6.0, 12.0),
-                        Pid::new(20.0, 0.0, 0.0, 0.0),
-                        Length::new::<inch>(0.5),
-                    );
-
-                    move_to
-                        .timeout(Duration::from_millis(3000))
-                        .move_to_point(
-                            &mut self.drivetrain,
-                            Vec2::new(Length::new::<inch>(60.0), Length::new::<inch>(-4.0)),
-                        )
-                        .await;
-                }
             }
 
-            // info!("Drivetrain: {}", self.drivetrain.pose());
+            info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
@@ -182,19 +172,16 @@ async fn main(peripherals: Peripherals) {
 
     let adi_expander = AdiExpander::new(peripherals.port_2);
 
+    let mut color_sort = OpticalSensor::new(peripherals.port_3);
+    _ = color_sort.set_led_brightness(1.0);
+    _ = color_sort.set_integration_time(Duration::from_millis(10));
+
     // TODO - make imu calibrate at the same time
     let mut imu = Imu::new(vec![
         InertialSensor::new(peripherals.port_14),
         InertialSensor::new(peripherals.port_15),
     ]);
-
-    let mut color_sort = OpticalSensor::new(peripherals.port_3);
     imu.calibrate().await;
-
-    // figure out why first command does not apply
-    _ = color_sort.set_led_brightness(1.0);
-    _ = color_sort.set_integration_time(Duration::from_millis(20));
-    _ = color_sort.set_led_brightness(1.0);
 
     let starting_position = Rc::new(RefCell::new(Pose::default()));
 
@@ -202,7 +189,7 @@ async fn main(peripherals: Peripherals) {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        enable_sort: true,
+        enable_sort: DoorCommands::On,
         color_override: false,
     }));
 
@@ -270,7 +257,7 @@ async fn main(peripherals: Peripherals) {
             Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
             AdiDigitalOut::new(peripherals.adi_f),
             color_sort,
-            Duration::from_millis(0),
+            Duration::from_millis(85),
             settings.clone(),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_g),
@@ -291,11 +278,8 @@ async fn main(peripherals: Peripherals) {
         peripherals.display,
         vec![
             "Select Auton",
-            "elims",
-            "quals",
             "rush control",
-            "rush elims",
-            "safe quals",
+            "skills",
         ],
         settings.clone(),
     );
