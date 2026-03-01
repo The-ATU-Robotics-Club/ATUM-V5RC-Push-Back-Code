@@ -33,23 +33,17 @@ impl Turn {
             timeout: None,
             speed: Motor::V5_MAX_VOLTAGE * 0.6,
             tolerance_scale: 1.0,
-
         }
     }
 
-    pub async fn turn_to_point(
-        &mut self,
-        dt: &mut Drivetrain,
-        point: Vec2<Length>,
-        reverse: bool,
-    ) {
+    pub async fn turn_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<Length>, reverse: bool) {
         let pose = dt.pose();
         let mut target = angular_distance(pose, point);
 
         if reverse {
             target += Angle::HALF_TURN;
         }
-        
+
         self.turn_to(dt, target).await;
     }
 
@@ -67,7 +61,10 @@ impl Turn {
 
             let heading = dt.pose().h;
             let error = wrap(target - heading);
-            let output = self.pid.output(error.get::<radian>(), elapsed_time).clamp(-self.speed, self.speed);
+            let output = self
+                .pid
+                .output(error.get::<radian>(), elapsed_time)
+                .clamp(-self.speed, self.speed);
             let omega = dt.pose().omega;
 
             debug!(
@@ -86,10 +83,6 @@ impl Turn {
                     time.as_millis()
                 );
                 break;
-            }
-
-            if error.abs() < self.tolerance {
-                debug!("time: {}", time.as_millis());
             }
 
             if self.timeout.is_some_and(|timeout| time > timeout) {

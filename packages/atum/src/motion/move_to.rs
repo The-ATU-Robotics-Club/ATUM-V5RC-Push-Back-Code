@@ -19,8 +19,8 @@ pub struct MoveTo {
     tolerance: Length,
     velocity_tolerance: Option<Velocity>,
     timeout: Option<Duration>,
+    speed: f64,
     tolerance_scale: f64,
-    speed: f64
 }
 
 impl MoveTo {
@@ -31,8 +31,8 @@ impl MoveTo {
             tolerance,
             velocity_tolerance: None,
             timeout: None,
-            tolerance_scale: 1.0,
             speed: 1.0,
+            tolerance_scale: 1.0,
         }
     }
 
@@ -100,6 +100,7 @@ impl MoveTo {
 
         self.timeout = None;
         self.tolerance_scale = 1.0;
+        self.speed = 1.0;
         self.velocity_tolerance = None;
 
         dt.set_voltages(0.0, 0.0);

@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use log::{info};
+use log::info;
 use uom::{
     ConstZero,
     si::{
@@ -34,13 +34,18 @@ impl Linear {
         }
     }
 
-    pub async fn drive_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<Length>, reverse:bool) {
+    pub async fn drive_to_point(
+        &mut self,
+        dt: &mut Drivetrain,
+        point: Vec2<Length>,
+        reverse: bool,
+    ) {
         let point = Vec2::new(point.x.get::<meter>(), point.y.get::<meter>());
         let pose = Vec2::new(dt.pose().x.get::<meter>(), dt.pose().y.get::<meter>());
         let mut target_distance = Length::new::<meter>((point - pose).length());
-        
+
         if reverse {
-            target_distance*= -1.0;
+            target_distance *= -1.0;
         }
 
         self.drive_distance(dt, target_distance).await;
@@ -84,7 +89,9 @@ impl Linear {
 
     fn is_settled(&mut self, error: Length, velocity: Velocity, time: Duration) -> bool {
         let within_tolerance = error.abs() < self.tolerance * self.tolerance_scale;
-        let within_velocity = self.velocity_tolerance.is_none_or(|tolerance| velocity.abs() < tolerance);
+        let within_velocity = self
+            .velocity_tolerance
+            .is_none_or(|tolerance| velocity.abs() < tolerance);
         let timed_out = self.timeout.is_some_and(|timeout| time > timeout);
 
         (within_tolerance && within_velocity) || timed_out
