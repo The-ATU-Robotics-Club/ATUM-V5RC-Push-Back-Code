@@ -44,8 +44,7 @@ impl Robot {
         self.settings.borrow_mut().enable_sort = DoorCommands::Close;
 
         turn.timeout(Duration::from_millis(1000))
-            // convert to radians / second
-            .settle_velocity(10.0)
+            .settle_velocity(10.0_f64.to_radians())
             .turn_to_point(dt, RED_RIGHT_LOADER, false)
             .await;
 
@@ -70,8 +69,7 @@ impl Robot {
         _ = self.lift.set_high();
         _ = self.wing.set_high();
         self.settings.borrow_mut().enable_sort = DoorCommands::Off;
-        // convert to radians / second
-        turn.settle_velocity(10.0)
+        turn.settle_velocity(10.0_f64.to_radians())
             .timeout(Duration::from_millis(1000))
             // .turn_to(dt, Angle::new::<degree>(90.0))
             .turn_to_point(dt, RED_RIGHT_GOAL, false)
@@ -114,8 +112,7 @@ impl Robot {
 
         linear.drive_distance(dt, -7.0).await;
         turn.timeout(Duration::from_millis(1500))
-            // convert to radians / second
-            .settle_velocity(10.0)
+            .settle_velocity(10.0_f64.to_radians())
             .turn_to(dt, Angle::from_degrees(90.0))
             .await;
         _ = self.wing.set_low();
@@ -163,8 +160,7 @@ impl Robot {
         _ = self.lift.set_high();
         _ = self.wing.set_high();
         self.settings.borrow_mut().enable_sort = DoorCommands::Off;
-        // convet to radians / second
-        turn.settle_velocity(10.0)
+        turn.settle_velocity(10.0_f64.to_radians())
             .timeout(Duration::from_millis(1000))
             .turn_to_point(dt, BLUE_LEFT_GOAL, false)
             .await;

@@ -78,8 +78,7 @@ impl Robot {
         _ = self.duck_bill.set_low();
         self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
         turn.timeout(Duration::from_millis(2000))
-            // change to radians / second
-            .settle_velocity(5.0)
+            .settle_velocity(5.0_f64.to_radians())
             .turn_to_point(dt, RED_LEFT_LOADER, false)
             .await;
         _ = self.match_loader.set_high();
@@ -101,7 +100,7 @@ impl Robot {
         _ = self.lift.set_high();
         _ = self.wing.set_high();
 
-        turn.settle_velocity(10.0)
+        turn.settle_velocity(10.0_f64.to_radians())
             .timeout(Duration::from_millis(1000))
             .turn_to_point(dt, RED_LEFT_GOAL, false)
             .await;
