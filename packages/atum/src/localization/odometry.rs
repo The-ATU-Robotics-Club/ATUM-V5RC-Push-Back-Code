@@ -4,7 +4,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use uom::si::{f64::Time, time::second};
 use vexide::{
     task::{Task, spawn},
     time::sleep,
@@ -54,8 +53,8 @@ impl Odometry {
                     let ds2_rot = dx_rot2 * phi2.cos() + dy_rot2 * phi2.sin();
 
                     // corrected wheel distances (translation only)
-                    let ds1_corr = ds1 - ds1_rot;
-                    let ds2_corr = ds2 - ds2_rot;
+                    let ds1_corr = ds1 - ds1_rot.as_radians();
+                    let ds2_corr = ds2 - ds2_rot.as_radians();
 
                     let det = (phi2 - phi1).sin();
 
@@ -70,9 +69,9 @@ impl Odometry {
                             x: prev.x + (heading_avg.cos() * dx - heading_avg.sin() * dy),
                             y: prev.y + (heading_avg.sin() * dx + heading_avg.cos() * dy),
                             h: prev.h + dh,
-                            vf: dx / Time::new::<second>(dt),
-                            vs: dy / Time::new::<second>(dt),
-                            omega: (dh / Time::new::<second>(dt)).into(),
+                            vf: dx / dt,
+                            vs: dy / dt,
+                            omega: dh.as_radians() / dt,
                         }
                     });
                     prev_time = Instant::now();

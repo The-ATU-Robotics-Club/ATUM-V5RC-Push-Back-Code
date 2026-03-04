@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use vexide::prelude::Motor;
 
@@ -94,9 +94,7 @@ impl MotorController {
         let error = target_rpm - actual_rpm;
 
         let ff = if target_rpm.abs() > 1e-6 {
-            self.ks * target_rpm.signum()
-                + self.kv * target_rpm
-                + self.ka * acceleration
+            self.ks * target_rpm.signum() + self.kv * target_rpm + self.ka * acceleration
         } else {
             0.0
         };

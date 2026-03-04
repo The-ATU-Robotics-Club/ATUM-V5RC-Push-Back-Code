@@ -5,6 +5,7 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
+
 use atum::{
     backend::start_ui,
     controllers::pid::Pid,
@@ -16,21 +17,15 @@ use atum::{
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    motion::move_to::MoveTo,
-    settings::{self, Color, Settings},
-    subsystems::{drivetrain::Drivetrain, intake::{DoorCommands, Intake}},
+    settings::{Color, Settings},
+    subsystems::{
+        drivetrain::Drivetrain,
+        intake::{DoorCommands, Intake},
+    },
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
-use uom::{
-    ConstZero,
-    si::{
-        angle::degree,
-        f64::{Angle, Length},
-        length::{inch, millimeter},
-    },
-};
-use vexide::prelude::*;
+use vexide::{math::Angle, prelude::*};
 
 struct Robot {
     controller: Controller,
@@ -52,13 +47,9 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
         self.settings.borrow_mut().enable_sort = DoorCommands::On;
 
-
         match route {
             1 => self.rushelims().await,
-            2 => self.safetyskills().await,
-            3 => self.rushblock().await,
-            4 => self.foursix().await,
-            5 => self.skills().await,
+            2 => self.skills().await,
             _ => (),
         }
 
@@ -68,7 +59,6 @@ impl Compete for Robot {
     async fn driver(&mut self) {
         // self.rushelims().await;
         loop {
-
             let state = self.controller.state().unwrap_or_default();
             let mappings = ControllerMappings {
                 drive_mode: DriveMode::Arcade {
@@ -85,7 +75,6 @@ impl Compete for Robot {
                 swap_color: state.button_left,
                 enable_color: state.button_x,
                 back_door: state.button_a,
-                
             };
 
             self.drivetrain.drive(&mappings.drive_mode);
@@ -100,11 +89,11 @@ impl Compete for Robot {
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
-                let mut setting  = self.settings.borrow_mut();
+                let mut setting = self.settings.borrow_mut();
                 setting.enable_sort = match setting.enable_sort {
                     DoorCommands::On => DoorCommands::Off,
                     DoorCommands::Off => DoorCommands::On,
-                    _ => setting.enable_sort // keep the command
+                    _ => setting.enable_sort, // keep the command
                 }
             }
 
@@ -127,7 +116,7 @@ impl Compete for Robot {
             }
 
             if mappings.enable_color.is_now_pressed() {
-                let mut setting  = self.settings.borrow_mut();
+                let mut setting = self.settings.borrow_mut();
                 setting.enable_sort = match setting.enable_sort {
                     DoorCommands::ForceOff => DoorCommands::On,
                     _ => DoorCommands::ForceOff,
@@ -135,25 +124,24 @@ impl Compete for Robot {
             }
 
             if mappings.swap_color.is_now_pressed() {
-                let mut setting  = self.settings.borrow_mut();
+                let mut setting = self.settings.borrow_mut();
                 setting.color = !setting.color;
             }
 
             if mappings.brake.is_now_pressed() {
                 _ = self.brake.toggle();
             }
-            
+
             if self.settings.borrow().test_auton {
                 self.autonomous().await;
                 self.settings.borrow_mut().test_auton = false;
             }
-            
+
             // info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
     }
-
 }
 #[vexide::main(banner(theme = STOUT_ROBOT))]
 async fn main(peripherals: Peripherals) {
@@ -172,9 +160,9 @@ async fn main(peripherals: Peripherals) {
 
     imu.calibrate().await;
 
-    let starting_position = Rc::new(RefCell::new(Pose::new(Length::ZERO, Length::ZERO, Angle::ZERO)));
+    let starting_position = Rc::new(RefCell::new(Pose::default()));
 
-    let mut settings = Rc::new(RefCell::new(Settings {
+    let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
         index: 0,
         test_auton: false,
@@ -217,29 +205,21 @@ async fn main(peripherals: Peripherals) {
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
-                    Direction::Forward,
-                    Length::new::<millimeter>(60.0),
-                    Vec2::new(
-                        Length::new::<inch>(-5.93824103),
-                        Length::new::<inch>(-1.00288550),
-                    ),
-                    Angle::new::<degree>(45.0),
+                    2.362204724,
+                    Vec2::new(-5.93824103, 1.00288550),
+                    Angle::from_degrees(45.0),
                 ),
                 TrackingWheel::new(
                     peripherals.adi_c,
                     peripherals.adi_d,
-                    Direction::Forward,
-                    Length::new::<millimeter>(60.0),
-                    Vec2::new(
-                        Length::new::<inch>(-5.93824103),
-                        Length::new::<inch>(1.00288550),
-                    ),
-                    Angle::new::<degree>(-45.0),
+                    2.362204724,
+                    Vec2::new(-5.93824103, -1.00288550),
+                    Angle::from_degrees(-45.0),
                 ),
                 imu,
             ),
-            Length::new::<inch>(2.5),
-            Length::new::<inch>(12.0),
+            2.5,
+            12.0,
         ),
         intake: Intake::new(
             Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
@@ -265,14 +245,7 @@ async fn main(peripherals: Peripherals) {
 
     start_ui(
         peripherals.display,
-        vec![
-            "Select Auton",
-            "Rush Elims",
-            "Safety Skills",
-            "Rush Block",
-            "Four + Six",
-            "Skills",
-        ],
+        vec!["Select Auton", "Rush Elims", "Skills"],
         settings.clone(),
     );
 }

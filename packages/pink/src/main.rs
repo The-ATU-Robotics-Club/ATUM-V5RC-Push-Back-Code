@@ -18,19 +18,14 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     settings::{Color, Settings},
-    subsystems::{drivetrain::Drivetrain, intake::{DoorCommands, Intake}},
+    subsystems::{
+        drivetrain::Drivetrain,
+        intake::{DoorCommands, Intake},
+    },
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
-use uom::{
-    ConstZero,
-    si::{
-        angle::degree,
-        f64::{Angle, Length},
-        length::{inch, millimeter},
-    },
-};
-use vexide::prelude::*;
+use vexide::{math::Angle, prelude::*};
 
 struct Robot {
     controller: Controller,
@@ -146,11 +141,7 @@ impl Compete for Robot {
 
             if state.button_x.is_pressed() {
                 if state.button_down.is_pressed() {
-                    self.drivetrain.set_pose(Pose::new(
-                        Length::new::<inch>(97.0),
-                        Length::new::<inch>(21.5),
-                        Angle::ZERO,
-                    ));
+                    self.drivetrain.set_pose(Pose::new(97.0, 21.5, Angle::ZERO));
                     // self.drivetrain.set_pose(Pose::default());
                 }
             }
@@ -228,29 +219,21 @@ async fn main(peripherals: Peripherals) {
                 TrackingWheel::new(
                     peripherals.adi_a,
                     peripherals.adi_b,
-                    Direction::Forward,
-                    Length::new::<millimeter>(60.0),
-                    Vec2::new(
-                        Length::new::<inch>(-5.93824103),
-                        Length::new::<inch>(1.00288550),
-                    ),
-                    Angle::new::<degree>(45.0),
+                    2.362204724,
+                    Vec2::new(-5.93824103, 1.00288550),
+                    Angle::from_degrees(45.0),
                 ),
                 TrackingWheel::new(
                     peripherals.adi_c,
                     peripherals.adi_d,
-                    Direction::Forward,
-                    Length::new::<millimeter>(60.0),
-                    Vec2::new(
-                        Length::new::<inch>(-5.93824103),
-                        Length::new::<inch>(-1.00288550),
-                    ),
-                    Angle::new::<degree>(-45.0),
+                    2.362204724,
+                    Vec2::new(-5.93824103, -1.00288550),
+                    Angle::from_degrees(-45.0),
                 ),
                 imu,
             ),
-            Length::new::<inch>(2.5),
-            Length::new::<inch>(12.0),
+            2.5,
+            12.0,
         ),
         intake: Intake::new(
             Motor::new(peripherals.port_4, Gearset::Blue, Direction::Forward),
@@ -276,11 +259,7 @@ async fn main(peripherals: Peripherals) {
 
     start_ui(
         peripherals.display,
-        vec![
-            "Select Auton",
-            "rush control",
-            "skills",
-        ],
+        vec!["Select Auton", "rush control", "skills"],
         settings.clone(),
     );
 }

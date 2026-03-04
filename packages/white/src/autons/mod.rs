@@ -1,15 +1,10 @@
-pub mod foursix;
 pub mod rushelims;
-pub mod rushblock;
-pub mod safequals;
-
 pub mod skills;
 
 use atum::{controllers::pid::Pid, localization::vec2::Vec2};
-use uom::si::{f64::Length, length::inch};
 
 const LINEAR_PID: Pid = Pid::new(46.0, 0.0, 3.95, 12.0);
-const ANGULAR_PID: Pid = Pid::new(21.0, 0.8*0.0, 1.45, 45.0);
+const ANGULAR_PID: Pid = Pid::new(21.0, 0.8 * 0.0, 1.45, 45.0);
 const _SETTLE_LIN_VEL: f64 = 2.5; // INCHES
 const SETTLE_ANG_VEL: f64 = 15.0; // DEGREES
 
@@ -26,16 +21,4 @@ const BLUE_RIGHT_GOAL: Vec2<f64> = mirror_coordinate(RED_RIGHT_GOAL);
 #[inline]
 const fn mirror_coordinate(coordinate: Vec2<f64>) -> Vec2<f64> {
     Vec2::new(144.0 - coordinate.x, 144.0 - coordinate.y)
-}
-
-// UOM doesn't have const initialization so this function reduces the boilerplate required to
-// convert the locations into units
-//
-// UOM will be removed after the first competition due to complications with writing clean code
-#[inline]
-fn vec2_length(coordinate: Vec2<f64>) -> Vec2<Length> {
-    Vec2::new(
-        Length::new::<inch>(coordinate.x),
-        Length::new::<inch>(coordinate.y),
-    )
 }

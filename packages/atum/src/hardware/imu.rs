@@ -1,8 +1,7 @@
 use std::f64::consts::TAU;
 
 use log::{error, info};
-use uom::si::{angle::radian, f64::Angle};
-use vexide::{math::Angle as VAngle, prelude::InertialSensor};
+use vexide::{math::Angle, prelude::InertialSensor};
 
 use super::average;
 
@@ -26,7 +25,7 @@ impl Imu {
 
     pub fn set_heading(&mut self, heading: Angle) {
         for imu in self.imus.iter_mut() {
-            _ = imu.set_rotation(VAngle::from_radians(heading.get::<radian>()));
+            _ = imu.set_rotation(heading);
         }
     }
 
@@ -38,7 +37,7 @@ impl Imu {
             }
         }
 
-        Angle::new::<radian>(average(angles))
+        Angle::from_radians(average(angles))
     }
 
     pub fn heading(&self) -> Angle {
@@ -49,6 +48,6 @@ impl Imu {
             }
         }
 
-        Angle::new::<radian>(average(angles).rem_euclid(TAU))
+        Angle::from_radians(average(angles)).wrapped_full()
     }
 }

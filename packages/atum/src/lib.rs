@@ -9,4 +9,3 @@ pub mod logger;
 pub mod mappings;
 pub mod settings;
 pub mod theme;
-pub mod utils;

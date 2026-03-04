@@ -12,15 +12,13 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     settings::{Color, Settings},
-    subsystems::{drivetrain::Drivetrain, intake::Intake},
+    subsystems::{
+        drivetrain::Drivetrain,
+        intake::{DoorCommands, Intake},
+    },
 };
 use log::{LevelFilter, info};
-use uom::si::{
-    angle::degree,
-    f64::{Angle, Length},
-    length::{inch, millimeter},
-};
-use vexide::prelude::*;
+use vexide::{math::Angle, prelude::*};
 
 struct Robot {
     controller: Controller,
@@ -89,7 +87,7 @@ async fn main(peripherals: Peripherals) {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        enable_sort: false,
+        enable_sort: DoorCommands::Off,
         color_override: false,
     }));
 
@@ -129,23 +127,21 @@ async fn main(peripherals: Peripherals) {
                 TrackingWheel::new(
                     peripherals.adi_h,
                     peripherals.adi_g,
-                    Direction::Forward,
-                    Length::new::<millimeter>(64.8),
-                    Vec2::new(Length::new::<inch>(0.086), Length::new::<inch>(0.0)),
-                    Angle::new::<degree>(90.0),
+                    2.551181102,
+                    Vec2::new(0.086, 0.0),
+                    Angle::QUARTER_TURN,
                 ),
                 TrackingWheel::new(
                     peripherals.adi_e,
                     peripherals.adi_f,
-                    Direction::Forward,
-                    Length::new::<millimeter>(64.8),
-                    Vec2::new(Length::new::<inch>(0.0), Length::new::<inch>(-1.685)),
-                    Angle::new::<degree>(0.0),
+                    2.551181102,
+                    Vec2::new(0.0, -1.685),
+                    Angle::ZERO,
                 ),
                 imu,
             ),
-            Length::new::<inch>(2.5),
-            Length::new::<inch>(12.0),
+            2.5,
+            12.0,
         ),
         intake: Intake::new(
             Motor::new(peripherals.port_1, Gearset::Blue, Direction::Reverse),

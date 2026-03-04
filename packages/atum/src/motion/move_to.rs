@@ -1,30 +1,25 @@
 use std::time::{Duration, Instant};
 
 use log::{debug, info, warn};
-use uom::si::{
-    angle::radian,
-    f64::{Angle, Length, Velocity},
-    length::meter,
-};
-use vexide::{prelude::Motor, time::sleep};
+use vexide::{math::Angle, prelude::Motor, time::sleep};
 
 use crate::{
     controllers::pid::Pid, localization::vec2::Vec2, motion::desaturate,
-    subsystems::drivetrain::Drivetrain, utils::wrap,
+    subsystems::drivetrain::Drivetrain,
 };
 
 pub struct MoveTo {
     linear: Pid,
     sideways: Pid,
-    tolerance: Length,
-    velocity_tolerance: Option<Velocity>,
+    tolerance: f64,
+    velocity_tolerance: Option<f64>,
     timeout: Option<Duration>,
     speed: f64,
     tolerance_scale: f64,
 }
 
 impl MoveTo {
-    pub fn new(linear: Pid, sideways: Pid, tolerance: Length) -> Self {
+    pub fn new(linear: Pid, sideways: Pid, tolerance: f64) -> Self {
         Self {
             linear,
             sideways,
@@ -36,7 +31,7 @@ impl MoveTo {
         }
     }
 
-    pub async fn move_to_point(&mut self, dt: &mut Drivetrain, target: Vec2<Length>) {
+    pub async fn move_to_point(&mut self, dt: &mut Drivetrain, target: Vec2<f64>) {
         let start_time = Instant::now();
         let mut prev_time = Instant::now();
         debug!("attempting to go to: {:?}", target);
@@ -49,14 +44,11 @@ impl MoveTo {
             let pose = dt.pose();
             let heading = pose.h;
 
-            let position_error = Vec2::new(
-                (target.x - pose.x).get::<meter>(),
-                (target.y - pose.y).get::<meter>(),
-            );
+            let position_error = Vec2::new(target.x - pose.x, target.y - pose.y);
             let mut distance = position_error.length();
-            let target_h = Angle::new::<radian>(position_error.angle());
+            let target_h = Angle::from_radians(position_error.angle());
 
-            if distance.abs() < self.tolerance.get::<meter>() * self.tolerance_scale
+            if distance.abs() < self.tolerance * self.tolerance_scale
                 && (self
                     .velocity_tolerance
                     .is_none_or(|tolerance| pose.vf.abs() < tolerance))
@@ -73,17 +65,16 @@ impl MoveTo {
                 break;
             }
 
-            let herror = wrap(target_h - heading);
-            let mut projected_cte = distance * herror.get::<radian>().sin();
+            let herror = (target_h - heading).wrapped_half();
+            let mut projected_cte = distance * herror.sin();
 
-            if herror.abs() > Angle::HALF_TURN / 2.0 {
+            if herror.abs() > Angle::QUARTER_TURN {
                 projected_cte *= -1.0;
                 distance *= -1.0;
             }
 
             let angular_output = self.sideways.output(-projected_cte, elapsed_time);
-            let linear_output =
-                self.linear.output(distance, elapsed_time) * herror.get::<radian>().cos().abs();
+            let linear_output = self.linear.output(distance, elapsed_time) * herror.cos().abs();
 
             debug!("Position: ({})", pose);
 
@@ -121,7 +112,7 @@ impl MoveTo {
         self
     }
 
-    pub fn settle_velocity(&mut self, velocity: Velocity) -> &mut Self {
+    pub fn settle_velocity(&mut self, velocity: f64) -> &mut Self {
         self.velocity_tolerance = Some(velocity);
         self
     }

@@ -1,11 +1,5 @@
 use std::f64::consts::PI;
 
-use uom::si::{
-    angular_velocity::radian_per_second,
-    f64::{AngularVelocity, Length, Time, Velocity},
-    length::meter,
-    time::second,
-};
 use vexide::prelude::Motor;
 
 use crate::{
@@ -18,8 +12,8 @@ pub struct Drivetrain {
     pub left: MotorGroup,
     pub right: MotorGroup,
     odometry: Odometry,
-    wheel_circum: Length,
-    track: Length,
+    wheel_circum: f64,
+    track: f64,
 }
 
 impl Drivetrain {
@@ -27,8 +21,8 @@ impl Drivetrain {
         left: MotorGroup,
         right: MotorGroup,
         odometry: Odometry,
-        wheel_diameter: Length,
-        track: Length,
+        wheel_diameter: f64,
+        track: f64,
     ) -> Self {
         Self {
             left,
@@ -94,17 +88,17 @@ impl Drivetrain {
         [self.left.voltage(), self.right.voltage()]
     }
 
-    pub fn velocity(&self) -> Velocity {
+    pub fn velocity(&self) -> f64 {
         let rpm = (self.left.velocity() + self.right.velocity()) / 2.0;
-        (self.wheel_circum * rpm) / Time::new::<second>(60.0)
+        (self.wheel_circum * rpm) / 60.0
     }
 
-    pub fn angular_velocity(&self) -> AngularVelocity {
-        let vdiff = self.wheel_circum.get::<meter>()
+    pub fn angular_velocity(&self) -> f64 {
+        let vdiff = self.wheel_circum
             * (self.left.velocity() - self.right.velocity())
             / 60.0;
 
-        AngularVelocity::new::<radian_per_second>(vdiff / self.track.get::<meter>())
+        vdiff / self.track
     }
 
     pub fn pose(&self) -> Pose {
@@ -115,7 +109,7 @@ impl Drivetrain {
         self.odometry.set_pose(pose);
     }
 
-    pub fn track(&mut self) -> Length {
+    pub fn track(&mut self) -> f64 {
         self.track
     }
 }

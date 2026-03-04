@@ -1,21 +1,16 @@
 use std::time::{Duration, Instant};
 
 use log::{info, warn};
-use uom::si::{
-    angle::{degree, radian},
-    f64::{Angle, AngularVelocity, Length},
-    length::meter,
-};
-use vexide::{prelude::Gearset, time::sleep};
+use vexide::{math::Angle, prelude::Gearset, time::sleep};
 
 use crate::{
-    controllers::pid::Pid, motion::desaturate, subsystems::drivetrain::Drivetrain, utils::wrap,
+    controllers::pid::Pid, motion::desaturate, subsystems::drivetrain::Drivetrain,
 };
 
 pub struct Swing {
     pid: Pid,
     tolerance: Angle,
-    velocity_tolerance: Option<AngularVelocity>,
+    velocity_tolerance: Option<f64>,
     timeout: Option<Duration>,
 }
 
@@ -29,11 +24,10 @@ impl Swing {
         }
     }
 
-    pub async fn swing_to(&mut self, dt: &mut Drivetrain, target: Angle, radius: Length) {
+    pub async fn swing_to(&mut self, dt: &mut Drivetrain, target: Angle, radius: f64) {
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
-        let starting_error = wrap(target - dt.pose().h).abs();
         let length = dt.track();
 
         loop {
@@ -43,8 +37,8 @@ impl Swing {
             prev_time = Instant::now();
 
             let heading = dt.pose().h;
-            let error = wrap(target - heading);
-            let output = self.pid.output(error.get::<radian>(), elapsed_time);
+            let error = (target - heading).wrapped_half();
+            let output = self.pid.output(error.as_radians(), elapsed_time);
             let omega = dt.pose().omega;
 
             if error.abs() < self.tolerance
@@ -54,14 +48,14 @@ impl Swing {
             {
                 info!(
                     "Swing complete at: {} with {}ms",
-                    starting_error.get::<degree>(),
+                    target.as_degrees(),
                     time.as_millis()
                 );
                 break;
             }
 
             if self.timeout.is_some_and(|timeout| time > timeout) {
-                warn!("Swing interrupted at: {}", starting_error.get::<degree>());
+                warn!("Swing interrupted at: {}", target.as_degrees());
                 break;
             }
 
@@ -69,7 +63,7 @@ impl Swing {
             let right = output * (radius + length / 2.0);
 
             let [left, right] = desaturate(
-                [left.get::<meter>(), right.get::<meter>()],
+                [left, right],
                 Gearset::MAX_BLUE_RPM,
             );
 
@@ -82,7 +76,7 @@ impl Swing {
         dt.set_voltages(0.0, 0.0);
     }
 
-    pub fn settle_velocity(&mut self, velocity: AngularVelocity) -> &mut Self {
+    pub fn settle_velocity(&mut self, velocity: f64) -> &mut Self {
         self.velocity_tolerance = Some(velocity);
         self
     }

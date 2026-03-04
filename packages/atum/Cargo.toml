@@ -6,7 +6,6 @@ edition = "2024"
 [dependencies]
 vexide = { workspace = true }
 log = { workspace = true }
-uom = { workspace = true }
 
 bytemuck = { version = "1.23.2", features = ["derive"] }
 num-traits = "0.2.19"

@@ -1,24 +1,14 @@
 use std::time::{Duration, Instant};
 
-use log::{debug, info, warn};
-use uom::si::{
-    angle::{degree, radian},
-    angular_velocity::degree_per_second,
-    f64::{Angle, AngularVelocity, Length},
-};
-use vexide::{prelude::Motor, time::sleep};
+use log::{debug, info};
+use vexide::{math::Angle, prelude::Motor, time::sleep};
 
-use crate::{
-    controllers::pid::Pid,
-    localization::vec2::Vec2,
-    subsystems::drivetrain::Drivetrain,
-    utils::{angular_distance, wrap},
-};
+use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
 
 pub struct Turn {
     pid: Pid,
     tolerance: Angle,
-    velocity_tolerance: Option<AngularVelocity>,
+    velocity_tolerance: Option<f64>,
     timeout: Option<Duration>,
     speed: f64,
     tolerance_scale: f64,
@@ -36,9 +26,9 @@ impl Turn {
         }
     }
 
-    pub async fn turn_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<Length>, reverse: bool) {
-        let pose = dt.pose();
-        let mut target = angular_distance(pose, point);
+    pub async fn turn_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<f64>, reverse: bool) {
+        let pose = Vec2::new(dt.pose().x, dt.pose().y);
+        let mut target = Angle::from_radians((pose - point).angle());
 
         if reverse {
             target += Angle::HALF_TURN;
@@ -51,8 +41,6 @@ impl Turn {
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
-        let starting_error = wrap(target - dt.pose().h).abs();
-
         loop {
             sleep(Duration::from_millis(10)).await;
             let elapsed_time = prev_time.elapsed();
@@ -60,18 +48,14 @@ impl Turn {
             prev_time = Instant::now();
 
             let heading = dt.pose().h;
-            let error = wrap(target - heading);
+            let error = (target - heading).wrapped_half();
             let output = self
                 .pid
-                .output(error.get::<radian>(), elapsed_time)
+                .output(error.as_radians(), elapsed_time)
                 .clamp(-self.speed, self.speed);
             let omega = dt.pose().omega;
 
-            debug!(
-                "(Error, Velocity): ({}, {})",
-                error.get::<degree>(),
-                omega.get::<degree_per_second>()
-            );
+            debug!("(Error, Velocity): ({}, {})", error.as_degrees(), omega);
             if error.abs() < self.tolerance * self.tolerance_scale
                 && self
                     .velocity_tolerance
@@ -79,14 +63,13 @@ impl Turn {
             {
                 info!(
                     "Turn complete at: {} with {}ms",
-                    starting_error.get::<degree>(),
-                    time.as_millis()
+                    target.as_degrees(),
+                    time.as_millis(),
                 );
                 break;
             }
 
             if self.timeout.is_some_and(|timeout| time > timeout) {
-                warn!("Turn interrupted at: {}", starting_error.get::<degree>());
                 break;
             }
 
@@ -100,7 +83,7 @@ impl Turn {
         dt.set_voltages(0.0, 0.0);
     }
 
-    pub fn settle_velocity(&mut self, velocity: AngularVelocity) -> &mut Self {
+    pub fn settle_velocity(&mut self, velocity: f64) -> &mut Self {
         self.velocity_tolerance = Some(velocity);
         self
     }
