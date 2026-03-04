@@ -1,5 +1,8 @@
+mod decaball;
+mod justrush;
 mod midthenrush;
 mod rushthenmid;
+mod troll;
 
 use atum::controllers::pid::Pid;
 

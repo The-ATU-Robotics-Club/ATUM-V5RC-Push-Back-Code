@@ -47,6 +47,9 @@ impl Compete for Robot {
         match route {
             1 => self.midthenrush().await,
             2 => self.rushthenmid().await,
+            3 => self.decaball().await,
+            4 => self.justrush().await,
+            5 => self.troll().await,
             _ => (),
         }
 
@@ -164,7 +167,7 @@ impl Compete for Robot {
                 }
             }
 
-            info!("Drivetrain: {}", self.drivetrain.pose());
+            // info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
@@ -252,7 +255,7 @@ async fn main(peripherals: Peripherals) {
     .detach();
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 2,
+        index: 5,
         test_auton: false,
         color_override: false,
     }));

@@ -50,60 +50,61 @@ impl Robot {
         );
 
         let dt = &mut self.drivetrain;
-
+        // DONEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
         // Drive to and collect matchload balls
         let mut target = Vec2::new(24.5, self.pose.borrow().y);
-        _ = move_to.move_to_point(dt, target).await;
+        _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, target).await;
         _ = self.lift.set_high();
         _ = self.match_loader.set_high();
-        _ = turn.speed(0.6).turn_to(dt, Angle::from_degrees(-90.0)).await;
+        _ = turn.speed(0.6).timeout(Duration::from_millis(500)).turn_to(dt, Angle::from_degrees(-90.0)).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
-        _ = linear.speed(0.9).timeout(Duration::from_millis(900)).drive_distance(dt, 12.0).await;
+        _ = linear.speed(0.8).timeout(Duration::from_millis(860)).drive_distance(dt, 12.0).await;
         
         // Drive to mid goal
-        target = Vec2::new(58.0, 54.0);
+        target = Vec2::new(56.575, 57.25);
         _ = self.lift.set_low();
-        // _ = linear.speed(0.8).timeout(Duration::from_millis(1100)).drive_to_point(dt, Vec2::new(24.0, 24.0), true).await;
-        // _ = turn.turn_to_point(dt, target, true).await;
-        _ = move_to.speed(0.65).timeout(Duration::from_millis(3000)).move_to_point(dt, target).await;
-
+        _ = linear.speed(0.7).timeout(Duration::from_millis(1100)).drive_to_point(dt, Vec2::new(24.0, 24.0), true).await;
+        _ = turn.turn_to_point(dt, target, true).await;
+        _ = move_to.speed(0.8).timeout(Duration::from_millis(2500)).move_to_point(dt, target).await;
+        
         // Score mid
         _ = self.duck_bill.set_high();
-        self.lever.score(LeverStage::Score(6.0, 3.0));
-        sleep(Duration::from_millis(1500)).await;
+        self.lever.score(LeverStage::Score(2.0, 6.0));
+        sleep(Duration::from_millis(1000)).await;
 
         // Return to matchloader
-        _ = linear.drive_to_point(dt, Vec2::new(24.0, 24.0), false).await;
+        _ = linear.timeout(Duration::from_millis(1100)).drive_to_point(dt, Vec2::new(24.0, 24.0), false).await;
+        _ = self.duck_bill.set_low();
         _ = self.lift.set_high();
-        _ = turn.speed(0.6).turn_to_point(dt, Vec2::new(25.0, 0.0), false).await;
+        _ = turn.speed(0.8).timeout(Duration::from_millis(500)).turn_to_point(dt, Vec2::new(24.5, 0.0), false).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
-        _ = linear.speed(0.6).timeout(Duration::from_millis(1200)).drive_distance(dt, 20.0).await;
+        _ = linear.speed(0.4).timeout(Duration::from_millis(1500)).drive_distance(dt, 20.0).await;
 
         // Spit opposing color balls into wall
-        _ = move_to.move_to_point(dt, Vec2::new(24.0, 17.0)).await;
+        _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(24.5, 18.5)).await;
         _ = self.match_loader.set_low();
-        _ = turn.tolerance(Angle::from_degrees(5.0)).speed(1.0).turn_to(dt, Angle::from_degrees(-135.0)).await;
+        _ = turn.timeout(Duration::from_millis(500)).tolerance(Angle::from_degrees(5.0)).speed(1.0).turn_to(dt, Angle::from_degrees(-135.0)).await;
         self.lever.set_intake(-Motor::V5_MAX_VOLTAGE);
-        sleep(Duration::from_millis(1500)).await;
+        sleep(Duration::from_millis(750)).await;
 
         // Return to matchloader
         _ = self.match_loader.set_high();
         _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, Angle::from_degrees(-90.0)).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
-        _ = linear.speed(0.6).timeout(Duration::from_millis(1250)).drive_distance(dt, 12.0).await;
+        _ = linear.speed(0.3).timeout(Duration::from_millis(1250)).drive_distance(dt, 20.0).await;
 
         // Score on long goal
-        _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(23.5, 42.0)).await;
+        _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(23.5, 42.25)).await;
         _ = self.match_loader.set_low();
         _ = self.duck_bill.set_high();
-        self.lever.score(LeverStage::Score(5.0, 10.0));
+        self.lever.score(LeverStage::Score(5.0, 8.0));
         sleep(Duration::from_millis(500)).await;
 
         // Wing
-        _ = move_to.speed(0.3).move_to_point(dt, Vec2::new(34.0, 28.0)).await;
+        _ = move_to.speed(0.3).move_to_point(dt, Vec2::new(34.225, 28.0)).await;
         _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, Angle::from_degrees(90.0)).await;
         _ = self.wing.toggle();
-        _ = move_to.speed(1.0).move_to_point(dt, Vec2::new(33.5, 60.0)).await;
+        _ = move_to.speed(1.0).move_to_point(dt, Vec2::new(33.1, 64.0)).await;
         dt.brake(BrakeMode::Hold);
         sleep(Duration::from_millis(30000)).await;
     }

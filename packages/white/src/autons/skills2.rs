@@ -235,6 +235,9 @@ impl Robot {
         ).await;
         _ = self.match_loader.set_low();
 
+        dt.set_arcade(-4.0, 0.0);
+        sleep(Duration::from_millis(500)).await;
+
         _ = move_to.speed(0.6).move_to_point(dt, Vec2::new(100.0, 10.0)).await;
         self.lever.set_intake(0.0);
         _ = turn.turn_to(dt, Angle::from_degrees(7.5)).await;
