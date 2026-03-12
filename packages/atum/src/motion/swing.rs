@@ -4,45 +4,71 @@ use log::{info, warn};
 use vexide::{math::Angle, prelude::Gearset, time::sleep};
 
 use crate::{
-    controllers::pid::Pid, motion::desaturate, subsystems::drivetrain::Drivetrain,
+    controllers::pid::Pid,
+    motion::{MotionParameters, desaturate},
+    subsystems::drivetrain::Drivetrain,
 };
 
+/// Controller for performing a swing turn.
+///
+/// A swing turn rotates the robot around an arc instead of turning in place.
+/// This allows the robot to follow a circular path with a specified radius.
+///
+/// If the radius equals half the track width, the robot pivots around one wheel.
+/// Larger radii produce wider arcs.
 pub struct Swing {
+    /// PID controller used to track heading error
     pid: Pid,
-    tolerance: Angle,
-    velocity_tolerance: Option<f64>,
-    timeout: Option<Duration>,
+
+    /// Shared motion parameters (tolerance, timeout, etc.)
+    params: MotionParameters<Angle>,
 }
 
 impl Swing {
-    pub fn new(pid: Pid, tolerance: Angle) -> Self {
-        Self {
-            pid,
-            tolerance,
-            velocity_tolerance: None,
-            timeout: None,
-        }
+    /// Creates a new swing controller.
+    pub fn new(pid: Pid, params: MotionParameters<Angle>) -> Self {
+        Self { pid, params }
     }
 
+    /// Rotates the robot toward a target heading while following
+    /// a circular arc with the specified radius.
+    ///
+    /// `radius` is measured from the robot's center of rotation.
     pub async fn swing_to(&mut self, dt: &mut Drivetrain, target: Angle, radius: f64) {
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
+        // Distance between the left and right wheels
         let length = dt.track();
 
+        // Reset PID parameters
+        self.pid.reset();
+
         loop {
+            // Run control loop at 100 Hz
             sleep(Duration::from_millis(10)).await;
+
             let elapsed_time = prev_time.elapsed();
             time += elapsed_time;
             prev_time = Instant::now();
 
+            // Current heading
             let heading = dt.pose().h;
+
+            // Shortest angular difference to the target
             let error = (target - heading).wrapped_half();
+
+            // PID output representing angular velocity command
             let output = self.pid.output(error.as_radians(), elapsed_time);
+
+            // Current angular velocity from odometry
             let omega = dt.pose().omega;
 
-            if error.abs() < self.tolerance
-                && self
+            // Motion is complete if:
+            // 1. Angular error is within tolerance
+            // 2. Angular velocity is sufficiently small (robot has settled)
+            if error.abs() < self.params.tolerance
+                && self.params
                     .velocity_tolerance
                     .is_none_or(|tolerance| omega.abs() < tolerance)
             {
@@ -54,35 +80,48 @@ impl Swing {
                 break;
             }
 
-            if self.timeout.is_some_and(|timeout| time > timeout) {
+            // Timeout safety
+            if self.params.timeout.is_some_and(|timeout| time > timeout) {
                 warn!("Swing interrupted at: {}", target.as_degrees());
                 break;
             }
 
+            // Compute wheel velocities required to follow a circular arc.
             let left = output * (radius - length / 2.0);
             let right = output * (radius + length / 2.0);
 
-            let [left, right] = desaturate(
-                [left, right],
-                Gearset::MAX_BLUE_RPM,
-            );
+            // Scale wheel velocities proportionally so their ratio is preserved
+            let [left, right] = desaturate([left, right], Gearset::MAX_BLUE_RPM);
 
+            // Apply wheel velocities
             dt.set_velocity(left, right);
         }
 
-        self.velocity_tolerance = None;
-        self.timeout = None;
-
+        // Stop drivetrain after motion completes
         dt.set_voltages(0.0, 0.0);
     }
 
-    pub fn settle_velocity(&mut self, velocity: f64) -> &mut Self {
-        self.velocity_tolerance = Some(velocity);
+    /// Sets the heading angular required to finish the swing.
+    pub fn tolerance(&mut self, tolerance: Angle) -> &mut Self {
+        self.params.tolerance = tolerance;
         self
     }
 
+    /// Sets the angular velocity threshold used to determine when the robot has settled.
+    pub fn settle_velocity(&mut self, velocity: f64) -> &mut Self {
+        self.params.velocity_tolerance = Some(velocity);
+        self
+    }
+
+    /// Sets a timeout for the motion.
     pub fn timeout(&mut self, duration: Duration) -> &mut Self {
-        self.timeout = Some(duration);
+        self.params.timeout = Some(duration);
+        self
+    }
+
+    /// Scales the maximum speed used for the motion.
+    pub fn speed(&mut self, speed: f64) -> &mut Self {
+        self.params.speed = speed;
         self
     }
 }
