@@ -1,6 +1,16 @@
+//! Controller Mappings
+//!
+//! This module defines how the physical controller inputs are mapped to
+//! robot actions. It supports multiple drive modes and includes buttons
+//! for subsystems and other special functions.
+//!
+//! - [`DriveMode`] – Different drive configurations the driver can select
+//!   * Arcade – forward/backward + turning
+//!   * Tank – independent left/right control
+//! - [`ControllerMappings`] – Stores all joystick and button states for
+//!   driving, subsystems, and extra features.
 use vexide::controller::{ButtonState, JoystickState};
 
-// Different drive mods that the driver can switch to
 pub enum DriveMode {
     Arcade {
         power: JoystickState,
@@ -12,8 +22,6 @@ pub enum DriveMode {
     },
 }
 
-// TODO: Create ui to allow user to change mappings
-// Map all the controller keybinds with their respective subsystem
 pub struct ControllerMappings {
     pub drive_mode: DriveMode,
 

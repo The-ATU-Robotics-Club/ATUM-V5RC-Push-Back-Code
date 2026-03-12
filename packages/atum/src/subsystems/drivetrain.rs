@@ -1,6 +1,10 @@
-use std::f64::consts::PI;
+//! Drivetrain control
+//!
+//! Provides high-level interfaces for controlling the robot's drivetrain, including
+//! motor groups, voltage/velocity commands, and drive modes (Arcade/Tank).
 
-use vexide::prelude::Motor;
+use std::f64::consts::PI;
+use vexide::{prelude::Motor, smart::motor::BrakeMode};
 
 use crate::{
     hardware::motor_group::MotorGroup,
@@ -8,6 +12,8 @@ use crate::{
     mappings::DriveMode,
 };
 
+/// Represents a differential drivetrain with left and right motor groups
+/// and integrated odometry for pose estimation.
 pub struct Drivetrain {
     pub left: MotorGroup,
     pub right: MotorGroup,
@@ -17,6 +23,7 @@ pub struct Drivetrain {
 }
 
 impl Drivetrain {
+    /// Create a new drivetrain instance
     pub fn new(
         left: MotorGroup,
         right: MotorGroup,
@@ -33,66 +40,78 @@ impl Drivetrain {
         }
     }
 
+    /// Set motor voltages directly
     pub fn set_voltages(&mut self, left: f64, right: f64) {
         self.left.set_voltage(left);
         self.right.set_voltage(right);
     }
 
+    /// Set motor target velocities
     pub fn set_velocity(&mut self, left: f64, right: f64) {
         self.left.set_velocity(left);
         self.right.set_velocity(right);
     }
 
+    /// Set brake mode for both motor groups
+    pub fn brake(&mut self, brake: BrakeMode) {
+        self.left.brake(brake);
+        self.right.brake(brake);
+    }
+
+    /// Simple arcade drive control using power and turn
     pub fn arcade(&mut self, power: f64, turn: f64) {
         let left = power + turn;
         let right = power - turn;
-
         self.set_voltages(left, right);
     }
 
-    /// Computes the left and right motor power values based on the selected drive mode.
-    /// Supports both Arcade and Tank drive configurations.
+    /// Drive method supporting both Arcade and Tank modes
     pub fn drive(&mut self, drive_mode: &DriveMode) {
         let mut power_val = 0.0;
         let mut turn_val = 0.0;
         let mut left_val = 0.0;
         let mut right_val = 0.0;
 
-        // Extract joystick values based on the configured drive mode
+        // Extract control inputs from DriveMode
         match drive_mode {
             DriveMode::Arcade { power, turn } => {
-                power_val = power.y(); // Forward/backward movement
-                turn_val = turn.x(); // Turning movement
+                power_val = power.y(); // forward/backward
+                turn_val = turn.x();   // rotation
             }
             DriveMode::Tank { left, right } => {
-                left_val = left.y(); // Left side control
-                right_val = right.y(); // Right side control
+                left_val = left.y();   // left side
+                right_val = right.y(); // right side
             }
         }
 
-        // Apply acceleration function if using Arcade drive
+        // Apply acceleration curve for Arcade drive
         if matches!(drive_mode, DriveMode::Arcade { .. }) {
+            power_val = apply_curve(power_val, 1);
             turn_val = apply_curve(turn_val, 2);
+
             left_val = power_val + turn_val;
             right_val = power_val - turn_val;
         }
 
-        // Scale the final voltage values to the V5 motor's maximum voltage
+        // Scale voltages to V5 max
         self.set_voltages(
             left_val * Motor::V5_MAX_VOLTAGE,
             right_val * Motor::V5_MAX_VOLTAGE,
         );
     }
 
+    /// Returns the average voltage of the drivetrain motors
     pub fn voltages(&self) -> [f64; 2] {
         [self.left.voltage(), self.right.voltage()]
     }
 
+    /// Computes linear velocity based on wheel RPMs
     pub fn velocity(&self) -> f64 {
         let rpm = (self.left.velocity() + self.right.velocity()) / 2.0;
         (self.wheel_circum * rpm) / 60.0
     }
 
+    /// Computes angular velocity of the robot
     pub fn angular_velocity(&self) -> f64 {
         let vdiff = self.wheel_circum
             * (self.left.velocity() - self.right.velocity())
@@ -101,31 +120,36 @@ impl Drivetrain {
         vdiff / self.track
     }
 
+    /// Returns the current robot pose
     pub fn pose(&self) -> Pose {
-        self.odometry.get_pose()
+        self.odometry.pose()
     }
 
+    /// Set the robot's pose
     pub fn set_pose(&mut self, pose: Pose) {
         self.odometry.set_pose(pose);
     }
 
-    pub fn track(&mut self) -> f64 {
+    /// Returns the track width (distance between left and right wheels)
+    pub fn track(&self) -> f64 {
         self.track
     }
 }
 
-/// Applies an acceleration function to the given power value.
-/// Uses polynomial scaling based on the acceleration factor.
+/// Apply a polynomial acceleration curve to a joystick input
+///
+/// - `power` – input value from -1.0 to 1.0
+/// - `acceleration` – exponent for scaling
 fn apply_curve(power: f64, acceleration: i32) -> f64 {
     if acceleration == 1 {
-        return power; // If acceleration is 1, return power as is (linear mapping)
+        return power; // Linear mapping
     }
 
-    // Polynomial acceleration adjustment
+    // Polynomial scaling, preserving sign
     power.powi(acceleration - 1)
         * if acceleration % 2 == 0 {
-            power.abs() // Even acceleration preserves absolute magnitude
+            power.abs() // Even exponents preserve magnitude
         } else {
-            power // Odd acceleration preserves sign
+            power
         }
 }

@@ -35,7 +35,8 @@ impl MotorGroup {
         }
     }
 
-    /// Apply a velocity setpoint to all motors, optionally using a PID + feedforward controller
+    /// Apply a velocity setpoint to all motors, using VEX's default velocity controller
+    /// if no velocity controller is provided
     pub fn set_velocity(&mut self, velocity: f64) {
         for motor in self.motors.iter_mut() {
             match self.motor_controller {

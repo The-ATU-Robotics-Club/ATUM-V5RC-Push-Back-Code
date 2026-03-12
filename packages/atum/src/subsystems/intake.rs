@@ -9,21 +9,32 @@ use vexide::{
 
 use crate::settings::Settings;
 
+/// Represents the different commands the intake door can receive.
 #[derive(Clone, Copy)]
 pub enum DoorCommands {
-    On,
-    Off,
-    ForceOff,
-    Open,  // for autonomous
-    Close, //    ^^^
+    On,       // Keep color sorting active
+    Off,      // Deactivate color sorting
+    ForceOff, // Deactivate color sorting, preventing other commands from overwritting
+    Open,
+    Close,
 }
 
+/// Manages intake motors and the door mechanism
+/// Handles ball color detection and automatic door operation.
 pub struct Intake {
-    voltage: Rc<RefCell<f64>>,
-    _task: Task<()>,
+    voltage: Rc<RefCell<f64>>, // Shared voltage to be applied to motors
+    _task: Task<()>,           // Background task that loops continuously
 }
 
 impl Intake {
+    /// Creates a new Intake system.
+    ///
+    /// # Arguments
+    /// - `top` / `bottom`: intake motors
+    /// - `door`: pneumatic door control
+    /// - `color_sort`: optical sensor for ball detection
+    /// - `delay`: delay to wait when door opens/closes on a ball
+    /// - `settings`: shared configuration and control flags
     pub fn new(
         mut top: Motor,
         mut bottom: Motor,
@@ -34,20 +45,25 @@ impl Intake {
     ) -> Self {
         let voltage = Rc::new(RefCell::new(0.0));
 
+        // TODO: Separate logic so intake isn't overwhelmingly long
         Self {
             voltage: voltage.clone(),
             _task: spawn(async move {
                 let mut ball_timer = Duration::ZERO;
-                // let mut balls_collected = 0;
 
+                // Main control loop for the intake task
                 loop {
+                    // Read desired motor voltage
                     let voltage = *voltage.borrow();
+                    // Snapshot current settings
                     let color_settings = *settings.borrow();
 
+                    // Apply voltage to intake motors
                     _ = bottom.set_voltage(voltage);
                     _ = top.set_voltage(voltage);
 
-                    settings.borrow_mut().enable_sort = match color_settings.enable_sort {
+                    // Handle door commands
+                    settings.borrow_mut().door_commands = match color_settings.door_commands {
                         DoorCommands::Open => {
                             _ = door.set_high();
                             DoorCommands::On
@@ -56,51 +72,56 @@ impl Intake {
                             _ = door.set_low();
                             DoorCommands::On
                         }
-                        _ => color_settings.enable_sort,
+                        _ => color_settings.door_commands,
                     };
 
+                    // Override door state if requested
                     if color_settings.color_override {
                         _ = door.toggle();
                     }
 
-                    if matches!(color_settings.enable_sort, DoorCommands::On) {
-                        let alliance = color_settings.color.hue_range();
-                        let opposing = (!color_settings.color).hue_range();
+                    // Main color-based sorting logic
+                    if matches!(color_settings.door_commands, DoorCommands::On) {
+                        let alliance = color_settings.color.hue_range(); // Hue range for alliance balls
+                        let opposing = (!color_settings.color).hue_range(); // Hue range for opponent balls
 
                         let hue = color_sort.hue().unwrap_or_default();
                         let proximity = color_sort.proximity().unwrap_or_default();
 
+                        // Ball detected close enough to sensor
                         if proximity > 0.3 {
                             info!("hue: {hue}");
                             if alliance.contains(&hue) {
-                                info!("alliance: {}", proximity);
+                                // Wait to allow ball to move before closing the door
                                 sleep(delay).await;
                                 _ = door.set_low();
-                                // balls_collected += 1;
                             } else if opposing.contains(&hue) {
-                                info!("opposing: {}", proximity);
+                                // Filter out ball
                                 _ = door.set_high();
                             }
-                            ball_timer = Duration::ZERO;
+                            ball_timer = Duration::ZERO; // Reset timer
                         } else if ball_timer > Duration::from_millis(1000) {
+                            // If no ball detected for 1 second, close door
                             _ = door.set_low();
                             ball_timer = Duration::ZERO;
                         } else if door.level().is_ok_and(|x| x.is_high()) {
+                            // Increment timer if door is still open
                             ball_timer += Duration::from_millis(10);
                         }
-
-                        // info!("{}", proximity);
                     }
 
+                    // Sleep briefly to yield scheduler
                     sleep(Duration::from_millis(10)).await;
                 }
             }),
         }
     }
 
+    /// Sets the intake motor voltage.
+    ///
+    /// This updates the shared voltage reference that the background task reads.
     pub fn set_voltage(&self, voltage: f64) -> f64 {
         self.voltage.replace(voltage)
     }
-
-    pub fn test_door(&mut self) {}
 }
+
