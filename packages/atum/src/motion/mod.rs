@@ -9,6 +9,8 @@ pub mod turn;
 
 use std::time::Duration;
 
+use vexide::prelude::Motor;
+
 /// Common configuration parameters used by motion controllers.
 ///
 /// These parameters control when a motion is considered complete
@@ -47,7 +49,7 @@ impl<T: Copy + PartialEq + PartialOrd + Default> Default for MotionParameters<T>
             tolerance: T::default(),
             velocity_tolerance: Default::default(),
             timeout: Default::default(),
-            speed: 1.0,
+            speed: Motor::V5_MAX_VOLTAGE, // rewrite to make speed a percentage
         }
     }
 }

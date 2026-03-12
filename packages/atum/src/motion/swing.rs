@@ -118,10 +118,4 @@ impl Swing {
         self.params.timeout = Some(duration);
         self
     }
-
-    /// Scales the maximum speed used for the motion.
-    pub fn speed(&mut self, speed: f64) -> &mut Self {
-        self.params.speed = speed;
-        self
-    }
 }
