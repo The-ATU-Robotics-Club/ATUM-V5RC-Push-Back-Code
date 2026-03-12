@@ -5,8 +5,6 @@ use atum::{controllers::pid::Pid, localization::vec2::Vec2};
 
 const LINEAR_PID: Pid = Pid::new(46.0, 0.0, 3.95, 12.0);
 const ANGULAR_PID: Pid = Pid::new(21.0, 0.8 * 0.0, 1.45, 45.0);
-const _SETTLE_LIN_VEL: f64 = 2.5; // INCHES
-const SETTLE_ANG_VEL: f64 = 15.0; // DEGREES
 
 const RED_LEFT_LOADER: Vec2<f64> = Vec2::new(28.0, 2.5);
 const RED_RIGHT_LOADER: Vec2<f64> = Vec2::new(144.0 - 24.0, 2.5);

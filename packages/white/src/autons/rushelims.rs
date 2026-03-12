@@ -3,7 +3,7 @@ use std::time::Duration;
 use atum::{
     controllers::pid::Pid,
     localization::{pose::Pose, vec2::Vec2},
-    motion::{linear::Linear, move_to::MoveTo, turn::Turn},
+    motion::{MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn},
     subsystems::intake::DoorCommands,
 };
 use futures_lite::future::zip;
@@ -19,14 +19,29 @@ use crate::{
 
 impl Robot {
     pub async fn rushelims(&mut self) {
-        let mut linear = Linear::new(LINEAR_PID, 1.0);
+        let mut linear = Linear::new(
+            LINEAR_PID,
+            MotionParameters {
+                tolerance: 1.0,
+                ..Default::default()
+            },
+        );
 
-        let mut turn = Turn::new(ANGULAR_PID, Angle::from_degrees(1.0));
+        let mut turn = Turn::new(
+            ANGULAR_PID,
+            MotionParameters {
+                tolerance: Angle::from_degrees(1.0),
+                ..Default::default()
+            },
+        );
 
         let mut move_to = MoveTo::new(
             Pid::new(30.0, 2.0, 6.0, 12.0),
             Pid::new(20.0, 0.0, 0.0, 0.0),
-            0.5,
+            MotionParameters {
+                tolerance: 0.5,
+                ..Default::default()
+            },
         );
 
         let dt = &mut self.drivetrain;
@@ -53,7 +68,7 @@ impl Robot {
             },
         )
         .await;
-        turn.chain(5.0)
+        turn.tolerance(Angle::from_degrees(5.0))
             .turn_to_point(dt, Vec2::new(55.0, 53.0), true)
             .await;
         move_to
@@ -95,9 +110,9 @@ impl Robot {
         self.intake.set_voltage(0.0);
         _ = self.match_loader.set_low();
         sleep(Duration::from_millis(500)).await; // wait for balls to settle in robot
-        self.settings.borrow_mut().enable_sort = DoorCommands::Close;
+        self.settings.borrow_mut().door_commands = DoorCommands::Close;
         sleep(Duration::from_millis(10)).await;
-        self.settings.borrow_mut().enable_sort = DoorCommands::Off;
+        self.settings.borrow_mut().door_commands = DoorCommands::Off;
 
         _ = self.lift.set_high();
         _ = self.wing.set_high();

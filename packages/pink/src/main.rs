@@ -87,10 +87,10 @@ impl Compete for Robot {
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
                 let mut settings = self.settings.borrow_mut();
-                settings.enable_sort = match settings.enable_sort {
+                settings.door_commands = match settings.door_commands {
                     DoorCommands::On => DoorCommands::Off,
                     DoorCommands::Off => DoorCommands::On,
-                    _ => settings.enable_sort,
+                    _ => settings.door_commands,
                 };
             }
 
@@ -120,7 +120,7 @@ impl Compete for Robot {
 
             if mappings.enable_color.is_now_pressed() {
                 let mut settings = self.settings.borrow_mut();
-                settings.enable_sort = match settings.enable_sort {
+                settings.door_commands = match settings.door_commands {
                     DoorCommands::ForceOff => DoorCommands::On,
                     _ => DoorCommands::ForceOff,
                 };
@@ -180,7 +180,7 @@ async fn main(peripherals: Peripherals) {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        enable_sort: DoorCommands::On,
+        door_commands: DoorCommands::On,
         color_override: false,
     }));
 

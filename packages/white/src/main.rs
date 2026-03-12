@@ -25,7 +25,7 @@ use atum::{
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
-use vexide::{math::Angle, prelude::*};
+use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 
 struct Robot {
     controller: Controller,
@@ -35,7 +35,6 @@ struct Robot {
     duck_bill: AdiDigitalOut,
     match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
-    brake: AdiDigitalOut,
     pose: Rc<RefCell<Pose>>,
     settings: Rc<RefCell<Settings>>,
 }
@@ -45,7 +44,7 @@ impl Compete for Robot {
         println!("autnomous");
         let time = Instant::now();
         let route = self.settings.borrow().index;
-        self.settings.borrow_mut().enable_sort = DoorCommands::On;
+        self.settings.borrow_mut().door_commands = DoorCommands::On;
 
         match route {
             1 => self.rushelims().await,
@@ -57,7 +56,8 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        // self.rushelims().await;
+        let mut brake = false;
+
         loop {
             let state = self.controller.state().unwrap_or_default();
             let mappings = ControllerMappings {
@@ -77,7 +77,15 @@ impl Compete for Robot {
                 back_door: state.button_a,
             };
 
-            self.drivetrain.drive(&mappings.drive_mode);
+            if mappings.brake.is_now_pressed() {
+                brake = !brake;
+            }
+
+            if brake {
+                self.drivetrain.brake(BrakeMode::Hold);
+            } else {
+                self.drivetrain.drive(&mappings.drive_mode);
+            }
 
             if mappings.intake.is_pressed() {
                 self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
@@ -90,10 +98,10 @@ impl Compete for Robot {
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
                 let mut setting = self.settings.borrow_mut();
-                setting.enable_sort = match setting.enable_sort {
+                setting.door_commands = match setting.door_commands {
                     DoorCommands::On => DoorCommands::Off,
                     DoorCommands::Off => DoorCommands::On,
-                    _ => setting.enable_sort, // keep the command
+                    _ => setting.door_commands, // keep the command
                 }
             }
 
@@ -117,7 +125,7 @@ impl Compete for Robot {
 
             if mappings.enable_color.is_now_pressed() {
                 let mut setting = self.settings.borrow_mut();
-                setting.enable_sort = match setting.enable_sort {
+                setting.door_commands = match setting.door_commands {
                     DoorCommands::ForceOff => DoorCommands::On,
                     _ => DoorCommands::ForceOff,
                 }
@@ -126,11 +134,7 @@ impl Compete for Robot {
             if mappings.swap_color.is_now_pressed() {
                 let mut setting = self.settings.borrow_mut();
                 setting.color = !setting.color;
-            }
-
-            if mappings.brake.is_now_pressed() {
-                _ = self.brake.toggle();
-            }
+            } 
 
             if self.settings.borrow().test_auton {
                 self.autonomous().await;
@@ -166,7 +170,7 @@ async fn main(peripherals: Peripherals) {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        enable_sort: DoorCommands::ForceOff,
+        door_commands: DoorCommands::ForceOff,
         color_override: false,
     }));
 
@@ -233,7 +237,6 @@ async fn main(peripherals: Peripherals) {
         duck_bill: AdiDigitalOut::new(peripherals.adi_g),
         match_loader: AdiDigitalOut::new(adi_expander.adi_a),
         wing: AdiDigitalOut::new(peripherals.adi_h),
-        brake: AdiDigitalOut::new(adi_expander.adi_b),
         pose: starting_position,
         settings: settings.clone(),
     };

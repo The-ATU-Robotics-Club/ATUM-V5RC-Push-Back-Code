@@ -87,7 +87,7 @@ async fn main(peripherals: Peripherals) {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        enable_sort: DoorCommands::Off,
+        door_commands: DoorCommands::Off,
         color_override: false,
     }));
 
