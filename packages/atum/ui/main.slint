@@ -4,14 +4,17 @@ import { HomePage } from "home_page.slint";
 import { SelectorPage, Selector } from "selector.slint";
 import { DiagnosticPage } from "diagnostic.slint";
 
+// Export Selector for backend binding
 export { Selector }
 
+/// Sidebar icon component used in the application window
 component SideBarIcon inherits Rectangle {
-    in-out property <bool> active;
-    in-out property <image> icon <=> i.source;
-    in-out property <brush> icon-colorize <=> i.colorize;
+    in-out property <bool> active;             // Whether this icon is currently active
+    in-out property <image> icon <=> i.source; // Icon image
+    in-out property <brush> icon-colorize <=> i.colorize; // Icon colorization (active/inactive)
 
-    callback activate;
+    callback activate; // Triggered when the icon is clicked
+
     width: Palette.side-bar-width;
     height: 60px;
 
@@ -24,40 +27,45 @@ component SideBarIcon inherits Rectangle {
         i := Image {
             width: 30px;
             height: 30px;
+            // Change color depending on whether this page is active
             colorize: root.active ? Palette.active-page-icon-color : Palette.inactive-page-icon-color;
             animate colorize { duration: 125ms; }
         }
     }
 
     TouchArea {
-        clicked => { root.activate(); }
+        // Call the activate callback when tapped
+        clicked => {
+            root.activate();
+        }
     }
 }
 
-/// Main application window
+/// Main application window containing all pages and sidebar
 export component AppWindow inherits Window {
-    out property<int> active-page: 0;
-    in property<[string]> paths;
+    out property <int> active-page: 0; // Currently active page index
+    in property <[string]> paths;      // Paths to show in the selector page
 
     width: 480px;
     height: 240px;
-
     background: Palette.primary;
 
     HorizontalLayout {
-        padding-left: Palette.side-bar-width;
+        padding-left: Palette.side-bar-width; // Make room for sidebar
 
+        // Main page view container
         main-view := Rectangle {
             height: 100%;
             background: Palette.background;
 
             Rectangle {
-                clip: true;
+                clip: true; // Clip content for rounded corners
                 x: main-view.border-radius / 2;
                 y: main-view.border-radius / 2;
                 width: main-view.width - main-view.border-radius;
                 height: main-view.height - main-view.border-radius;
 
+                // Helper function to calculate vertical offset for page animation
                 function calcPageY(pageNumber: int) -> length {
                     if (root.active-page == pageNumber) {
                         return 0;
@@ -68,7 +76,7 @@ export component AppWindow inherits Window {
                 property <duration> page-animation-duration: 250ms;
 
                 HomePage {
-                    property<int> pageNumber: 0;
+                    property <int> pageNumber: 0;
                     y: calcPageY(pageNumber);
                     opacity: root.active-page == pageNumber ? 1 : 0;
                     animate y {
@@ -82,7 +90,7 @@ export component AppWindow inherits Window {
                 }
 
                 path-selector := SelectorPage {
-                    property<int> pageNumber: 1;
+                    property <int> pageNumber: 1;
                     paths: root.paths;
                     y: calcPageY(pageNumber);
                     opacity: root.active-page == pageNumber ? 1 : 0;
@@ -97,7 +105,7 @@ export component AppWindow inherits Window {
                 }
 
                 DiagnosticPage {
-                    property<int> pageNumber: 2;
+                    property <int> pageNumber: 2;
                     y: calcPageY(pageNumber);
                     opacity: root.active-page == pageNumber ? 1 : 0;
                     animate y {
@@ -113,10 +121,11 @@ export component AppWindow inherits Window {
         }
     }
 
+    // Sidebar containing page icons
     sidebar := Rectangle {
         function icon-y(index: int) -> length {
             return 100px // top padding
-                + index * 72px;
+                + index * 72px; // spacing between icons
         }
         x: 0px;
         width: Palette.side-bar-width;
@@ -124,6 +133,7 @@ export component AppWindow inherits Window {
         VerticalLayout {
             y: 20px;
 
+            // Generate one SideBarIcon per page
             for page-icon[idx] in [
                 @image-url("images/home.png"),
                 @image-url("images/path.png"),
@@ -131,7 +141,7 @@ export component AppWindow inherits Window {
             ]: SideBarIcon {
                 activate => {
                     root.active-page = idx;
-                }
+                } // Change active page when clicked
                 icon: page-icon;
                 active: root.active-page == idx;
             }

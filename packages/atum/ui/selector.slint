@@ -31,8 +31,8 @@ export component SelectorPage inherits Page {
             padding: 10px;
             width: 50px;
 
-            property<length> button-width: 170px;
-            property<length> button-height: 40px;
+            property <length> button-width: 170px;
+            property <length> button-height: 40px;
 
             // ComboBox for selecting an autonomous mode
             mode_cb := ComboBox {
@@ -67,7 +67,7 @@ export component SelectorPage inherits Page {
             // Test button to trigger the autonomous test
             Button {
                 text: "Test";
-                width: button-width;                
+                width: button-width;
                 height: button-height;
                 clicked => {
                     Selector.test();

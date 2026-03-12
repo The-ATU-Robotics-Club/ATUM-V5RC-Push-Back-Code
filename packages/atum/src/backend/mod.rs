@@ -8,28 +8,36 @@ use crate::settings::{Color, Settings};
 
 slint::include_modules!();
 
+/// Initializes and runs the Slint GUI for autonomous selection and settings configuration.
+///
+/// This function sets up the frontend UI and bridges it with the backend robot settings:
+/// - Converts a list of autonomous paths into a Slint model.
+/// - Updates the shared `Settings` struct when a user selects event buttons.
+/// - Runs the Slint event loop.
 pub fn start_ui(display: Display, paths: Vec<&str>, settings: Rc<RefCell<Settings>>) {
+    // Initialize the Slint platform using the robot's display
     initialize_slint_platform(display);
 
+    // Create the main application window
     let app = AppWindow::new().unwrap();
 
-    // Convert backend paths into a Slint model
+    // Convert backend autonomous paths names
     let modes: Vec<SharedString> = paths
         .into_iter()
         .map(SharedString::from)
         .collect();
-
     let model = ModelRc::new(VecModel::from(modes));
 
-    // Set the property on the component
+    // Assign the model to the GUI component
     app.set_paths(model);
 
+    // Event: When an autonomous is selected in the UI
     app.global::<Selector>().on_autonomous({
         let settings = settings.clone();
-
         move |autonomous| {
             let index = autonomous.index as usize;
 
+            // Update shared backend settings
             let mut settings = settings.borrow_mut();
             settings.index = index;
             settings.color = match autonomous.color {
@@ -39,15 +47,16 @@ pub fn start_ui(display: Display, paths: Vec<&str>, settings: Rc<RefCell<Setting
         }
     });
 
+    // Event: When the test button is pressed in the UI
     app.global::<Selector>().on_test({
         let settings = settings.clone();
-
         move || {
             let mut settings = settings.borrow_mut();
             settings.test_auton = true;
         }
     });
 
+    // Show the GUI window and start the Slint event loop
     _ = app.show();
     _ = slint::run_event_loop();
 }

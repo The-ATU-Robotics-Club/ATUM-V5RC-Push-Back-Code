@@ -1,5 +1,6 @@
 import { Palette } from "std-widgets.slint";
 
+/// Global color palette and style constants for the UI
 export global Palette {
     out property <color> background: #2d2d32;
     out property <color> primary: #141313;
@@ -15,6 +16,8 @@ export global Palette {
     out property <length> side-bar-width: 50px;
 }
 
+/// Base page component that all pages inherit from
+/// Provides header, back button support, and consistent background styling
 export component Page inherits Rectangle {
     in property <string> header <=> h.text;
     in property <bool> has-back-button: false;
@@ -26,17 +29,21 @@ export component Page inherits Rectangle {
 
     TouchArea { } // protect underneath controls
 
-    if (root.has-back-button) : Image {
-        x:0;
+    // If page contains a back button
+    if (root.has-back-button): Image {
+        x: 0;
         source: @image-url("images/back.png");
         image-fit: contain;
         colorize: Palette.control-secondary;
         y: h.y + (h.height - self.height) / 2;
         width: 14px;
         height: 24px;
-    
+
+        // Trigger the back callback
         TouchArea {
-            clicked => { root.back() }
+            clicked => {
+                root.back()
+            }
             x: -14px;
             height: 200%;
             width: self.height;
@@ -49,10 +56,12 @@ export component Page inherits Rectangle {
         color: Palette.text-primary;
         y: 46px - self.font-size;
         x: root.has-back-button ? 24px + 16px : 0px;
-        // Allow clicking on the title as well to get back easier when just
-        // using fingers on a small screen.
-        if (root.has-back-button) : TouchArea {
-            clicked => { root.back() }
+
+        // TouchArea on header for easier back navigation on small screens
+        if (root.has-back-button): TouchArea {
+            clicked => {
+                root.back()
+            }
         }
     }
 }
