@@ -1,8 +1,8 @@
-# ATUM-VRC-Push-Back-Code
+# ATUM-V5RC-Push-Back-Code
 
 [![Rust](https://shields.io/badge/-Rust-3776AB?style=flat&logo=rust)](https://www.rust-lang.org)
 
-This repository contains the code used for team **ATUM’s robots** for the V5RC 2024–2025 game, *Push Back*.
+This repository contains the code used for team **ATUM’s robots** for the V5RC 2025–2026 game, *Push Back*.
 
 ## Project Structure
 
@@ -32,7 +32,7 @@ Make sure you have [Git](https://git-scm.com/downloads) installed.
     ```bash
     git clone https://github.com/The-ATU-Robotics-Club/ATUM-V5RC-Push-Back-Code
     
-    cd ATUM-VRC-Push-Back-Code
+    cd ATUM-V5RC-Push-Back-Code
     ```
 
 4. **Install Vexide tooling**
