@@ -104,7 +104,7 @@ impl Odometry {
                     // the 2x2 matrix formed by the wheel axes.
                     let delta = Vec2::new(
                         (axis2.y * ds1_corr - axis1.y * ds2_corr) / det,
-                        (-axis2.x * ds1_corr - axis1.x * ds2_corr) / det,
+                        (-axis2.x * ds1_corr + axis1.x * ds2_corr) / det,
                     );
 
                     // Time since last update
