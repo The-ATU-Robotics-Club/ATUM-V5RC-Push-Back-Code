@@ -3,10 +3,10 @@ use std::time::{Duration, Instant};
 use log::{debug, info, warn};
 use vexide::{math::Angle, prelude::Motor, time::sleep};
 
+use super::{MotionError, MotionParameters, MotionResult, desaturate};
 use crate::{
     controllers::pid::Pid,
     localization::vec2::Vec2,
-    motion::{MotionParameters, desaturate},
     subsystems::drivetrain::Drivetrain,
 };
 
@@ -42,7 +42,7 @@ impl MoveTo {
     ///
     /// The robot simultaneously drives forward and steers toward the point
     /// rather than performing separate turn and drive motions.
-    pub async fn move_to_point(&mut self, dt: &mut Drivetrain, target: Vec2<f64>) {
+    pub async fn move_to_point(&mut self, dt: &mut Drivetrain, target: Vec2<f64>) -> MotionResult<Vec2<f64>> {
         let start_time = Instant::now();
         let mut prev_time = Instant::now();
 
@@ -91,8 +91,8 @@ impl MoveTo {
                 .timeout
                 .is_some_and(|timeout| start_time.elapsed() > timeout)
             {
-                warn!("Moving failed");
-                break;
+                dt.set_voltages(0.0, 0.0);
+                return Err(MotionError::Timeout(position_error));
             }
 
             // Heading error between robot and target direction
@@ -129,6 +129,8 @@ impl MoveTo {
 
         // Stop drivetrain after motion completes
         dt.set_voltages(0.0, 0.0);
+
+        Ok(())
     }
 
     /// Sets the position tolerance required to finish the motion.

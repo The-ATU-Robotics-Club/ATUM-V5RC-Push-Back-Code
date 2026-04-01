@@ -54,6 +54,16 @@ impl<T: Copy + PartialEq + PartialOrd + Default> Default for MotionParameters<T>
     }
 }
 
+pub type MotionResult<T> = Result<(), MotionError<T>>;
+
+pub enum MotionError<T> {
+    /// The error that was given after a motion timeout.
+    Timeout(T),
+
+    /// A sensor the motion relies fails.
+    Sensor
+}
+
 /// Scales a set of outputs proportionally so the largest magnitude
 /// equals `max`, preserving the ratio between all values.
 pub fn desaturate<const N: usize>(values: [f64; N], max: f64) -> [f64; N] {

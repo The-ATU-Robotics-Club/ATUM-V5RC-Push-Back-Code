@@ -3,10 +3,10 @@ use std::time::{Duration, Instant};
 use log::{debug, info};
 use vexide::{math::Angle, prelude::Motor, time::sleep};
 
+use super::{MotionError, MotionParameters, MotionResult};
 use crate::{
     controllers::pid::Pid,
     localization::vec2::Vec2,
-    motion::MotionParameters,
     subsystems::drivetrain::Drivetrain,
 };
 
@@ -32,7 +32,7 @@ impl Turn {
     ///
     /// The heading to the point is calculated using `atan2`
     /// and then passed to `turn_to`.
-    pub async fn turn_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<f64>, reverse: bool) {
+    pub async fn turn_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<f64>, reverse: bool) -> MotionResult<Angle> {
         let pose = Vec2::new(dt.pose().x, dt.pose().y);
         let mut target = Angle::from_radians((point - pose).angle());
 
@@ -40,11 +40,13 @@ impl Turn {
             target += Angle::HALF_TURN;
         }
 
-        self.turn_to(dt, target).await;
+        self.turn_to(dt, target).await?;
+
+        Ok(())
     }
 
     /// Rotates the robot to a specific heading.
-    pub async fn turn_to(&mut self, dt: &mut Drivetrain, target: Angle) {
+    pub async fn turn_to(&mut self, dt: &mut Drivetrain, target: Angle) -> MotionResult<Angle> {
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
@@ -96,7 +98,8 @@ impl Turn {
 
             // Stop if the motion exceeds the allowed timeout
             if self.params.timeout.is_some_and(|timeout| time > timeout) {
-                break;
+                dt.set_voltages(0.0, 0.0);
+                return Err(MotionError::Timeout(error));
             }
 
             // Apply opposite voltages to create rotation
@@ -105,6 +108,8 @@ impl Turn {
 
         // Stop drivetrain after the turn completes
         dt.set_voltages(0.0, 0.0);
+
+        Ok(())
     }
 
     /// Sets the angular tolerance required to finish the turn.

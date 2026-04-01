@@ -3,9 +3,9 @@ use std::time::{Duration, Instant};
 use log::{info, warn};
 use vexide::{math::Angle, prelude::Gearset, time::sleep};
 
+use super::{MotionError, MotionParameters, MotionResult, desaturate};
 use crate::{
     controllers::pid::Pid,
-    motion::{MotionParameters, desaturate},
     subsystems::drivetrain::Drivetrain,
 };
 
@@ -34,7 +34,7 @@ impl Swing {
     /// a circular arc with the specified radius.
     ///
     /// `radius` is measured from the robot's center of rotation.
-    pub async fn swing_to(&mut self, dt: &mut Drivetrain, target: Angle, radius: f64) {
+    pub async fn swing_to(&mut self, dt: &mut Drivetrain, target: Angle, radius: f64) -> MotionResult<Angle> {
         let mut time = Duration::ZERO;
         let mut prev_time = Instant::now();
 
@@ -82,8 +82,8 @@ impl Swing {
 
             // Timeout safety
             if self.params.timeout.is_some_and(|timeout| time > timeout) {
-                warn!("Swing interrupted at: {}", target.as_degrees());
-                break;
+                dt.set_voltages(0.0, 0.0);
+                return Err(MotionError::Timeout(error));
             }
 
             // Compute wheel velocities required to follow a circular arc.
@@ -99,6 +99,8 @@ impl Swing {
 
         // Stop drivetrain after motion completes
         dt.set_voltages(0.0, 0.0);
+
+        Ok(())
     }
 
     /// Sets the heading angular required to finish the swing.

@@ -24,8 +24,9 @@ impl Robot {
             MotionParameters {
                 tolerance: 0.5,
                 velocity_tolerance: Some(2.5),
-                ..Default::default()
+                ..Default::default() 
             },
+            None,
         );
 
         let mut turn = Turn::new(
