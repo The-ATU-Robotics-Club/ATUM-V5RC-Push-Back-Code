@@ -60,41 +60,41 @@ impl Robot {
 
         dt.set_pose(Pose::new(95.945, 20.926, Angle::ZERO));
 
-        self.settings.borrow_mut().door_commands = DoorCommands::Open;
+        self.intake.set_door(DoorCommands::Open);
 
         // Drive to the match loader
-        linear
+        _ = linear
             .timeout(Duration::from_millis(1000))
             .drive_distance(dt, 23.0)
             .await;
 
-        self.settings.borrow_mut().door_commands = DoorCommands::Close;
+        self.intake.set_door(DoorCommands::Close);
 
-        turn.timeout(Duration::from_millis(1000))
+        _ = turn.timeout(Duration::from_millis(1000))
             .turn_to_point(dt, RED_RIGHT_LOADER, false)
             .await;
 
-        self.settings.borrow_mut().door_commands = DoorCommands::Off;
+        self.intake.set_door(DoorCommands::Off);
 
         // Grab balls from match loader
         self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
         _ = self.match_loader.set_high();
 
-        linear
+        _ = linear
             .timeout(Duration::from_millis(7500))
             .speed(0.3)
             .drive_distance(dt, 13.0)
             .await;
 
         // Drive to goal
-        linear.drive_distance(dt, -7.5).await;
+        _ = linear.drive_distance(dt, -7.5).await;
         self.intake.set_voltage(0.0);
         _ = self.match_loader.set_low();
         sleep(Duration::from_millis(500)).await; // wait for balls to settle in robot
         _ = self.lift.set_high();
         _ = self.wing.set_high();
-        self.settings.borrow_mut().door_commands = DoorCommands::Off;
-        turn.timeout(Duration::from_millis(1000))
+        self.intake.set_door(DoorCommands::Off);
+        _ = turn.timeout(Duration::from_millis(1000))
             .turn_to_point(dt, RED_RIGHT_GOAL, false)
             .await;
 
@@ -102,7 +102,7 @@ impl Robot {
         _ = self.duck_bill.set_high();
         zip(
             async {
-                move_to
+                _ = move_to
                     .timeout(Duration::from_millis(5000))
                     .move_to_point(dt, RED_RIGHT_GOAL)
                     .await;
@@ -124,22 +124,22 @@ impl Robot {
 
         // Back up and shove balls into goal
         _ = self.duck_bill.set_low();
-        linear
+        _ = linear
             .timeout(Duration::from_millis(1000))
             .drive_distance(dt, -5.0)
             .await;
-        swing
+        _ = swing
             .timeout(Duration::from_millis(750))
             .swing_to(dt, Angle::ZERO, 5.0)
             .await;
 
-        linear.drive_distance(dt, -7.0).await;
-        turn.timeout(Duration::from_millis(1500))
+        _ = linear.drive_distance(dt, -7.0).await;
+        _ = turn.timeout(Duration::from_millis(1500))
             .turn_to(dt, Angle::from_degrees(90.0))
             .await;
         _ = self.wing.set_low();
 
-        move_to
+        _ = move_to
             .timeout(Duration::from_millis(1500))
             .speed(0.6)
             .move_to_point(dt, Vec2::new(107.0, 55.0))
@@ -149,25 +149,25 @@ impl Robot {
 
         // drive to the second match load
         let target = Vec2::new(self.pose.borrow().x, 144.0 - 24.0);
-        linear.drive_to_point(dt, target, false).await;
+        _ = linear.drive_to_point(dt, target, false).await;
 
         _ = self.lift.set_low();
         _ = self.wing.set_low();
 
-        turn.turn_to(dt, Angle::ZERO).await;
+        _ = turn.turn_to(dt, Angle::ZERO).await;
         let target = Vec2::new(144.0 - 24.0, self.pose.borrow().y);
-        linear.drive_to_point(dt, target, false).await;
+        _ = linear.drive_to_point(dt, target, false).await;
 
-        turn.turn_to(dt, Angle::from_degrees(90.0)).await;
+        _ = turn.turn_to(dt, Angle::from_degrees(90.0)).await;
         _ = self.match_loader.set_high();
-        linear.drive_distance(dt, 20.0).await;
+        _ = linear.drive_distance(dt, 20.0).await;
 
         // MIRROR ON OTHER SIDE
         // grab balls and score on long goal
         self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
         _ = self.match_loader.set_high();
 
-        linear
+        _ = linear
             .timeout(Duration::from_millis(7500))
             .speed(0.3)
             // .drive_to_point(&mut self.drivetrain, vec2_length(RED_RIGHT_LOADER))
@@ -175,14 +175,14 @@ impl Robot {
             .await;
 
         // Drive to goal
-        linear.drive_distance(dt, -7.5).await;
+        _ = linear.drive_distance(dt, -7.5).await;
         self.intake.set_voltage(0.0);
         _ = self.match_loader.set_low();
         sleep(Duration::from_millis(500)).await; // wait for balls to settle in robot
         _ = self.lift.set_high();
         _ = self.wing.set_high();
-        self.settings.borrow_mut().door_commands = DoorCommands::Off;
-        turn.settle_velocity(10.0_f64.to_radians())
+        self.intake.set_door(DoorCommands::Off);
+        _ = turn.settle_velocity(10.0_f64.to_radians())
             .timeout(Duration::from_millis(1000))
             .turn_to_point(dt, BLUE_LEFT_GOAL, false)
             .await;
@@ -191,7 +191,7 @@ impl Robot {
         _ = self.duck_bill.set_high();
         zip(
             async {
-                move_to
+                _ = move_to
                     .timeout(Duration::from_millis(5000))
                     .move_to_point(dt, BLUE_LEFT_GOAL)
                     .await;
@@ -211,6 +211,6 @@ impl Robot {
         )
         .await;
 
-        linear.drive_distance(dt, -5.0).await;
+        _ = linear.drive_distance(dt, -5.0).await;
     }
 }

@@ -44,7 +44,7 @@ impl Compete for Robot {
         println!("autnomous");
         let time = Instant::now();
         let route = self.settings.borrow().index;
-        self.settings.borrow_mut().door_commands = DoorCommands::On;
+        self.intake.set_door(DoorCommands::On);
 
         match route {
             1 => self.rushelims().await,
@@ -97,12 +97,12 @@ impl Compete for Robot {
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
-                let mut setting = self.settings.borrow_mut();
-                setting.door_commands = match setting.door_commands {
+                let door_command = self.intake.door();
+                self.intake.set_door(match door_command {
                     DoorCommands::On => DoorCommands::Off,
                     DoorCommands::Off => DoorCommands::On,
-                    _ => setting.door_commands, // keep the command
-                }
+                    _ => door_command,
+                });
             }
 
             if mappings.duck_bill.is_pressed() {
@@ -124,26 +124,32 @@ impl Compete for Robot {
             }
 
             if mappings.enable_color.is_now_pressed() {
-                let mut setting = self.settings.borrow_mut();
-                setting.door_commands = match setting.door_commands {
+                self.intake.set_door(match self.intake.door() {
                     DoorCommands::ForceOff => DoorCommands::On,
                     _ => DoorCommands::ForceOff,
-                }
+                });
             }
 
             if mappings.swap_color.is_now_pressed() {
                 let mut setting = self.settings.borrow_mut();
                 setting.color = !setting.color;
-            } 
+            }
 
             if self.settings.borrow().test_auton {
                 self.autonomous().await;
                 self.settings.borrow_mut().test_auton = false;
             }
 
-            // info!("Drivetrain: {}", self.drivetrain.pose());
+            if state.button_x.is_pressed() {
+                if state.button_down.is_pressed() {
+                    // self.drivetrain.set_pose(Pose::new(0.0, 0.0, Angle::QUARTER_TURN));
+                    self.drivetrain.set_pose(Pose::default());
+                }
+            }
 
-            sleep(Controller::UPDATE_INTERVAL).await;
+            info!("{}", self.drivetrain.pose());
+
+            sleep(Duration::from_millis(10)).await;
         }
     }
 }
@@ -156,6 +162,25 @@ async fn main(peripherals: Peripherals) {
     let mut color_sort = OpticalSensor::new(peripherals.port_17);
     _ = color_sort.set_led_brightness(1.0);
     _ = color_sort.set_integration_time(Duration::from_millis(10));
+
+    let wheel_1 = TrackingWheel::new(
+        peripherals.adi_a,
+        peripherals.adi_b,
+        2.362204724,
+        Vec2::new(-0.90288550, -5.70824103),
+        // Vec2::new(-5.531519437, -0.905980563),
+        // Vec2::new(-1.00288550, -5.41131450),
+        Angle::from_degrees(45.0),
+    );
+    let wheel_2 = TrackingWheel::new(
+        peripherals.adi_c,
+        peripherals.adi_d,
+        2.362204724,
+        Vec2::new(0.90288550, -5.70824103),
+        // Vec2::new(-5.531519437, 0.905980563),
+        // Vec2::new(1.00288550, -5.41131450),
+        Angle::from_degrees(-45.0),
+    );
 
     let mut imu = Imu::new(vec![
         InertialSensor::new(peripherals.port_19),
@@ -170,7 +195,6 @@ async fn main(peripherals: Peripherals) {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        door_commands: DoorCommands::ForceOff,
         color_override: false,
     }));
 
@@ -204,33 +228,17 @@ async fn main(peripherals: Peripherals) {
                 ],
                 motor_controller,
             ),
-            Odometry::new(
-                starting_position.clone(),
-                TrackingWheel::new(
-                    peripherals.adi_a,
-                    peripherals.adi_b,
-                    2.362204724,
-                    Vec2::new(-5.93824103, 1.00288550),
-                    Angle::from_degrees(45.0),
-                ),
-                TrackingWheel::new(
-                    peripherals.adi_c,
-                    peripherals.adi_d,
-                    2.362204724,
-                    Vec2::new(-5.93824103, -1.00288550),
-                    Angle::from_degrees(-45.0),
-                ),
-                imu,
-            ),
+            Odometry::new(starting_position.clone(), wheel_1, wheel_2, imu),
             2.5,
             12.0,
         ),
         intake: Intake::new(
             Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
-            AdiDigitalOut::new(peripherals.adi_e),
+            Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
+            AdiDigitalOut::new(adi_expander.adi_b),
             color_sort,
-            Duration::from_millis(80),
+            Duration::from_millis(85),
+            DoorCommands::On,
             settings.clone(),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_f),

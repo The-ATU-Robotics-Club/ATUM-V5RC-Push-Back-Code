@@ -25,7 +25,7 @@ use atum::{
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
-use vexide::{math::Angle, prelude::*};
+use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 
 struct Robot {
     controller: Controller,
@@ -55,6 +55,8 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
+        let mut brake = false;
+
         loop {
             let state = self.controller.state().unwrap_or_default();
             let mappings = ControllerMappings {
@@ -74,7 +76,15 @@ impl Compete for Robot {
                 back_door: state.button_a,
             };
 
-            self.drivetrain.drive(&mappings.drive_mode);
+            if mappings.brake.is_now_pressed() {
+                brake = !brake;
+            }
+
+            if brake {
+                self.drivetrain.brake(BrakeMode::Hold);
+            } else {
+                self.drivetrain.drive(&mappings.drive_mode);
+            }
 
             if mappings.intake.is_pressed() {
                 self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
@@ -86,12 +96,12 @@ impl Compete for Robot {
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
-                let mut settings = self.settings.borrow_mut();
-                settings.door_commands = match settings.door_commands {
+                let door_command = self.intake.door();
+                self.intake.set_door(match door_command {
                     DoorCommands::On => DoorCommands::Off,
                     DoorCommands::Off => DoorCommands::On,
-                    _ => settings.door_commands,
-                };
+                    _ => door_command,
+                });
             }
 
             if mappings.duck_bill.is_pressed() {
@@ -119,11 +129,10 @@ impl Compete for Robot {
             }
 
             if mappings.enable_color.is_now_pressed() {
-                let mut settings = self.settings.borrow_mut();
-                settings.door_commands = match settings.door_commands {
+                self.intake.set_door(match self.intake.door() {
                     DoorCommands::ForceOff => DoorCommands::On,
                     _ => DoorCommands::ForceOff,
-                };
+                });
             }
 
             if mappings.swap_color.is_now_pressed() {
@@ -141,8 +150,8 @@ impl Compete for Robot {
 
             if state.button_x.is_pressed() {
                 if state.button_down.is_pressed() {
-                    self.drivetrain.set_pose(Pose::new(97.0, 21.5, Angle::ZERO));
-                    // self.drivetrain.set_pose(Pose::default());
+                    // self.drivetrain.set_pose(Pose::new(97.0, 21.5, Angle::ZERO));
+                    self.drivetrain.set_pose(Pose::default());
                 }
             }
 
@@ -167,6 +176,23 @@ async fn main(peripherals: Peripherals) {
     _ = color_sort.set_led_brightness(1.0);
     _ = color_sort.set_integration_time(Duration::from_millis(10));
 
+    let wheel_1 = TrackingWheel::new(
+        peripherals.adi_a,
+        peripherals.adi_b,
+        2.362204724,
+        Vec2::new(-1.00288550, -5.93824103),
+        Angle::from_degrees(45.0),
+    );
+    let wheel_2 = TrackingWheel::new(
+        peripherals.adi_c,
+        peripherals.adi_d,
+        2.362204724,
+        Vec2::new(1.00288550, -5.93824103),
+        // Vec2::new(-5.531519437, 0.905980563),
+        // Vec2::new(1.00288550, -5.41131450),
+        Angle::from_degrees(-45.0),
+    );
+
     // TODO - make imu calibrate at the same time
     let mut imu = Imu::new(vec![
         InertialSensor::new(peripherals.port_14),
@@ -180,7 +206,6 @@ async fn main(peripherals: Peripherals) {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        door_commands: DoorCommands::On,
         color_override: false,
     }));
 
@@ -214,24 +239,7 @@ async fn main(peripherals: Peripherals) {
                 ],
                 motor_controller,
             ),
-            Odometry::new(
-                starting_position.clone(),
-                TrackingWheel::new(
-                    peripherals.adi_a,
-                    peripherals.adi_b,
-                    2.362204724,
-                    Vec2::new(-5.93824103, 1.00288550),
-                    Angle::from_degrees(45.0),
-                ),
-                TrackingWheel::new(
-                    peripherals.adi_c,
-                    peripherals.adi_d,
-                    2.362204724,
-                    Vec2::new(-5.93824103, -1.00288550),
-                    Angle::from_degrees(-45.0),
-                ),
-                imu,
-            ),
+            Odometry::new(starting_position.clone(), wheel_1, wheel_2, imu),
             2.5,
             12.0,
         ),
@@ -241,6 +249,7 @@ async fn main(peripherals: Peripherals) {
             AdiDigitalOut::new(peripherals.adi_f),
             color_sort,
             Duration::from_millis(85),
+            DoorCommands::On,
             settings.clone(),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_g),

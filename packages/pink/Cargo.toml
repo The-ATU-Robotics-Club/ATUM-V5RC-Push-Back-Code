@@ -9,7 +9,6 @@ edition = "2024"
 [package.metadata.v5]
 upload-strategy = "differential"
 slot = 1
-name = "pink"
 icon = "cool-x"
 compress = true
 

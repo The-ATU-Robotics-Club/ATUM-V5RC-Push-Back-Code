@@ -52,10 +52,10 @@ impl Robot {
         self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
         zip(
             async {
-                linear.drive_distance(dt, 28.0).await;
+                _ = linear.drive_distance(dt, 28.0).await;
                 self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
 
-                move_to
+                _ = move_to
                     .speed(0.75)
                     .timeout(Duration::from_millis(1500))
                     .move_to_point(dt, Vec2::new(44.5, 69.0))
@@ -69,57 +69,57 @@ impl Robot {
             },
         )
         .await;
-        turn.tolerance(Angle::from_degrees(5.0))
+        _ = turn.tolerance(Angle::from_degrees(5.0))
             .turn_to_point(dt, Vec2::new(55.0, 53.0), true)
             .await;
-        move_to
+        _ = move_to
             .timeout(Duration::from_millis(1000))
             .move_to_point(dt, Vec2::new(55.0, 52.0))
             .await;
-        turn.timeout(Duration::from_millis(750))
+        _ = turn.timeout(Duration::from_millis(750))
             .turn_to(dt, Angle::from_degrees(45.0))
             .await;
         self.intake.set_voltage(0.0);
         _ = self.duck_bill.set_high();
-        linear
+        _ = linear
             .timeout(Duration::from_millis(1000))
             .drive_distance(dt, 4.5)
             .await;
         self.intake.set_voltage(10.0);
         sleep(Duration::from_millis(750)).await;
-        linear
+        _ = linear
             .timeout(Duration::from_millis(2000))
             .drive_to_point(dt, Vec2::new(26.0, 26.0), true)
             .await;
         _ = self.duck_bill.set_low();
         self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-        turn.timeout(Duration::from_millis(2000))
+        _ = turn.timeout(Duration::from_millis(2000))
             .settle_velocity(5.0_f64.to_radians())
             .turn_to_point(dt, RED_LEFT_LOADER, false)
             .await;
         _ = self.match_loader.set_high();
-        linear
+        _ = linear
             .speed(0.3)
             .timeout(Duration::from_millis(7500))
             .drive_distance(dt, 20.0)
             .await;
 
-        linear
+        _ = linear
             .timeout(Duration::from_millis(1000))
             .drive_distance(dt, -7.5)
             .await;
         self.intake.set_voltage(0.0);
         _ = self.match_loader.set_low();
         sleep(Duration::from_millis(500)).await; // wait for balls to settle in robot
-        self.settings.borrow_mut().door_commands = DoorCommands::Close;
+        self.intake.set_door(DoorCommands::Close);
         sleep(Duration::from_millis(10)).await;
-        self.settings.borrow_mut().door_commands = DoorCommands::Off;
+        self.intake.set_door(DoorCommands::Off);
 
         _ = self.lift.set_high();
         _ = self.wing.set_high();
 
         // change to radians / second
-        turn.settle_velocity(10.0_f64.to_radians())
+        _ = turn.settle_velocity(10.0_f64.to_radians())
             .timeout(Duration::from_millis(1000))
             .turn_to_point(dt, RED_LEFT_GOAL, false)
             .await;
@@ -128,7 +128,7 @@ impl Robot {
         _ = self.duck_bill.set_high();
         zip(
             async {
-                move_to
+                _ = move_to
                     .timeout(Duration::from_millis(5000))
                     .move_to_point(dt, RED_LEFT_GOAL)
                     .await;
@@ -149,11 +149,11 @@ impl Robot {
 
         // Back up and shove balls into goal
         _ = self.duck_bill.set_low();
-        linear
+        _ = linear
             .timeout(Duration::from_millis(1000))
             .drive_distance(dt, -10.0)
             .await;
-        linear
+        _ = linear
             .timeout(Duration::from_millis(1000))
             .drive_distance(dt, 10.0)
             .await;
