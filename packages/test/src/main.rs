@@ -12,10 +12,7 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     settings::{Color, Settings},
-    subsystems::{
-        drivetrain::Drivetrain,
-        intake::{DoorCommands, Intake},
-    },
+    subsystems::drivetrain::Drivetrain,
 };
 use log::{LevelFilter, info};
 use vexide::{math::Angle, prelude::*};
@@ -23,7 +20,7 @@ use vexide::{math::Angle, prelude::*};
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
-    intake: Intake,
+    // aiv: AiVisionSensor,
 }
 
 impl Compete for Robot {
@@ -53,14 +50,6 @@ impl Compete for Robot {
 
             self.drivetrain.drive(&mappings.drive_mode);
 
-            if mappings.intake.is_pressed() {
-                self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-            } else if mappings.outake.is_pressed() {
-                self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
-            } else {
-                self.intake.set_voltage(0.0);
-            }
-
             sleep(Controller::UPDATE_INTERVAL).await;
         }
     }
@@ -87,7 +76,6 @@ async fn main(peripherals: Peripherals) {
         color: Color::Red,
         index: 0,
         test_auton: false,
-        door_commands: DoorCommands::Off,
         color_override: false,
     }));
 
@@ -142,14 +130,6 @@ async fn main(peripherals: Peripherals) {
             ),
             2.5,
             12.0,
-        ),
-        intake: Intake::new(
-            Motor::new(peripherals.port_1, Gearset::Blue, Direction::Reverse),
-            Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
-            AdiDigitalOut::new(peripherals.adi_c),
-            color_sort,
-            Duration::from_millis(100),
-            settings.clone(),
         ),
     };
 
