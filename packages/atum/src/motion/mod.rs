@@ -9,8 +9,6 @@ pub mod turn;
 
 use std::time::Duration;
 
-use vexide::prelude::Motor;
-
 /// Common configuration parameters used by motion controllers.
 ///
 /// These parameters control when a motion is considered complete
@@ -18,7 +16,7 @@ use vexide::prelude::Motor;
 ///
 /// This struct is generic over the tolerance type so it can be reused
 /// for different error units (distance, angle, etc.).
-pub struct MotionParameters<T: Copy + PartialEq + PartialOrd> {
+pub struct MotionParameters<T: Copy + PartialEq + PartialOrd + Default> {
     /// Acceptable position error required to consider the motion complete.
     pub tolerance: T,
 
@@ -38,7 +36,7 @@ pub struct MotionParameters<T: Copy + PartialEq + PartialOrd> {
 /// Defaults are intentionally permissive so controllers can run without
 /// requiring full configuration:
 ///
-/// - `tolerance` is set to the type's default value (typically `0`).
+/// - `tolerance` is set to the type's default value.
 /// - `velocity_tolerance` is disabled (`None`), meaning settling is based
 ///   only on positional error unless explicitly configured.
 /// - `timeout` is disabled (`None`), allowing the motion to run indefinitely.
@@ -49,7 +47,7 @@ impl<T: Copy + PartialEq + PartialOrd + Default> Default for MotionParameters<T>
             tolerance: T::default(),
             velocity_tolerance: Default::default(),
             timeout: Default::default(),
-            speed: Motor::V5_MAX_VOLTAGE, // rewrite to make speed a percentage
+            speed: 1.0,
         }
     }
 }
@@ -57,11 +55,11 @@ impl<T: Copy + PartialEq + PartialOrd + Default> Default for MotionParameters<T>
 pub type MotionResult<T> = Result<(), MotionError<T>>;
 
 pub enum MotionError<T> {
-    /// The error that was given after a motion timeout.
+    /// The distance from a motion's target after a timeout.
     Timeout(T),
 
-    /// A sensor the motion relies fails.
-    Sensor
+    /// Sensor failure.
+    Sensor,
 }
 
 /// Scales a set of outputs proportionally so the largest magnitude

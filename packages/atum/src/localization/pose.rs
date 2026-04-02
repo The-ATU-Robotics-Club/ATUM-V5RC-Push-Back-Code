@@ -49,9 +49,7 @@ impl Pose {
             omega: 0.0,
         }
     }
-}
 
-impl Pose {
     /// Returns the position component of the pose as a vector.
     pub fn position(&self) -> Vec2<f64> {
         Vec2::new(self.x, self.y)

@@ -1,14 +1,9 @@
 use std::time::{Duration, Instant};
 
-use log::{debug, info};
 use vexide::{math::Angle, prelude::Motor, time::sleep};
 
 use super::{MotionError, MotionParameters, MotionResult};
-use crate::{
-    controllers::pid::Pid,
-    localization::vec2::Vec2,
-    subsystems::drivetrain::Drivetrain,
-};
+use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
 
 /// Controller responsible for rotational robot movement.
 ///
@@ -32,23 +27,32 @@ impl Turn {
     ///
     /// The heading to the point is calculated using `atan2`
     /// and then passed to `turn_to`.
-    pub async fn turn_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<f64>, reverse: bool) -> MotionResult<Angle> {
-        let pose = Vec2::new(dt.pose().x, dt.pose().y);
+    pub async fn turn_to_point(
+        &mut self,
+        drivetrain: &mut Drivetrain,
+        point: Vec2<f64>,
+        reverse: bool,
+    ) -> MotionResult<Angle> {
+        let pose = drivetrain.pose().position();
         let mut target = Angle::from_radians((point - pose).angle());
 
         if reverse {
             target += Angle::HALF_TURN;
         }
 
-        self.turn_to(dt, target).await?;
+        self.turn_to(drivetrain, target).await?;
 
         Ok(())
     }
 
     /// Rotates the robot to a specific heading.
-    pub async fn turn_to(&mut self, dt: &mut Drivetrain, target: Angle) -> MotionResult<Angle> {
-        let mut time = Duration::ZERO;
-        let mut prev_time = Instant::now();
+    pub async fn turn_to(
+        &mut self,
+        drivetrain: &mut Drivetrain,
+        target: Angle,
+    ) -> MotionResult<Angle> {
+        let start_time = Instant::now();
+        let mut prev_time = start_time;
 
         // Reset PID parameters
         self.pid.reset();
@@ -57,27 +61,17 @@ impl Turn {
             // Run controller loop at 100 Hz
             sleep(Duration::from_millis(10)).await;
 
-            let elapsed_time = prev_time.elapsed();
-            time += elapsed_time;
-            prev_time = Instant::now();
+            let now = Instant::now();
+            let dt = now - prev_time;
+            prev_time = now;
 
-            // Current robot heading
-            let heading = dt.pose().h;
+            let heading = drivetrain.pose().h;
+            let omega = drivetrain.pose().omega;
 
             // Compute shortest angular error between target and heading
             // `wrapped_half()` ensures the error stays within [-π, π)
             let error = (target - heading).wrapped_half();
-
-            // PID output converted to motor voltage
-            let output = self
-                .pid
-                .output(error.as_radians(), elapsed_time)
-                .clamp(-self.params.speed, self.params.speed);
-
-            // Current angular velocity from odometry
-            let omega = dt.pose().omega;
-
-            debug!("(Error, Velocity): ({}, {})", error.as_degrees(), omega);
+            let output = self.pid.output(error.as_radians(), dt);
 
             // Motion is complete if:
             // 1. Angular error is within tolerance
@@ -88,26 +82,25 @@ impl Turn {
                     .velocity_tolerance
                     .is_none_or(|tolerance| omega.abs() < tolerance)
             {
-                info!(
-                    "Turn complete at: {} with {}ms",
-                    target.as_degrees(),
-                    time.as_millis(),
-                );
                 break;
             }
 
             // Stop if the motion exceeds the allowed timeout
-            if self.params.timeout.is_some_and(|timeout| time > timeout) {
-                dt.set_voltages(0.0, 0.0);
+            if self
+                .params
+                .timeout
+                .is_some_and(|timeout| start_time.elapsed() > timeout)
+            {
+                drivetrain.set_voltages(0.0, 0.0);
                 return Err(MotionError::Timeout(error));
             }
 
             // Apply opposite voltages to create rotation
-            dt.set_voltages(output, -output);
+            drivetrain.set_arcade(0.0, output * self.params.speed);
         }
 
         // Stop drivetrain after the turn completes
-        dt.set_voltages(0.0, 0.0);
+        drivetrain.set_voltages(0.0, 0.0);
 
         Ok(())
     }

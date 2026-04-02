@@ -1,14 +1,9 @@
 use std::time::{Duration, Instant};
 
-use log::{debug, info, warn};
-use vexide::{math::Angle, prelude::Motor, time::sleep};
+use vexide::{math::Angle, time::sleep};
 
-use super::{MotionError, MotionParameters, MotionResult, desaturate};
-use crate::{
-    controllers::pid::Pid,
-    localization::vec2::Vec2,
-    subsystems::drivetrain::Drivetrain,
-};
+use super::{MotionError, MotionParameters, MotionResult};
+use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
 
 /// Controller that drives the robot to a 2D point.
 ///
@@ -42,9 +37,13 @@ impl MoveTo {
     ///
     /// The robot simultaneously drives forward and steers toward the point
     /// rather than performing separate turn and drive motions.
-    pub async fn move_to_point(&mut self, dt: &mut Drivetrain, target: Vec2<f64>) -> MotionResult<Vec2<f64>> {
+    pub async fn move_to_point(
+        &mut self,
+        drivetrain: &mut Drivetrain,
+        target: Vec2<f64>,
+    ) -> MotionResult<Vec2<f64>> {
         let start_time = Instant::now();
-        let mut prev_time = Instant::now();
+        let mut prev_time = start_time;
 
         // Reset PID parameters
         self.linear.reset();
@@ -54,14 +53,14 @@ impl MoveTo {
             // Run control loop at 100Hz
             sleep(Duration::from_millis(10)).await;
 
-            let elapsed_time = prev_time.elapsed();
-            prev_time = Instant::now();
+            let now = Instant::now();
+            let dt = now - prev_time;
+            prev_time = now;
 
             // Current robot pose
-            let pose = dt.pose();
+            let pose = drivetrain.pose();
             let position = pose.position();
             let heading = pose.h;
-            debug!("Position: ({})", pose);
 
             // Vector from robot to target
             let position_error = target - position;
@@ -81,7 +80,6 @@ impl MoveTo {
                     .velocity_tolerance
                     .is_none_or(|tolerance| pose.vf.abs() < tolerance))
             {
-                info!("move_to success");
                 break;
             }
 
@@ -91,7 +89,7 @@ impl MoveTo {
                 .timeout
                 .is_some_and(|timeout| start_time.elapsed() > timeout)
             {
-                dt.set_voltages(0.0, 0.0);
+                drivetrain.set_voltages(0.0, 0.0);
                 return Err(MotionError::Timeout(position_error));
             }
 
@@ -105,30 +103,23 @@ impl MoveTo {
             if herror.abs() > Angle::QUARTER_TURN {
                 cross_track_error *= -1.0;
                 distance *= -1.0;
-            } 
+            }
 
             // Forward motion scaled by the alignment with the target
-            let linear_output = self.linear.output(distance, elapsed_time) * herror.cos().abs();
+            let linear_output = self.linear.output(distance, dt) * herror.cos().abs();
 
             // Steering correction from cross-track error
-            let angular_output = self.lateral.output(-cross_track_error, elapsed_time);
-
-            // Combine forward and angular commands while scaling wheel
-            // voltages proportionally so their ratio is preserved
-            let [left, right] = desaturate(
-                [
-                    linear_output + angular_output,
-                    linear_output - angular_output,
-                ],
-                self.params.speed,
-            );
+            let angular_output = self.lateral.output(-cross_track_error, dt);
 
             // Apply output to motors
-            dt.set_voltages(left, right);
+            drivetrain.set_arcade(
+                linear_output * self.params.speed,
+                angular_output * self.params.speed,
+            );
         }
 
         // Stop drivetrain after motion completes
-        dt.set_voltages(0.0, 0.0);
+        drivetrain.set_voltages(0.0, 0.0);
 
         Ok(())
     }
@@ -153,7 +144,7 @@ impl MoveTo {
 
     /// Scales the maximum speed used during the motion.
     pub fn speed(&mut self, speed: f64) -> &mut Self {
-        self.params.speed = Motor::V5_MAX_VOLTAGE * speed;
+        self.params.speed = speed;
         self
     }
 }

@@ -1,13 +1,9 @@
 use std::time::{Duration, Instant};
 
-use log::info;
-use vexide::{prelude::{DistanceSensor, Motor}, time::sleep};
+use vexide::{prelude::DistanceSensor, time::sleep};
 
 use super::{MotionError, MotionParameters, MotionResult};
-use crate::{
-    controllers::pid::Pid, localization::vec2::Vec2,
-    subsystems::drivetrain::Drivetrain,
-};
+use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
 
 /// Linear motion controller.
 ///
@@ -27,31 +23,49 @@ pub struct Linear {
 
 impl Linear {
     /// Creates a new linear motion controller.
-    pub fn new(pid: Pid, params: MotionParameters<f64>, distance_sensor:Option<DistanceSensor>) -> Self {
-        Self { pid, params, distance_sensor, use_distance:false }
+    pub fn new(
+        pid: Pid,
+        params: MotionParameters<f64>,
+        distance_sensor: Option<DistanceSensor>,
+    ) -> Self {
+        Self {
+            pid,
+            params,
+            distance_sensor,
+            use_distance: false,
+        }
     }
 
     /// Drives the robot to a target point on the field.
     ///
     /// The distance to the point is computed and then passed
     /// to `drive_distance`.
-    pub async fn drive_to_point(&mut self, dt: &mut Drivetrain, point: Vec2<f64>, reverse: bool) -> MotionResult<f64> {
-        let pose = Vec2::new(dt.pose().x, dt.pose().y);
+    pub async fn drive_to_point(
+        &mut self,
+        drivetrain: &mut Drivetrain,
+        point: Vec2<f64>,
+        reverse: bool,
+    ) -> MotionResult<f64> {
+        let pose = drivetrain.pose().position();
         let mut target_distance = (point - pose).length();
 
         if reverse {
             target_distance *= -1.0;
         }
 
-        self.drive_distance(dt, target_distance).await?;
+        self.drive_distance(drivetrain, target_distance).await?;
 
         Ok(())
     }
 
     /// Drives the robot forward or backward by a specified distance.
-    pub async fn drive_distance(&mut self, dt: &mut Drivetrain, target: f64) -> MotionResult<f64> {
-        let mut time = Duration::ZERO;
-        let mut prev_time = Instant::now();
+    pub async fn drive_distance(
+        &mut self,
+        drivetrain: &mut Drivetrain,
+        target: f64,
+    ) -> MotionResult<f64> {
+        let start_time = Instant::now();
+        let mut prev_time = start_time;
 
         // Estimated distance traveled during this motion
         let mut traveled = 0.0;
@@ -63,34 +77,31 @@ impl Linear {
             // Run controller at 100 Hz
             sleep(Duration::from_millis(10)).await;
 
-            let elapsed_time = prev_time.elapsed();
-            time += elapsed_time;
-            prev_time = Instant::now();
+            let now = Instant::now();
+            let dt = now - prev_time;
+            prev_time = now;
 
-            let pose = dt.pose();
-            let mut error;
-            if !self.use_distance {
+            let pose = drivetrain.pose();
+            let error = if !self.use_distance {
                 // Integrate forward velocity to estimate distance traveled
-                traveled += pose.vf * elapsed_time.as_secs_f64();
+                traveled += pose.vf * dt.as_secs_f64();
 
                 // Remaining distance to target
-                error = target - traveled
-            } else if let Some(distance_sensor) = &self.distance_sensor {
-                let Ok(Some(object)) = distance_sensor.object() else {
-                    dt.set_voltages(0.0, 0.0);
-                    return Err(MotionError::Sensor);
-                };
-
-                error = (object.distance as f64 / 25.4) - target;
+                target - traveled
             } else {
-                return Err(MotionError::Sensor);
-            }
+                // Do not that if this returns early, the drivetrain will still move if it occurs
+                // mid motion. For now, do a safety check and stop drivetrain if it fails.
+                let distance_sensor = self.distance_sensor.as_ref().ok_or(MotionError::Sensor)?;
 
-            // PID controller output (clamped to voltage limits)
-            let output = self
-                .pid
-                .output(error, elapsed_time)
-                .clamp(self.params.speed, self.params.speed);
+                let object = distance_sensor
+                    .object()
+                    .map_err(|_| MotionError::Sensor)?
+                    .ok_or(MotionError::Sensor)?;
+
+                (object.distance as f64 / 25.4) - target
+            };
+
+            let output = self.pid.output(error, dt);
 
             // Motion is complete if:
             // 1. Error is within tolerance
@@ -101,29 +112,31 @@ impl Linear {
                     .velocity_tolerance
                     .is_none_or(|tolerance| pose.vf.abs() < tolerance))
             {
-                info!("turn success");
                 break;
             }
 
             // Stop if the motion exceeds the allowed timeout
-            if self.params.timeout.is_some_and(|timeout| time > timeout) {
-                dt.set_voltages(0.0, 0.0);
+            if self
+                .params
+                .timeout
+                .is_some_and(|timeout| start_time.elapsed() > timeout)
+            {
+                drivetrain.set_voltages(0.0, 0.0);
                 return Err(MotionError::Timeout(error));
             }
 
             // Apply equal voltage to both sides to drive straight
-            dt.set_voltages(output, output);
+            drivetrain.set_arcade(output * self.params.speed, 0.0);
         }
 
         // Stop drivetrain after motion completes
-        dt.set_voltages(0.0, 0.0);
+        drivetrain.set_voltages(0.0, 0.0);
 
         Ok(())
     }
 
-
     /// Sets the distance tolerance required for success.
-    pub fn chain(&mut self, tolerance: f64) -> &mut Self {
+    pub fn tolerance(&mut self, tolerance: f64) -> &mut Self {
         self.params.tolerance = tolerance;
         self
     }
@@ -143,7 +156,7 @@ impl Linear {
 
     /// Scales the maximum speed used for the motion.
     pub fn speed(&mut self, speed: f64) -> &mut Self {
-        self.params.speed = Motor::V5_MAX_VOLTAGE * speed;
+        self.params.speed = speed;
         self
     }
 
@@ -152,4 +165,3 @@ impl Linear {
         self
     }
 }
-

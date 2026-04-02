@@ -1,13 +1,9 @@
 use std::time::{Duration, Instant};
 
-use log::{info, warn};
-use vexide::{math::Angle, prelude::Gearset, time::sleep};
+use vexide::{math::Angle, time::sleep};
 
-use super::{MotionError, MotionParameters, MotionResult, desaturate};
-use crate::{
-    controllers::pid::Pid,
-    subsystems::drivetrain::Drivetrain,
-};
+use super::{MotionError, MotionParameters, MotionResult};
+use crate::{controllers::pid::Pid, subsystems::drivetrain::Drivetrain};
 
 /// Controller for performing a swing turn.
 ///
@@ -34,12 +30,17 @@ impl Swing {
     /// a circular arc with the specified radius.
     ///
     /// `radius` is measured from the robot's center of rotation.
-    pub async fn swing_to(&mut self, dt: &mut Drivetrain, target: Angle, radius: f64) -> MotionResult<Angle> {
-        let mut time = Duration::ZERO;
-        let mut prev_time = Instant::now();
+    pub async fn swing_to(
+        &mut self,
+        drivetrain: &mut Drivetrain,
+        target: Angle,
+        radius: f64,
+    ) -> MotionResult<Angle> {
+        let start_time = Instant::now();
+        let mut prev_time = start_time;
 
         // Distance between the left and right wheels
-        let length = dt.track();
+        let length = drivetrain.track();
 
         // Reset PID parameters
         self.pid.reset();
@@ -48,41 +49,41 @@ impl Swing {
             // Run control loop at 100 Hz
             sleep(Duration::from_millis(10)).await;
 
-            let elapsed_time = prev_time.elapsed();
-            time += elapsed_time;
-            prev_time = Instant::now();
+            let now = Instant::now();
+            let dt = now - prev_time;
+            prev_time = now;
 
             // Current heading
-            let heading = dt.pose().h;
+            let heading = drivetrain.pose().h;
 
             // Shortest angular difference to the target
             let error = (target - heading).wrapped_half();
 
             // PID output representing angular velocity command
-            let output = self.pid.output(error.as_radians(), elapsed_time);
+            let output = self.pid.output(error.as_radians(), dt);
 
             // Current angular velocity from odometry
-            let omega = dt.pose().omega;
+            let omega = drivetrain.pose().omega;
 
             // Motion is complete if:
             // 1. Angular error is within tolerance
             // 2. Angular velocity is sufficiently small (robot has settled)
             if error.abs() < self.params.tolerance
-                && self.params
+                && self
+                    .params
                     .velocity_tolerance
                     .is_none_or(|tolerance| omega.abs() < tolerance)
             {
-                info!(
-                    "Swing complete at: {} with {}ms",
-                    target.as_degrees(),
-                    time.as_millis()
-                );
                 break;
             }
 
             // Timeout safety
-            if self.params.timeout.is_some_and(|timeout| time > timeout) {
-                dt.set_voltages(0.0, 0.0);
+            if self
+                .params
+                .timeout
+                .is_some_and(|timeout| start_time.elapsed() > timeout)
+            {
+                drivetrain.set_voltages(0.0, 0.0);
                 return Err(MotionError::Timeout(error));
             }
 
@@ -90,15 +91,12 @@ impl Swing {
             let left = output * (radius - length / 2.0);
             let right = output * (radius + length / 2.0);
 
-            // Scale wheel velocities proportionally so their ratio is preserved
-            let [left, right] = desaturate([left, right], Gearset::MAX_BLUE_RPM);
-
             // Apply wheel velocities
-            dt.set_velocity(left, right);
+            drivetrain.set_velocity(left * self.params.speed, right * self.params.speed);
         }
 
         // Stop drivetrain after motion completes
-        dt.set_voltages(0.0, 0.0);
+        drivetrain.set_voltages(0.0, 0.0);
 
         Ok(())
     }
@@ -118,6 +116,12 @@ impl Swing {
     /// Sets a timeout for the motion.
     pub fn timeout(&mut self, duration: Duration) -> &mut Self {
         self.params.timeout = Some(duration);
+        self
+    }
+
+    /// Scales the maximum speed used during the motion.
+    pub fn speed(&mut self, speed: f64) -> &mut Self {
+        self.params.speed = speed;
         self
     }
 }
