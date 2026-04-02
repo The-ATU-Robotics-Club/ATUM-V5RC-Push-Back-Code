@@ -5,8 +5,6 @@
 
 use std::ops::{Not, Range};
 
-use crate::subsystems::intake::DoorCommands;
-
 /// Stores the main settings for a run of the robot.
 ///
 /// These values are used to control autonomous behavior, color selection,
@@ -19,8 +17,6 @@ pub struct Settings {
     pub index: usize,
     /// Whether to run the test autonomous routine
     pub test_auton: bool,
-    /// Door command for the intake system used in sorting
-    pub door_commands: DoorCommands,
     /// Whether to override automatic color selection
     pub color_override: bool,
 }
@@ -34,6 +30,7 @@ pub enum Color {
 
 impl Color {
     /// Hue ranges for Red and Blue (in degrees)
+    // pub const RED_HUE: Range<f64> = 300.0..360.0;
     pub const RED_HUE: Range<f64> = 0.0..55.0;
     pub const BLUE_HUE: Range<f64> = 70.0..300.0;
 
