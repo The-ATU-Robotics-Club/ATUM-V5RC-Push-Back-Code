@@ -4,12 +4,17 @@
 //! motor groups, voltage/velocity commands, and drive modes (Arcade/Tank).
 
 use std::f64::consts::PI;
-use vexide::{prelude::Motor, smart::motor::BrakeMode};
+
+use vexide::{
+    prelude::{Gearset, Motor},
+    smart::motor::BrakeMode,
+};
 
 use crate::{
     hardware::motor_group::MotorGroup,
     localization::{odometry::Odometry, pose::Pose},
     mappings::DriveMode,
+    motion::desaturate,
 };
 
 /// Represents a differential drivetrain with left and right motor groups
@@ -42,14 +47,16 @@ impl Drivetrain {
 
     /// Set motor voltages directly
     pub fn set_voltages(&mut self, left: f64, right: f64) {
-        self.left.set_voltage(left);
-        self.right.set_voltage(right);
+        let [left, right] = desaturate([left, right], 1.0);
+        self.left.set_voltage(left * Motor::V5_MAX_VOLTAGE);
+        self.right.set_voltage(right * Motor::V5_MAX_VOLTAGE);
     }
 
     /// Set motor target velocities
     pub fn set_velocity(&mut self, left: f64, right: f64) {
-        self.left.set_velocity(left);
-        self.right.set_velocity(right);
+        let [left, right] = desaturate([left, right], 1.0);
+        self.left.set_velocity(left * Gearset::MAX_BLUE_RPM);
+        self.right.set_velocity(right * Gearset::MAX_BLUE_RPM);
     }
 
     /// Set brake mode for both motor groups
@@ -59,7 +66,7 @@ impl Drivetrain {
     }
 
     /// Simple arcade drive control using power and turn
-    pub fn arcade(&mut self, power: f64, turn: f64) {
+    pub fn set_arcade(&mut self, power: f64, turn: f64) {
         let left = power + turn;
         let right = power - turn;
         self.set_voltages(left, right);
@@ -76,10 +83,10 @@ impl Drivetrain {
         match drive_mode {
             DriveMode::Arcade { power, turn } => {
                 power_val = power.y(); // forward/backward
-                turn_val = turn.x();   // rotation
+                turn_val = turn.x(); // rotation
             }
             DriveMode::Tank { left, right } => {
-                left_val = left.y();   // left side
+                left_val = left.y(); // left side
                 right_val = right.y(); // right side
             }
         }
@@ -94,10 +101,7 @@ impl Drivetrain {
         }
 
         // Scale voltages to V5 max
-        self.set_voltages(
-            left_val * Motor::V5_MAX_VOLTAGE,
-            right_val * Motor::V5_MAX_VOLTAGE,
-        );
+        self.set_voltages(left_val, right_val);
     }
 
     /// Returns the average voltage of the drivetrain motors
@@ -113,9 +117,7 @@ impl Drivetrain {
 
     /// Computes angular velocity of the robot
     pub fn angular_velocity(&self) -> f64 {
-        let vdiff = self.wheel_circum
-            * (self.left.velocity() - self.right.velocity())
-            / 60.0;
+        let vdiff = self.wheel_circum * (self.left.velocity() - self.right.velocity()) / 60.0;
 
         vdiff / self.track
     }
@@ -130,7 +132,7 @@ impl Drivetrain {
         self.odometry.set_pose(pose);
     }
 
-    /// Returns the track width (distance between left and right wheels)
+    /// Returns the distance between left and right wheels
     pub fn track(&self) -> f64 {
         self.track
     }
@@ -141,14 +143,9 @@ impl Drivetrain {
 /// - `power` – input value from -1.0 to 1.0
 /// - `acceleration` – exponent for scaling
 fn apply_curve(power: f64, acceleration: i32) -> f64 {
-    if acceleration == 1 {
-        return power; // Linear mapping
-    }
-
-    // Polynomial scaling, preserving sign
     power.powi(acceleration - 1)
         * if acceleration % 2 == 0 {
-            power.abs() // Even exponents preserve magnitude
+            power.abs()
         } else {
             power
         }
