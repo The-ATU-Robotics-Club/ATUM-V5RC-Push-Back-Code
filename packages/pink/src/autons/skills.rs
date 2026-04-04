@@ -4,7 +4,7 @@ use atum::{
     controllers::pid::Pid,
     localization::{pose::Pose, vec2::Vec2},
     motion::{MotionParameters, linear::Linear, move_to::MoveTo, swing::Swing, turn::Turn},
-    subsystems::intake::DoorCommands,
+    subsystems::intakes::cshape::DoorCommands,
 };
 use futures_lite::future::zip;
 use vexide::{

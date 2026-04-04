@@ -20,7 +20,7 @@ use atum::{
     settings::{Color, Settings},
     subsystems::{
         drivetrain::Drivetrain,
-        intake::{DoorCommands, Intake},
+        intakes::cshape::{CShape, DoorCommands},
     },
     theme::STOUT_ROBOT,
 };
@@ -30,7 +30,7 @@ use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
-    intake: Intake,
+    intake: CShape,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
     match_loader: AdiDigitalOut,
@@ -232,7 +232,7 @@ async fn main(peripherals: Peripherals) {
             2.5,
             12.0,
         ),
-        intake: Intake::new(
+        intake: CShape::new(
             Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
             Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
             AdiDigitalOut::new(adi_expander.adi_b),

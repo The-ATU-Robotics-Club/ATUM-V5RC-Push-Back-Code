@@ -20,13 +20,13 @@ pub enum DoorCommands {
 
 /// Manages intake motors and the door mechanism
 /// Handles ball color detection and automatic door operation.
-pub struct Intake {
+pub struct CShape {
     voltage: Rc<RefCell<f64>>, // Shared voltage to be applied to motors
     door_commands: Rc<RefCell<DoorCommands>>,
     _task: Task<()>, // Background task that loops continuously
 }
 
-impl Intake {
+impl CShape {
     /// Creates a new Intake system.
     ///
     /// # Arguments

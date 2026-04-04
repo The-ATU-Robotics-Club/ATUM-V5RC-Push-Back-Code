@@ -7,4 +7,4 @@
 //! - [`drivetrain`] – handles the robot drive system, including motor groups and odometry
 //! - [`intake`] – manages the intake motors, door mechanism, and color sorting logic
 pub mod drivetrain;
-pub mod intake;
+pub mod intakes;
