@@ -2,6 +2,7 @@
 ///
 /// Contains motion primitives used to move the robot in autonomous.
 /// Each submodule implements a specific type of movement controller.
+pub mod boomerang;
 pub mod linear;
 pub mod move_to;
 pub mod swing;
