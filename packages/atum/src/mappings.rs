@@ -39,12 +39,14 @@ pub struct ControllerMappings {
     pub enable_color: ButtonState,
 }
 
+// edit to use only one mapping struct
 pub struct ControllerMappingsLever {
     pub drive_mode: DriveMode,
 
     pub intake: ButtonState,
     pub outake: ButtonState,
     pub lever: ButtonState,
+    pub lspeed: ButtonState,
     pub lift: ButtonState,
     pub duck_bill: ButtonState,
     pub wing: ButtonState,

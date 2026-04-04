@@ -3,7 +3,7 @@ mod autons;
 use std::{
     cell::RefCell,
     rc::Rc,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use atum::{
@@ -16,7 +16,7 @@ use atum::{
     },
     localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
-    mappings::{ControllerMappings, ControllerMappingsLever, DriveMode},
+    mappings::{ControllerMappingsLever, DriveMode},
     settings::{Color, Settings},
     subsystems::{drivetrain::Drivetrain, intakes::lever::{Lever, LeverStage}},
     theme::STOUT_ROBOT,
@@ -49,6 +49,8 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
+        let mut lever_voltage = Motor::V5_MAX_VOLTAGE;
+
         loop {
             let state = self.controller.state().unwrap_or_default();
             let mappings = ControllerMappingsLever {
@@ -59,6 +61,7 @@ impl Compete for Robot {
                 intake: state.button_r1,
                 outake: state.button_r2,
                 lever: state.button_l1,
+                lspeed: state.button_a,
                 lift: state.button_y,
                 duck_bill: state.button_l1,
                 wing: state.button_l2,
@@ -80,10 +83,15 @@ impl Compete for Robot {
                 let lever_stage = match self.lever.stage() {
                     LeverStage::Score(_) => LeverStage::Reset,
                     LeverStage::Reset => LeverStage::Idle,
-                    LeverStage::Idle => LeverStage::Score(Motor::V5_MAX_VOLTAGE),
+                    LeverStage::Idle => LeverStage::Score(lever_voltage),
                 };
 
                 self.lever.score(lever_stage);
+            }
+
+            if mappings.lspeed.is_now_pressed() {
+                // do math stuff
+                lever_voltage = (lever_voltage - 3.0) % 9.0 + 6.0;
             }
 
             if mappings.lift.is_now_pressed() {
@@ -214,10 +222,10 @@ async fn main(peripherals: Peripherals) {
             ),
             RotationSensor::new(peripherals.port_6, Direction::Forward),
         ),
-        lift: AdiDigitalOut::new(peripherals.adi_g),
+        lift: AdiDigitalOut::new(peripherals.adi_e),
         duck_bill: AdiDigitalOut::new(peripherals.adi_h),
         match_loader: AdiDigitalOut::new(peripherals.adi_f),
-        wing: AdiDigitalOut::new(peripherals.adi_e),
+        wing: AdiDigitalOut::new(peripherals.adi_g),
         pose: starting_position,
         settings: settings.clone(),
     };
