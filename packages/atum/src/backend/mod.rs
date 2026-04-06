@@ -1,10 +1,18 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    rc::Rc,
+    sync::{Arc, Mutex}, time::Duration,
+};
 
-use slint::{ModelRc, SharedString, VecModel};
+use slint::{Color as SColor, ModelRc, SharedString, ToSharedString, VecModel};
 use vexide::prelude::Display;
 use vexide_slint::initialize_slint_platform;
 
-use crate::settings::{Color, Settings};
+use crate::{
+    logger::LogEntry,
+    settings::{Color, Settings},
+};
 
 slint::include_modules!();
 
@@ -14,7 +22,12 @@ slint::include_modules!();
 /// - Converts a list of autonomous paths into a Slint model.
 /// - Updates the shared `Settings` struct when a user selects event buttons.
 /// - Runs the Slint event loop.
-pub fn start_ui(display: Display, paths: Vec<&str>, settings: Rc<RefCell<Settings>>) {
+pub fn start_ui(
+    display: Display,
+    paths: Vec<&str>,
+    logs: Arc<Mutex<VecDeque<LogEntry>>>,
+    settings: Rc<RefCell<Settings>>,
+) {
     // Initialize the Slint platform using the robot's display
     initialize_slint_platform(display);
 
@@ -22,10 +35,7 @@ pub fn start_ui(display: Display, paths: Vec<&str>, settings: Rc<RefCell<Setting
     let app = AppWindow::new().unwrap();
 
     // Convert backend autonomous paths names
-    let modes: Vec<SharedString> = paths
-        .into_iter()
-        .map(SharedString::from)
-        .collect();
+    let modes: Vec<SharedString> = paths.into_iter().map(SharedString::from).collect();
     let model = ModelRc::new(VecModel::from(modes));
 
     // Assign the model to the GUI component
@@ -56,7 +66,35 @@ pub fn start_ui(display: Display, paths: Vec<&str>, settings: Rc<RefCell<Setting
         }
     });
 
+    let weak = app.as_weak();
+
+    let timer = slint::Timer::default();
+    timer.start(
+        slint::TimerMode::Repeated,
+        Duration::from_millis(10),
+        move || {
+            if let Some(app) = weak.upgrade() {
+                let model = {
+                    let logs = logs.lock().unwrap();
+                    let vec = logs.iter().map(to_slint_log).collect::<Vec<_>>();
+                    ModelRc::new(VecModel::from(vec))
+                };
+
+                app.set_logs(model);
+            }
+        },
+    );
+
     // Show the GUI window and start the Slint event loop
     _ = app.show();
     _ = slint::run_event_loop();
+}
+
+pub fn to_slint_log(log: &LogEntry) -> Log {
+    Log {
+        time: log.time.to_shared_string(),
+        level: log.level.to_shared_string(),
+        level_color: SColor::from_rgb_u8(log.level_color.0, log.level_color.1, log.level_color.2),
+        message: log.message.to_shared_string(),
+    }
 }
