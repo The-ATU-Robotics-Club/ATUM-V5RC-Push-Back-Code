@@ -14,6 +14,7 @@ use atum::{
     settings::{Color, Settings},
     subsystems::drivetrain::Drivetrain,
 };
+use lazy_static::lazy_static;
 use log::{LevelFilter, info};
 use vexide::{math::Angle, prelude::*};
 
@@ -55,9 +56,13 @@ impl Compete for Robot {
     }
 }
 
+lazy_static! {
+    static ref LOGGER: Logger = Logger::new();
+}
+
 #[vexide::main]
 async fn main(peripherals: Peripherals) {
-    Logger.init(LevelFilter::Trace).unwrap();
+    LOGGER.init(LevelFilter::Trace).unwrap();
 
     let mut imu = Imu::new(vec![
         InertialSensor::new(peripherals.port_5),
@@ -138,5 +143,10 @@ async fn main(peripherals: Peripherals) {
     })
     .detach();
 
-    start_ui(peripherals.display, vec![], settings.clone());
+    start_ui(
+        peripherals.display,
+        vec![],
+        LOGGER.clone_messages(),
+        settings.clone(),
+    );
 }
