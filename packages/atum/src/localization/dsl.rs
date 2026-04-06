@@ -2,7 +2,7 @@ use super::{pose::Pose, vec2::Vec2};
 use crate::hardware::wall_distance_sensor::{Wall, WallDistanceSensor};
 
 const FIELD_SIZE: f64 = 140.42;
-const MAX_ERROR: f64 = 6.0;
+pub const MAX_ERROR: f64 = 18.0;
 const MAX_RAYCAST_DIST: f64 = FIELD_SIZE * 2.0;
 const MIN_AXIS_COMPONENT: f64 = 0.95;
 
@@ -27,7 +27,7 @@ impl DSL {
         Self { sensors }
     }
 
-    pub fn correction(&self, pose: Pose) -> Option<PoseCorrection> {
+    pub fn correction(&self, pose: Pose, max_error: f64) -> Option<PoseCorrection> {
         let robot_position = pose.position();
 
         let mut xs = Vec::new();
@@ -49,7 +49,7 @@ impl DSL {
                 None => continue,
             };
 
-            if (measured - hit.distance).abs() > MAX_ERROR {
+            if (measured - hit.distance).abs() > max_error {
                 continue;
             }
 
@@ -72,7 +72,7 @@ impl DSL {
                     let sensor_x = -dx * measured;
                     let robot_x = sensor_x - rotated_offset.x;
 
-                    if in_field(robot_x) && (robot_x - pose.x).abs() <= MAX_ERROR {
+                    if in_field(robot_x) && (robot_x - pose.x).abs() <= max_error {
                         xs.push(robot_x);
                     }
                 }
@@ -80,7 +80,7 @@ impl DSL {
                     let sensor_x = FIELD_SIZE - dx * measured;
                     let robot_x = sensor_x - rotated_offset.x;
 
-                    if in_field(robot_x) && (robot_x - pose.x).abs() <= MAX_ERROR {
+                    if in_field(robot_x) && (robot_x - pose.x).abs() <= max_error {
                         xs.push(robot_x);
                     }
                 }
@@ -88,7 +88,7 @@ impl DSL {
                     let sensor_y = -dy * measured;
                     let robot_y = sensor_y - rotated_offset.y;
 
-                    if in_field(robot_y) && (robot_y - pose.y).abs() <= MAX_ERROR {
+                    if in_field(robot_y) && (robot_y - pose.y).abs() <= max_error {
                         ys.push(robot_y);
                     }
                 }
@@ -96,7 +96,7 @@ impl DSL {
                     let sensor_y = FIELD_SIZE - dy * measured;
                     let robot_y = sensor_y - rotated_offset.y;
 
-                    if in_field(robot_y) && (robot_y - pose.y).abs() <= MAX_ERROR {
+                    if in_field(robot_y) && (robot_y - pose.y).abs() <= max_error {
                         ys.push(robot_y);
                     }
                 }
@@ -115,10 +115,10 @@ impl DSL {
         }
     }
 
-    pub fn corrected_pose(&self, pose: Pose) -> Pose {
+    pub fn corrected_pose(&self, pose: Pose, max_error: f64) -> Pose {
         let mut corrected = pose;
 
-        if let Some(correction) = self.correction(pose) {
+        if let Some(correction) = self.correction(pose, max_error) {
             if let Some(x) = correction.x {
                 corrected.x = x;
             }

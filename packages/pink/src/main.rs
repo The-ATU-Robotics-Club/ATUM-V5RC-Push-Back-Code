@@ -197,7 +197,10 @@ async fn main(peripherals: Peripherals) {
     let mut imu = Imu::new(vec![
         InertialSensor::new(peripherals.port_14),
         InertialSensor::new(peripherals.port_15),
-    ]);
+
+        ],
+        1.0059722222,
+    );
     imu.calibrate().await;
 
     let starting_position = Rc::new(RefCell::new(Pose::default()));
@@ -208,7 +211,7 @@ async fn main(peripherals: Peripherals) {
         test_auton: false,
         color_override: false,
     }));
-
+    
     let motor_controller = Some(MotorController::new(
         Pid::new(0.025, 0.0, 0.01, 0.014),
         0.83,

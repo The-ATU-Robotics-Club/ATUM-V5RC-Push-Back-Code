@@ -12,12 +12,13 @@ use super::average;
 pub struct Imu {
     /// Collection of inertial sensors used for heading estimation.
     imus: Vec<InertialSensor>,
+    ratio: f64
 }
 
 impl Imu {
     /// Creates a new IMU system from a list of inertial sensors.
-    pub fn new(imus: Vec<InertialSensor>) -> Self {
-        Self { imus }
+    pub fn new(imus: Vec<InertialSensor>, ratio: f64) -> Self {
+        Self { imus, ratio}
     }
 
     /// Calibrates all inertial sensors.
@@ -55,7 +56,7 @@ impl Imu {
             }
         }
 
-        Angle::from_radians(average(angles))
+        Angle::from_radians(average(angles)*self.ratio)
     }
 
     /// Returns the robot heading normalized to `[0, 2π)`.

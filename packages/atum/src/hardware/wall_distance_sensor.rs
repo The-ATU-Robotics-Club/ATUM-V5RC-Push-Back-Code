@@ -1,4 +1,4 @@
-use vexide::{math::Angle, prelude::DistanceSensor, smart::distance::DistanceObjectError};
+use vexide::{math::Angle, prelude::DistanceSensor, smart::{SmartPort, distance::DistanceObjectError}};
 
 use crate::localization::vec2::Vec2;
 
@@ -25,7 +25,7 @@ pub struct WallDistanceSensor {
 impl WallDistanceSensor {
     const MILLIMETER_TO_INCH: f64 = 1.0 / 25.4;
 
-    const MAX_DISTANCE: f64 = 1800.0 * Self::MILLIMETER_TO_INCH;
+    const MAX_DISTANCE: f64 = 2000.0 * Self::MILLIMETER_TO_INCH;
     const MIN_DISTANCE: f64 = 20.0 * Self::MILLIMETER_TO_INCH;
 
 
@@ -34,12 +34,12 @@ impl WallDistanceSensor {
     /// - `offset` x and y position of the sensor relative to the tracking center
     /// - `angle`  Sensor beam direction relative to the robot frame.
     pub fn new(
-        sensor: DistanceSensor,
+        port: SmartPort,
         offset: Vec2<f64>,
         angle: Angle,
     ) -> Self {
         Self{
-            sensor,
+            sensor: DistanceSensor::new(port),
             offset,
             angle,
             
