@@ -2,7 +2,7 @@ use super::{pose::Pose, vec2::Vec2};
 use crate::hardware::wall_distance_sensor::{Wall, WallDistanceSensor};
 
 const FIELD_SIZE: f64 = 140.42;
-pub const MAX_ERROR: f64 = 18.0;
+pub const MAX_ERROR: f64 = 5.0;
 const MAX_RAYCAST_DIST: f64 = FIELD_SIZE * 2.0;
 const MIN_AXIS_COMPONENT: f64 = 0.95;
 

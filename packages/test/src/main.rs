@@ -11,8 +11,8 @@ use atum::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
         tracking_wheel::TrackingWheel, wall_distance_sensor::WallDistanceSensor,
-    }, localization::{dsl::{DSL, MAX_ERROR}, odometry::Odometry, pose::Pose, vec2::Vec2}, logger::Logger, mappings::{ControllerMappings, DriveMode}, motion::{MotionError, MotionParameters, linear::Linear, turn::Turn}, settings::{Color, Settings}, subsystems::{
-        drivetrain::{self, Drivetrain},
+    }, localization::{dsl::{DSL, MAX_ERROR}, odometry::Odometry, pose::Pose, vec2::Vec2}, logger::Logger, mappings::{ControllerMappings, DriveMode}, motion::{MotionError, MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn}, settings::{Color, Settings}, subsystems::{
+        drivetrain::Drivetrain,
         intake::{DoorCommands, Intake},
     }, theme::STOUT_ROBOT
 };
@@ -60,12 +60,13 @@ impl Compete for Robot {
 
         self.drivetrain.set_pose(Pose::new(77.0, 23.4, Angle::ZERO));
 
-        linear.drive_to_point(&mut self.drivetrain, Vec2::new(116.0 ,23.0), false).await;
-        angular.turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN).await;
+        _ = linear.drive_to_point(&mut self.drivetrain, Vec2::new(116.0 ,23.0), false).await;
+        _ = angular.turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN).await;
+        _ = linear.drive_to_point(&mut self.drivetrain, Vec2::new(116.0, 15.0), false).await;
 
-        match route {
-            _ => (),
-        }
+        // match route {
+        //     _ => (),
+        // }
 
         info!("Time elapsed: {:?}", time.elapsed());
     }
@@ -173,32 +174,42 @@ impl Compete for Robot {
                     // self.drivetrain.set_pose(Pose::new(97.0, 21.5, Angle::ZERO));
                     self.drivetrain.set_pose(Pose::default());
                 }
+
                 if state.button_up.is_pressed(){
-                    let mut linear = Linear::new(
-                        Pid::new(0.1, 0.0, 0.009, 0.0),
-                        MotionParameters {
-                            tolerance: 0.0,
-                            timeout: Some(Duration::from_millis(5000)),
-                            ..Default::default()
-                        },
-                        None,
-                    );
-                    let mut angular = Turn::new(
-                        Pid::new(0.78, 0.05, 0.05, 13.5),
-                        MotionParameters {
-                            tolerance: Angle::from_degrees(1.0),
-                            timeout: Some(Duration::from_millis(5000)),
-                            speed: 0.75,
-                            ..Default::default()
-                        },
-                    );
-                    let result = linear.drive_distance(&mut self.drivetrain, 12.0).await;
+                    // let mut linear = Linear::new(
+                    //     Pid::new(0.1, 0.0, 0.009, 0.0),
+                    //     MotionParameters {
+                    //         tolerance: 0.0,
+                    //         timeout: Some(Duration::from_millis(5000)),
+                    //         ..Default::default()
+                    //     },
+                    //     None,
+                    // );
+                    // let mut angular = Turn::new(
+                    //     Pid::new(0.78, 0.05, 0.05, 13.5),
+                    //     MotionParameters {
+                    //         tolerance: Angle::from_degrees(1.0),
+                    //         timeout: Some(Duration::from_millis(5000)),
+                    //         speed: 0.75,
+                    //         ..Default::default()
+                    //     },
+                    // );
+                    // let result = linear.drive_distance(&mut self.drivetrain, 12.0).await;
                     // let result = angular.turn_to(&mut self.drivetrain, Angle::QUARTER_TURN).await;
-                    if let Err(error) = result {
-                        match error {
-                            MotionError::Timeout(t) => debug!("timeout {}", t),
-                            _ => (),
-                        }
+                    let mut move_to = MoveTo::new(
+                        Pid::new(0.1, 0.0, 0.02, 12.0),
+                        Pid::new(0.067, 0.0, 0.0, 13.5),
+                        MotionParameters {
+                            tolerance: 1.0,
+                            timeout: Some(Duration::from_millis(2500)),
+                            speed: 0.5,
+                            ..Default::default()
+                        },
+                    );
+                    let target = Vec2::new(116.0, 23.5);
+                    let result = move_to.move_to_point(&mut self.drivetrain, target).await;
+                    if let Err(MotionError::Timeout(error)) = result {
+                        debug!("timeout {:?}", error);
                     }
                 }
             }
@@ -262,7 +273,7 @@ async fn main(peripherals: Peripherals) {
         WallDistanceSensor::new(peripherals.port_4, Vec2::new(-5.21868874,1.40196062), Angle::QUARTER_TURN),
     ]);
 
-    let starting_position = Rc::new(RefCell::new(Pose::new(92.0, 24.0, Angle::ZERO)));
+    let starting_position = Rc::new(RefCell::new(Pose::new(77.0, 23.0, Angle::ZERO)));
     let cloned_pose = starting_position.clone();
 
     spawn(async move {
@@ -298,7 +309,7 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_12, Gearset::Blue, Direction::Forward),
                 ],
-                motor_controller,
+                None,
             ),
             MotorGroup::new(
                 vec![
@@ -308,7 +319,7 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
                 ],
-                motor_controller,
+                None,
             ),
             Odometry::new(starting_position.clone(), wheel_1, wheel_2, imu),
             2.5,
