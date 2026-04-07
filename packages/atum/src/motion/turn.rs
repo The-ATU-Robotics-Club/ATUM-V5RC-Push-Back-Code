@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use vexide::{math::Angle, prelude::Motor, time::sleep};
+use vexide::{math::Angle, prelude::Motor, smart::motor::BrakeMode, time::sleep};
 
 use super::{MotionError, MotionParameters, MotionResult};
 use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
@@ -91,7 +91,7 @@ impl Turn {
                 .timeout
                 .is_some_and(|timeout| start_time.elapsed() > timeout)
             {
-                drivetrain.set_voltages(0.0, 0.0);
+                drivetrain.brake(BrakeMode::Brake);
                 return Err(MotionError::Timeout(error));
             }
 
@@ -100,7 +100,7 @@ impl Turn {
         }
 
         // Stop drivetrain after the turn completes
-        drivetrain.set_voltages(0.0, 0.0);
+        drivetrain.brake(BrakeMode::Brake);
 
         Ok(())
     }
