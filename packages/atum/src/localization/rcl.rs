@@ -21,12 +21,12 @@ impl PoseCorrection {
     }
 }
 
-pub struct DSL {
+pub struct RaycastLocalization {
     sensors: Vec<WallDistanceSensor>,
     objects: Vec<Circle>,
 }
 
-impl DSL {
+impl RaycastLocalization {
     pub fn new(sensors: Vec<WallDistanceSensor>, objects: Vec<Circle>) -> Self {
         Self { sensors, objects }
     }

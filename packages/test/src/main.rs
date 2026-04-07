@@ -1,3 +1,4 @@
+use core::f64;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -14,7 +15,7 @@ use atum::{
         wall_distance_sensor::WallDistanceSensor,
     },
     localization::{
-        dsl::{DSL, MAX_ERROR}, odometry::Odometry, pose::Pose, shape::Circle, vec2::Vec2
+        rcl::{RaycastLocalization, MAX_ERROR}, odometry::Odometry, pose::Pose, shape::Circle, vec2::Vec2
     },
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
@@ -38,7 +39,6 @@ struct Robot {
     match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
     brake: AdiDigitalOut,
-    // dsl: DSL,
     pose: Rc<RefCell<Pose>>,
     settings: Rc<RefCell<Settings>>,
 }
@@ -230,9 +230,6 @@ impl Compete for Robot {
                 }
             }
 
-            // let corrected = self.dsl.corrected_pose(self.drivetrain.pose(), MAX_ERROR);
-            // self.drivetrain.set_pose(corrected);
-
             info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
@@ -281,9 +278,13 @@ async fn main(peripherals: Peripherals) {
     );
     imu.calibrate().await;
 
-    let dsl = DSL::new(
+    let rcl = RaycastLocalization::new(
         vec![
-            WallDistanceSensor::new(peripherals.port_1, Vec2::new(6.03128976, 0.0), Angle::ZERO),
+            WallDistanceSensor::new(
+                peripherals.port_1,
+                Vec2::new(6.03128976, 0.0),
+                Angle::ZERO
+            ),
             WallDistanceSensor::new(
                 peripherals.port_2,
                 Vec2::new(-3.94528346, 0.0),
@@ -308,12 +309,14 @@ async fn main(peripherals: Peripherals) {
         ],
     );
 
-    let starting_position = Rc::new(RefCell::new(Pose::new(77.0, 23.0, Angle::ZERO)));
+    let relative_position = Pose::new(77.0, 23.0, Angle::ZERO);
+    let corrected = rcl.corrected_pose(relative_position, f64::INFINITY);
+    let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
 
     spawn(async move {
         loop {
-            let corrected = dsl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
+            let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
             sleep(Duration::from_millis(30)).await;
         }
@@ -375,7 +378,6 @@ async fn main(peripherals: Peripherals) {
         match_loader: AdiDigitalOut::new(adi_expander.adi_a),
         wing: AdiDigitalOut::new(peripherals.adi_e),
         brake: AdiDigitalOut::new(adi_expander.adi_b),
-        // dsl,
         pose: starting_position,
         settings: settings.clone(),
     };
