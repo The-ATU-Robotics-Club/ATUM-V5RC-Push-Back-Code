@@ -1,5 +1,3 @@
-
-
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -7,14 +5,26 @@ use std::{
 };
 
 use atum::{
-    backend::start_ui, controllers::pid::Pid, hardware::{
+    backend::start_ui,
+    controllers::pid::Pid,
+    hardware::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
-        tracking_wheel::TrackingWheel, wall_distance_sensor::WallDistanceSensor,
-    }, localization::{dsl::{DSL, MAX_ERROR}, odometry::Odometry, pose::Pose, vec2::Vec2}, logger::Logger, mappings::{ControllerMappings, DriveMode}, motion::{MotionError, MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn}, settings::{Color, Settings}, subsystems::{
+        tracking_wheel::TrackingWheel,
+        wall_distance_sensor::WallDistanceSensor,
+    },
+    localization::{
+        dsl::{DSL, MAX_ERROR}, odometry::Odometry, pose::Pose, shape::Circle, vec2::Vec2
+    },
+    logger::Logger,
+    mappings::{ControllerMappings, DriveMode},
+    motion::{linear::Linear, move_to::MoveTo, turn::Turn, MotionError, MotionParameters},
+    settings::{Color, Settings},
+    subsystems::{
         drivetrain::Drivetrain,
         intake::{DoorCommands, Intake},
-    }, theme::STOUT_ROBOT
+    },
+    theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, debug, info};
 use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
@@ -60,9 +70,15 @@ impl Compete for Robot {
 
         self.drivetrain.set_pose(Pose::new(77.0, 23.4, Angle::ZERO));
 
-        _ = linear.drive_to_point(&mut self.drivetrain, Vec2::new(116.0 ,23.0), false).await;
-        _ = angular.turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN).await;
-        _ = linear.drive_to_point(&mut self.drivetrain, Vec2::new(116.0, 15.0), false).await;
+        _ = linear
+            .drive_to_point(&mut self.drivetrain, Vec2::new(116.0, 23.0), false)
+            .await;
+        _ = angular
+            .turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN)
+            .await;
+        _ = linear
+            .drive_to_point(&mut self.drivetrain, Vec2::new(116.0, 15.0), false)
+            .await;
 
         // match route {
         //     _ => (),
@@ -175,7 +191,7 @@ impl Compete for Robot {
                     self.drivetrain.set_pose(Pose::default());
                 }
 
-                if state.button_up.is_pressed(){
+                if state.button_up.is_pressed() {
                     // let mut linear = Linear::new(
                     //     Pid::new(0.1, 0.0, 0.009, 0.0),
                     //     MotionParameters {
@@ -213,7 +229,6 @@ impl Compete for Robot {
                     }
                 }
             }
-
 
             // let corrected = self.dsl.corrected_pose(self.drivetrain.pose(), MAX_ERROR);
             // self.drivetrain.set_pose(corrected);
@@ -257,21 +272,41 @@ async fn main(peripherals: Peripherals) {
     );
 
     // TODO - make imu calibrate at the same time
-    let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_10),
-        // InertialSensor::new(peripherals.port_9),
+    let mut imu = Imu::new(
+        vec![
+            InertialSensor::new(peripherals.port_10),
+            // InertialSensor::new(peripherals.port_9),
         ],
         1.0084555556,
     );
     imu.calibrate().await;
 
-
-    let dsl = DSL::new(vec![
-        WallDistanceSensor::new(peripherals.port_1, Vec2::new(6.03128976,0.0), Angle::ZERO),
-        WallDistanceSensor::new(peripherals.port_2, Vec2::new(-3.94528346,0.0), Angle::HALF_TURN),
-        WallDistanceSensor::new(peripherals.port_3, Vec2::new(-5.21868874,-1.40196062), -Angle::QUARTER_TURN),
-        WallDistanceSensor::new(peripherals.port_4, Vec2::new(-5.21868874,1.40196062), Angle::QUARTER_TURN),
-    ]);
+    let dsl = DSL::new(
+        vec![
+            WallDistanceSensor::new(peripherals.port_1, Vec2::new(6.03128976, 0.0), Angle::ZERO),
+            WallDistanceSensor::new(
+                peripherals.port_2,
+                Vec2::new(-3.94528346, 0.0),
+                Angle::HALF_TURN,
+            ),
+            WallDistanceSensor::new(
+                peripherals.port_3,
+                Vec2::new(-5.21868874, -1.40196062),
+                -Angle::QUARTER_TURN,
+            ),
+            WallDistanceSensor::new(
+                peripherals.port_4,
+                Vec2::new(-5.21868874, 1.40196062),
+                Angle::QUARTER_TURN,
+            ),
+        ],
+        vec![
+            Circle::new(Vec2::new(23.5, 2.375), 2.375),
+            Circle::new(Vec2::new(116.92, 2.375), 2.375),
+            Circle::new(Vec2::new(23.5, 138.045), 2.375),
+            Circle::new(Vec2::new(116.92, 138.045), 2.375),
+        ],
+    );
 
     let starting_position = Rc::new(RefCell::new(Pose::new(77.0, 23.0, Angle::ZERO)));
     let cloned_pose = starting_position.clone();
@@ -282,7 +317,8 @@ async fn main(peripherals: Peripherals) {
             cloned_pose.replace(corrected);
             sleep(Duration::from_millis(30)).await;
         }
-    }).detach();
+    })
+    .detach();
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
