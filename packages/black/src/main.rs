@@ -1,10 +1,6 @@
 mod autons;
 
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    time::Instant,
-};
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use atum::{
     backend::start_ui,
@@ -18,7 +14,10 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappingsLever, DriveMode},
     settings::{Color, Settings},
-    subsystems::{drivetrain::Drivetrain, intakes::lever::{Lever, LeverStage}},
+    subsystems::{
+        drivetrain::Drivetrain,
+        intakes::lever::{Lever, LeverStage},
+    },
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
@@ -50,6 +49,8 @@ impl Compete for Robot {
 
     async fn driver(&mut self) {
         let mut lever_voltage = Motor::V5_MAX_VOLTAGE;
+        let mut open_bill = false;
+        _ = self.controller.set_text(format!("lever voltage: {lever_voltage}"), 1, 1).await;
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -63,7 +64,7 @@ impl Compete for Robot {
                 lever: state.button_l1,
                 lspeed: state.button_a,
                 lift: state.button_y,
-                duck_bill: state.button_l1,
+                duck_bill: state.button_up,
                 wing: state.button_l2,
                 match_load: state.button_right,
                 brake: state.button_b,
@@ -79,6 +80,22 @@ impl Compete for Robot {
                 self.lever.set_intake(0.0);
             }
 
+            if mappings.duck_bill.is_now_pressed() {
+                open_bill = !open_bill;
+            }
+
+            match self.lever.stage() {
+                LeverStage::Score(_) => _ = self.duck_bill.set_high(),
+                LeverStage::Reset => (),
+                LeverStage::Idle => {
+                    if open_bill {
+                        _ = self.duck_bill.set_high();
+                    } else if !mappings.lever.is_pressed() {
+                        _ = self.duck_bill.set_low();
+                    }
+                }
+            }
+
             if mappings.lever.is_now_pressed() {
                 let lever_stage = match self.lever.stage() {
                     LeverStage::Score(_) => LeverStage::Reset,
@@ -90,18 +107,21 @@ impl Compete for Robot {
             }
 
             if mappings.lspeed.is_now_pressed() {
-                // do math stuff
-                lever_voltage = (lever_voltage - 3.0) % 9.0 + 6.0;
+                if lever_voltage == 4.0 {
+                    lever_voltage += 2.0;
+                } else {
+                    lever_voltage += 3.0;
+                }
+
+                if lever_voltage > 12.0 {
+                    lever_voltage = 4.0;
+                }
+
+                _ = self.controller.set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1).await;
             }
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
-            }
-
-            if mappings.duck_bill.is_pressed() {
-                _ = self.duck_bill.set_high();
-            } else {
-                _ = self.duck_bill.set_low();
             }
 
             if mappings.match_load.is_now_pressed() {
@@ -206,7 +226,7 @@ async fn main(peripherals: Peripherals) {
                     Vec2::new(-5.93824103, -1.00288550),
                     Angle::from_degrees(-45.0),
                 ),
-                imu
+                imu,
             ),
             2.5,
             12.0,
@@ -223,9 +243,9 @@ async fn main(peripherals: Peripherals) {
             RotationSensor::new(peripherals.port_6, Direction::Forward),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_e),
-        duck_bill: AdiDigitalOut::new(peripherals.adi_h),
-        match_loader: AdiDigitalOut::new(peripherals.adi_f),
-        wing: AdiDigitalOut::new(peripherals.adi_g),
+        duck_bill: AdiDigitalOut::new(peripherals.adi_f),
+        match_loader: AdiDigitalOut::new(peripherals.adi_g),
+        wing: AdiDigitalOut::new(peripherals.adi_h),
         pose: starting_position,
         settings: settings.clone(),
     };

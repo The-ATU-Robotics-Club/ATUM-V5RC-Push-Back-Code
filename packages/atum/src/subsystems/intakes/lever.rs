@@ -1,5 +1,6 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
+use log::debug;
 use vexide::{
     math::Angle,
     prelude::{Motor, RotationSensor},
@@ -31,30 +32,27 @@ impl Lever {
             voltage: voltage.clone(),
             lever_stage: lever_stage.clone(),
             _task: spawn(async move {
-                _ = rotation.set_position(
-                    (rotation.position().unwrap_or_default() + Angle::from_degrees(10.0))
-                        .wrapped_full(),
-                );
-
                 loop {
                     sleep(Duration::from_millis(10)).await;
 
                     let voltage = *voltage.borrow();
-
                     _ = intake.set_voltage(voltage);
 
                     let mut lever_stage = lever_stage.borrow_mut();
-                    let position = rotation.position().unwrap_or_default();
+                    let position = -rotation.position().unwrap_or_default().wrapped_half();
+                    debug!("{}", position.as_degrees());
                     match *lever_stage {
                         LeverStage::Score(voltage) => {
-                            if position > Angle::from_degrees(145.0) {
+                            if position > Angle::from_degrees(120.0) {
                                 *lever_stage = LeverStage::Reset;
+                                drop(lever_stage);
+                                sleep(Duration::from_millis(50)).await;
                             }
 
                             lever.set_voltage(voltage);
                         }
                         LeverStage::Reset => {
-                            if position < Angle::from_degrees(37.0) {
+                            if position < Angle::from_degrees(5.0) {
                                 *lever_stage = LeverStage::Idle;
                             }
 
