@@ -10,4 +10,5 @@
 pub mod dsl;
 pub mod odometry;
 pub mod pose;
+pub mod shape;
 pub mod vec2;

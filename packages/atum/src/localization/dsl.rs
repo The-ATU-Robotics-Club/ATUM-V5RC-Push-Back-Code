@@ -1,5 +1,8 @@
 use super::{pose::Pose, vec2::Vec2};
-use crate::hardware::wall_distance_sensor::{Wall, WallDistanceSensor};
+use crate::{
+    hardware::wall_distance_sensor::{Wall, WallDistanceSensor},
+    localization::shape::{Circle, Shape},
+};
 
 const FIELD_SIZE: f64 = 140.42;
 pub const MAX_ERROR: f64 = 5.0;
@@ -20,11 +23,12 @@ impl PoseCorrection {
 
 pub struct DSL {
     sensors: Vec<WallDistanceSensor>,
+    objects: Vec<Circle>,
 }
 
 impl DSL {
-    pub fn new(sensors: Vec<WallDistanceSensor>) -> Self {
-        Self { sensors }
+    pub fn new(sensors: Vec<WallDistanceSensor>, objects: Vec<Circle>) -> Self {
+        Self { sensors, objects }
     }
 
     pub fn correction(&self, pose: Pose, max_error: f64) -> Option<PoseCorrection> {
@@ -33,21 +37,17 @@ impl DSL {
         let mut xs = Vec::new();
         let mut ys = Vec::new();
 
-        for sensor in &self.sensors {
+        'outer: for sensor in &self.sensors {
             let measured = match sensor.distance() {
                 Ok(Some(d)) => d,
                 _ => continue,
             };
 
-            let hit = match sensor.predicted_hit(
-                robot_position,
-                pose.h,
-                FIELD_SIZE,
-                MAX_RAYCAST_DIST,
-            ) {
-                Some(hit) => hit,
-                None => continue,
-            };
+            let hit =
+                match sensor.predicted_hit(robot_position, pose.h, FIELD_SIZE, MAX_RAYCAST_DIST) {
+                    Some(hit) => hit,
+                    None => continue,
+                };
 
             if (measured - hit.distance).abs() > max_error {
                 continue;
@@ -57,6 +57,12 @@ impl DSL {
             let theta = world_angle.as_radians();
             let dx = theta.cos();
             let dy = theta.sin();
+
+            for object in self.objects.iter() {
+                if object.is_intersecting(Vec2::new(dx, dy), world_angle, hit.distance) {
+                    continue 'outer;
+                }
+            }
 
             match hit.wall {
                 Wall::Left | Wall::Right if dx.abs() < MIN_AXIS_COMPONENT => continue,
