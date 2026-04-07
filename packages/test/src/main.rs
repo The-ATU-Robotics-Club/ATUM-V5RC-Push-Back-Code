@@ -27,8 +27,9 @@ use atum::{
     },
     theme::STOUT_ROBOT,
 };
+use lazy_static::lazy_static;
 use log::{LevelFilter, debug, info};
-use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
+use vexide::{math::Angle, prelude::*};
 
 struct Robot {
     controller: Controller,
@@ -237,9 +238,13 @@ impl Compete for Robot {
     }
 }
 
-#[vexide::main(banner(theme = STOUT_ROBOT))]
+lazy_static! {
+    static ref LOGGER: Logger = Logger::new();
+}
+
+#[vexide::main]
 async fn main(peripherals: Peripherals) {
-    Logger.init(LevelFilter::Trace).unwrap();
+    LOGGER.init(LevelFilter::Trace).unwrap();
 
     // RADIO PORTS DO NOT REMOVE
     drop(peripherals.port_9);
@@ -389,7 +394,8 @@ async fn main(peripherals: Peripherals) {
 
     start_ui(
         peripherals.display,
-        vec!["Select Auton", "rush control", "skills"],
+        vec![],
+        LOGGER.clone_messages(),
         settings.clone(),
     );
 }

@@ -24,6 +24,7 @@ use atum::{
     },
     theme::STOUT_ROBOT,
 };
+use lazy_static::lazy_static;
 use log::{LevelFilter, info};
 use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 
@@ -153,9 +154,14 @@ impl Compete for Robot {
         }
     }
 }
+
+lazy_static! {
+    static ref LOGGER: Logger = Logger::new();
+}
+
 #[vexide::main(banner(theme = STOUT_ROBOT))]
 async fn main(peripherals: Peripherals) {
-    Logger.init(LevelFilter::Trace).unwrap();
+    LOGGER.init(LevelFilter::Trace).unwrap();
 
     let adi_expander = AdiExpander::new(peripherals.port_3);
 
@@ -257,6 +263,7 @@ async fn main(peripherals: Peripherals) {
     start_ui(
         peripherals.display,
         vec!["Select Auton", "Rush Elims", "Skills"],
+        LOGGER.clone_messages(),
         settings.clone(),
     );
 }

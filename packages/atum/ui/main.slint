@@ -2,7 +2,7 @@ import { ComboBox, Button, VerticalBox, HorizontalBox, VerticalBox } from "std-w
 import { Palette, Page } from "./common.slint";
 import { HomePage } from "home_page.slint";
 import { SelectorPage, Selector } from "selector.slint";
-import { DiagnosticPage } from "diagnostic.slint";
+import { DiagnosticPage, Log } from "diagnostic.slint";
 
 // Export Selector for backend binding
 export { Selector }
@@ -45,6 +45,7 @@ component SideBarIcon inherits Rectangle {
 export component AppWindow inherits Window {
     out property <int> active-page: 0; // Currently active page index
     in property <[string]> paths;      // Paths to show in the selector page
+    in property <[Log]> logs;     // Logs to show in the diagnostic page
 
     width: 480px;
     height: 240px;
@@ -106,6 +107,7 @@ export component AppWindow inherits Window {
 
                 DiagnosticPage {
                     property <int> pageNumber: 2;
+                    logs: root.logs;
                     y: calcPageY(pageNumber);
                     opacity: root.active-page == pageNumber ? 1 : 0;
                     animate y {
