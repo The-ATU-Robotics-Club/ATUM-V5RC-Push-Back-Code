@@ -8,7 +8,7 @@ use vexide::{
     time::sleep,
 };
 
-use crate::hardware::motor_group::MotorGroup;
+use crate::{hardware::motor_group::MotorGroup, utils::apply_curve};
 
 #[derive(Copy, Clone)]
 pub enum LeverStage {
@@ -24,7 +24,7 @@ pub struct Lever {
 }
 
 impl Lever {
-    pub fn new(mut intake: Motor, mut lever: MotorGroup, mut rotation: RotationSensor) -> Self {
+    pub fn new(mut intake: Motor, mut lever: MotorGroup, rotation: RotationSensor) -> Self {
         let voltage = Rc::new(RefCell::new(0.0));
         let lever_stage = Rc::new(RefCell::new(LeverStage::Idle));
 
@@ -40,27 +40,23 @@ impl Lever {
 
                     let mut lever_stage = lever_stage.borrow_mut();
                     let position = -rotation.position().unwrap_or_default().wrapped_half();
-                    // debug!("{}", position.as_degrees());
+
                     match *lever_stage {
-                        LeverStage::Score(voltage, smart_score) => {
+                        LeverStage::Score(mut voltage, smart_score) => {
                             if position > Angle::from_degrees(120.0) {
                                 *lever_stage = LeverStage::Reset;
                                 drop(lever_stage);
                                 sleep(Duration::from_millis(50)).await;
                             }
-                            let vf = if smart_score {
-                                let a = if position.as_degrees() < 20.0{
-                                    0.0
-                                } else {
-                                    position.as_degrees()-20.0
-                                };
-                                ((a) * (Motor::V5_MAX_VOLTAGE - voltage) / 110.0) + voltage
-                            } else {
-                                voltage
-                            };
 
-                            debug!("{}", vf);
-                            lever.set_voltage(vf);
+                            if smart_score {
+                                let range = Motor::V5_MAX_VOLTAGE - voltage;
+                                let added = position.as_degrees() * (range) / 110.0;
+                                voltage += apply_curve(added, 2, range)
+                            }
+
+                            debug!("{}", voltage);
+                            lever.set_voltage(voltage);
                         }
                         LeverStage::Reset => {
                             if position < Angle::from_degrees(5.0) {
