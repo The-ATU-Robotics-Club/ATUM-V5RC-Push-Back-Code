@@ -50,7 +50,9 @@ impl Compete for Robot {
     async fn driver(&mut self) {
         let mut lever_voltage = Motor::V5_MAX_VOLTAGE;
         let mut open_bill = false;
+        let mut smart_score = false;
         _ = self.controller.set_text(format!("lever voltage: {lever_voltage}"), 1, 1).await;
+        _ = self.controller.set_text(format!("smart score: {smart_score}"), 2, 1).await;
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -84,8 +86,13 @@ impl Compete for Robot {
                 open_bill = !open_bill;
             }
 
+            if state.button_power.is_now_pressed() {
+                smart_score = !smart_score;
+                _ = self.controller.set_text(format!("smart score: {smart_score}"), 2, 1).await;
+            }
+
             match self.lever.stage() {
-                LeverStage::Score(_) => _ = self.duck_bill.set_high(),
+                LeverStage::Score(..) => _ = self.duck_bill.set_high(),
                 LeverStage::Reset => (),
                 LeverStage::Idle => {
                     if open_bill {
@@ -98,9 +105,9 @@ impl Compete for Robot {
 
             if mappings.lever.is_now_pressed() {
                 let lever_stage = match self.lever.stage() {
-                    LeverStage::Score(_) => LeverStage::Reset,
+                    LeverStage::Score(..) => LeverStage::Reset,
                     LeverStage::Reset => LeverStage::Idle,
-                    LeverStage::Idle => LeverStage::Score(lever_voltage),
+                    LeverStage::Idle => LeverStage::Score(lever_voltage, smart_score),
                 };
 
                 self.lever.score(lever_stage);
@@ -118,6 +125,7 @@ impl Compete for Robot {
                 }
 
                 _ = self.controller.set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1).await;
+                
             }
 
             if mappings.lift.is_now_pressed() {

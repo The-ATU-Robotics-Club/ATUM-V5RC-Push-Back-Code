@@ -12,7 +12,7 @@ use crate::hardware::motor_group::MotorGroup;
 
 #[derive(Copy, Clone)]
 pub enum LeverStage {
-    Score(f64),
+    Score(f64, bool),
     Reset,
     Idle,
 }
@@ -40,16 +40,27 @@ impl Lever {
 
                     let mut lever_stage = lever_stage.borrow_mut();
                     let position = -rotation.position().unwrap_or_default().wrapped_half();
-                    debug!("{}", position.as_degrees());
+                    // debug!("{}", position.as_degrees());
                     match *lever_stage {
-                        LeverStage::Score(voltage) => {
+                        LeverStage::Score(voltage, smart_score) => {
                             if position > Angle::from_degrees(120.0) {
                                 *lever_stage = LeverStage::Reset;
                                 drop(lever_stage);
                                 sleep(Duration::from_millis(50)).await;
                             }
+                            let vf = if smart_score {
+                                let a = if position.as_degrees() < 20.0{
+                                    0.0
+                                } else {
+                                    position.as_degrees()-20.0
+                                };
+                                ((a) * (Motor::V5_MAX_VOLTAGE - voltage) / 110.0) + voltage
+                            } else {
+                                voltage
+                            };
 
-                            lever.set_voltage(voltage);
+                            debug!("{}", vf);
+                            lever.set_voltage(vf);
                         }
                         LeverStage::Reset => {
                             if position < Angle::from_degrees(5.0) {
