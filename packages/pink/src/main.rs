@@ -18,10 +18,7 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     settings::{Color, Settings},
-    subsystems::{
-        drivetrain::Drivetrain,
-        intakes::cshape::{CShape, DoorCommands},
-    },
+    subsystems::{drivetrain::Drivetrain, intakes::basic::Basic},
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
@@ -30,12 +27,11 @@ use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
-    intake: CShape,
+    intake: Basic,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
     match_loader: AdiDigitalOut,
     wing: AdiDigitalOut,
-    brake: AdiDigitalOut,
     pose: Rc<RefCell<Pose>>,
     settings: Rc<RefCell<Settings>>,
 }
@@ -96,12 +92,6 @@ impl Compete for Robot {
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
-                let door_command = self.intake.door();
-                self.intake.set_door(match door_command {
-                    DoorCommands::On => DoorCommands::Off,
-                    DoorCommands::Off => DoorCommands::On,
-                    _ => door_command,
-                });
             }
 
             if mappings.duck_bill.is_pressed() {
@@ -120,24 +110,6 @@ impl Compete for Robot {
                 _ = self.wing.set_high();
             } else {
                 _ = self.wing.set_low();
-            }
-
-            if mappings.brake.is_pressed() {
-                _ = self.brake.set_high();
-            } else {
-                _ = self.brake.set_low();
-            }
-
-            if mappings.enable_color.is_now_pressed() {
-                self.intake.set_door(match self.intake.door() {
-                    DoorCommands::ForceOff => DoorCommands::On,
-                    _ => DoorCommands::ForceOff,
-                });
-            }
-
-            if mappings.swap_color.is_now_pressed() {
-                let mut settings = self.settings.borrow_mut();
-                settings.color = !settings.color;
             }
 
             self.settings.borrow_mut().color_override = mappings.back_door.is_now_pressed();
@@ -169,8 +141,6 @@ async fn main(peripherals: Peripherals) {
     // RADIO PORTS DO NOT REMOVE
     drop(peripherals.port_1);
     drop(peripherals.port_21);
-
-    let adi_expander = AdiExpander::new(peripherals.port_2);
 
     let mut color_sort = OpticalSensor::new(peripherals.port_3);
     _ = color_sort.set_led_brightness(1.0);
@@ -243,20 +213,14 @@ async fn main(peripherals: Peripherals) {
             2.5,
             12.0,
         ),
-        intake: CShape::new(
+        intake: Basic::new(
             Motor::new(peripherals.port_4, Gearset::Blue, Direction::Forward),
             Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
-            AdiDigitalOut::new(peripherals.adi_f),
-            color_sort,
-            Duration::from_millis(85),
-            DoorCommands::On,
-            settings.clone(),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_g),
         duck_bill: AdiDigitalOut::new(peripherals.adi_h),
-        match_loader: AdiDigitalOut::new(adi_expander.adi_a),
+        match_loader: AdiDigitalOut::new(peripherals.adi_f),
         wing: AdiDigitalOut::new(peripherals.adi_e),
-        brake: AdiDigitalOut::new(adi_expander.adi_b),
         pose: starting_position,
         settings: settings.clone(),
     };

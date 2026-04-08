@@ -18,10 +18,7 @@ use atum::{
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
     settings::{Color, Settings},
-    subsystems::{
-        drivetrain::Drivetrain,
-        intakes::cshape::{CShape, DoorCommands},
-    },
+    subsystems::{drivetrain::Drivetrain, intakes::basic::Basic},
     theme::STOUT_ROBOT,
 };
 use log::{LevelFilter, info};
@@ -30,7 +27,7 @@ use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
-    intake: CShape,
+    intake: Basic,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
     match_loader: AdiDigitalOut,
@@ -44,7 +41,6 @@ impl Compete for Robot {
         println!("autnomous");
         let time = Instant::now();
         let route = self.settings.borrow().index;
-        self.intake.set_door(DoorCommands::On);
 
         match route {
             1 => self.rushelims().await,
@@ -97,12 +93,6 @@ impl Compete for Robot {
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
-                let door_command = self.intake.door();
-                self.intake.set_door(match door_command {
-                    DoorCommands::On => DoorCommands::Off,
-                    DoorCommands::Off => DoorCommands::On,
-                    _ => door_command,
-                });
             }
 
             if mappings.duck_bill.is_pressed() {
@@ -121,13 +111,6 @@ impl Compete for Robot {
 
             if mappings.match_load.is_now_pressed() {
                 _ = self.match_loader.toggle();
-            }
-
-            if mappings.enable_color.is_now_pressed() {
-                self.intake.set_door(match self.intake.door() {
-                    DoorCommands::ForceOff => DoorCommands::On,
-                    _ => DoorCommands::ForceOff,
-                });
             }
 
             if mappings.swap_color.is_now_pressed() {
@@ -232,14 +215,9 @@ async fn main(peripherals: Peripherals) {
             2.5,
             12.0,
         ),
-        intake: CShape::new(
+        intake: Basic::new(
             Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
             Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
-            AdiDigitalOut::new(adi_expander.adi_b),
-            color_sort,
-            Duration::from_millis(85),
-            DoorCommands::On,
-            settings.clone(),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_f),
         duck_bill: AdiDigitalOut::new(peripherals.adi_g),

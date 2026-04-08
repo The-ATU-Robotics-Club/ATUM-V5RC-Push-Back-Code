@@ -4,7 +4,6 @@ use atum::{
     controllers::pid::Pid,
     localization::{pose::Pose, vec2::Vec2},
     motion::{MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn},
-    subsystems::intakes::cshape::DoorCommands,
 };
 use futures_lite::future::zip;
 use vexide::{
@@ -69,14 +68,16 @@ impl Robot {
             },
         )
         .await;
-        _ = turn.tolerance(Angle::from_degrees(5.0))
+        _ = turn
+            .tolerance(Angle::from_degrees(5.0))
             .turn_to_point(dt, Vec2::new(55.0, 53.0), true)
             .await;
         _ = move_to
             .timeout(Duration::from_millis(1000))
             .move_to_point(dt, Vec2::new(55.0, 52.0))
             .await;
-        _ = turn.timeout(Duration::from_millis(750))
+        _ = turn
+            .timeout(Duration::from_millis(750))
             .turn_to(dt, Angle::from_degrees(45.0))
             .await;
         self.intake.set_voltage(0.0);
@@ -93,7 +94,8 @@ impl Robot {
             .await;
         _ = self.duck_bill.set_low();
         self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
-        _ = turn.timeout(Duration::from_millis(2000))
+        _ = turn
+            .timeout(Duration::from_millis(2000))
             .settle_velocity(5.0_f64.to_radians())
             .turn_to_point(dt, RED_LEFT_LOADER, false)
             .await;
@@ -111,15 +113,14 @@ impl Robot {
         self.intake.set_voltage(0.0);
         _ = self.match_loader.set_low();
         sleep(Duration::from_millis(500)).await; // wait for balls to settle in robot
-        self.intake.set_door(DoorCommands::Close);
         sleep(Duration::from_millis(10)).await;
-        self.intake.set_door(DoorCommands::Off);
 
         _ = self.lift.set_high();
         _ = self.wing.set_high();
 
         // change to radians / second
-        _ = turn.settle_velocity(10.0_f64.to_radians())
+        _ = turn
+            .settle_velocity(10.0_f64.to_radians())
             .timeout(Duration::from_millis(1000))
             .turn_to_point(dt, RED_LEFT_GOAL, false)
             .await;

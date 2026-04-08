@@ -4,7 +4,6 @@ use atum::{
     controllers::pid::Pid,
     localization::{pose::Pose, vec2::Vec2},
     motion::{MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn},
-    subsystems::intakes::cshape::DoorCommands,
 };
 use futures_lite::future::zip;
 use vexide::{
@@ -48,7 +47,6 @@ impl Robot {
         let dt = &mut self.drivetrain;
 
         dt.set_pose(Pose::new(56.0, 21.5, Angle::QUARTER_TURN));
-        self.intake.set_door(DoorCommands::Off);
 
         self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
         zip(
