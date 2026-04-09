@@ -71,7 +71,7 @@ impl Turn {
             // Compute shortest angular error between target and heading
             // `wrapped_half()` ensures the error stays within [-π, π)
             let error = (target - heading).wrapped_half();
-            let output = self.pid.output(error.as_radians(), dt);
+            let output = self.pid.output(error.as_radians(), dt).clamp(-1.0, 1.0);
 
             // Motion is complete if:
             // 1. Angular error is within tolerance

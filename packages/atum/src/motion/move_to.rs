@@ -75,10 +75,10 @@ impl MoveTo {
             // 1. Error is within tolerance
             // 2. Velocity is sufficiently small (robot has settled)
             if distance.abs() < self.params.tolerance
-                && (self
+                && self
                     .params
                     .velocity_tolerance
-                    .is_none_or(|tolerance| pose.vf.abs() < tolerance))
+                    .is_none_or(|tolerance| pose.vf.abs() < tolerance)
             {
                 break;
             }
@@ -105,11 +105,8 @@ impl MoveTo {
                 distance *= -1.0;
             }
 
-            // Forward motion scaled by the alignment with the target
-            let linear_output = self.linear.output(distance, dt) * herror.cos().abs();
-
-            // Steering correction from cross-track error
-            let angular_output = self.lateral.output(-cross_track_error, dt);
+            let linear_output = self.linear.output(distance, dt).clamp(-1.0, 1.0) * herror.cos().abs();
+            let angular_output = self.lateral.output(cross_track_error, dt).clamp(-1.0, 1.0);
 
             // Apply output to motors
             drivetrain.set_arcade(
