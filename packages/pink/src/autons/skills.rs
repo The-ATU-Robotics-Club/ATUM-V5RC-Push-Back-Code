@@ -26,7 +26,6 @@ impl Robot {
                 velocity_tolerance: Some(2.5),
                 ..Default::default() 
             },
-            None,
         );
 
         let mut turn = Turn::new(
@@ -40,7 +39,7 @@ impl Robot {
         );
 
         let mut swing = Swing::new(
-            Pid::new(1000.0, 150.0, 0.0, 90.0),
+            Pid::new(1000.0/600.0, 150.0/600.0, 0.0, 90.0),
             MotionParameters {
                 tolerance: Angle::from_degrees(1.0),
                 ..Default::default()
@@ -48,8 +47,8 @@ impl Robot {
         );
 
         let mut move_to = MoveTo::new(
-            Pid::new(30.0, 2.0, 6.0, 12.0),
-            Pid::new(20.0, 0.0, 0.0, 0.0),
+            Pid::new(30.0/12.0, 2.0/12.0, 6.0/12.0, 12.0),
+            Pid::new(20.0/12.0, 0.0, 0.0, 0.0),
             MotionParameters {
                 tolerance: 0.5,
                 ..Default::default()
@@ -58,7 +57,7 @@ impl Robot {
 
         let dt = &mut self.drivetrain;
 
-        dt.set_pose(Pose::new(95.945, 20.926, Angle::ZERO));
+        // dt.set_pose(Pose::new(95.945, 20.926, Angle::ZERO));
 
         self.intake.set_door(DoorCommands::Open);
 

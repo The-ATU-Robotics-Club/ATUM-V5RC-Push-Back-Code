@@ -29,7 +29,7 @@ use atum::{
 };
 use lazy_static::lazy_static;
 use log::{LevelFilter, debug, info};
-use vexide::{math::Angle, prelude::*};
+use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 
 struct Robot {
     controller: Controller,
@@ -57,7 +57,6 @@ impl Compete for Robot {
                 timeout: Some(Duration::from_millis(5000)),
                 ..Default::default()
             },
-            None,
         );
         let mut angular = Turn::new(
             Pid::new(0.78, 0.05, 0.05, 13.5),
@@ -247,12 +246,12 @@ async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
 
     // RADIO PORTS DO NOT REMOVE
-    drop(peripherals.port_9);
+    // drop(peripherals.port_9);
     drop(peripherals.port_21);
 
-    let adi_expander = AdiExpander::new(peripherals.port_8);
+    let adi_expander = AdiExpander::new(peripherals.port_13);
 
-    let mut color_sort = OpticalSensor::new(peripherals.port_7);
+    let mut color_sort = OpticalSensor::new(peripherals.port_11);
     _ = color_sort.set_led_brightness(1.0);
     _ = color_sort.set_integration_time(Duration::from_millis(10));
 
@@ -276,57 +275,58 @@ async fn main(peripherals: Peripherals) {
     // TODO - make imu calibrate at the same time
     let mut imu = Imu::new(
         vec![
-            InertialSensor::new(peripherals.port_10),
+            InertialSensor::new(peripherals.port_20),
             // InertialSensor::new(peripherals.port_9),
         ],
         1.0084555556,
     );
     imu.calibrate().await;
 
-    let rcl = RaycastLocalization::new(
-        vec![
-            WallDistanceSensor::new(
-                peripherals.port_1,
-                Vec2::new(6.03128976, 0.0),
-                Angle::ZERO
-            ),
-            WallDistanceSensor::new(
-                peripherals.port_2,
-                Vec2::new(-3.94528346, 0.0),
-                Angle::HALF_TURN,
-            ),
-            WallDistanceSensor::new(
-                peripherals.port_3,
-                Vec2::new(-5.21868874, -1.40196062),
-                -Angle::QUARTER_TURN,
-            ),
-            WallDistanceSensor::new(
-                peripherals.port_4,
-                Vec2::new(-5.21868874, 1.40196062),
-                Angle::QUARTER_TURN,
-            ),
-        ],
-        vec![
-            Circle::new(Vec2::new(23.5, 2.375), 2.375),
-            Circle::new(Vec2::new(116.92, 2.375), 2.375),
-            Circle::new(Vec2::new(23.5, 138.045), 2.375),
-            Circle::new(Vec2::new(116.92, 138.045), 2.375),
-        ],
-    );
+    // let rcl = RaycastLocalization::new(
+    //     vec![
+    //         WallDistanceSensor::new(
+    //             peripherals.port_1,
+    //             Vec2::new(6.03128976, 0.0),
+    //             Angle::ZERO
+    //         ),
+    //         WallDistanceSensor::new(
+    //             peripherals.port_2,
+    //             Vec2::new(-3.94528346, 0.0),
+    //             Angle::HALF_TURN,
+    //         ),
+    //         WallDistanceSensor::new(
+    //             peripherals.port_3,
+    //             Vec2::new(-5.21868874, -1.40196062),
+    //             -Angle::QUARTER_TURN,
+    //         ),
+    //         WallDistanceSensor::new(
+    //             peripherals.port_4,
+    //             Vec2::new(-5.21868874, 1.40196062),
+    //             Angle::QUARTER_TURN,
+    //         ),
+    //     ],
+    //     vec![
+    //         Circle::new(Vec2::new(23.5, 2.375), 2.375),
+    //         Circle::new(Vec2::new(116.92, 2.375), 2.375),
+    //         Circle::new(Vec2::new(23.5, 138.045), 2.375),
+    //         Circle::new(Vec2::new(116.92, 138.045), 2.375),
+    //     ],
+    // );
 
-    let relative_position = Pose::new(77.0, 23.0, Angle::ZERO);
-    let corrected = rcl.corrected_pose(relative_position, f64::INFINITY);
-    let starting_position = Rc::new(RefCell::new(corrected));
-    let cloned_pose = starting_position.clone();
+    // let relative_position = Pose::new(77.0, 23.0, Angle::ZERO);
+    // let corrected = rcl.corrected_pose(relative_position, f64::INFINITY);
+    // let starting_position = Rc::new(RefCell::new(corrected));
+    // let cloned_pose = starting_position.clone();
 
-    spawn(async move {
-        loop {
-            let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
-            cloned_pose.replace(corrected);
-            sleep(Duration::from_millis(30)).await;
-        }
-    })
-    .detach();
+    // spawn(async move {
+    //     loop {
+    //         let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
+    //         cloned_pose.replace(corrected);
+    //         sleep(Duration::from_millis(30)).await;
+    //     }
+    // })
+    // .detach();
+    let starting_position = Rc::new(RefCell::new(Pose::default()));
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
@@ -347,21 +347,21 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_1, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_2, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_5, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
                 ],
                 None,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_10, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
                 ],
                 None,
             ),
@@ -370,8 +370,8 @@ async fn main(peripherals: Peripherals) {
             12.0,
         ),
         intake: Intake::new(
-            Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-            Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
             AdiDigitalOut::new(peripherals.adi_f),
             color_sort,
             Duration::from_millis(85),

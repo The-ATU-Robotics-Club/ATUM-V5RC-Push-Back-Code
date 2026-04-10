@@ -1,3 +1,5 @@
+use log::debug;
+
 use super::{pose::Pose, vec2::Vec2};
 use crate::{
     hardware::wall_distance_sensor::{Wall, WallDistanceSensor},
@@ -5,7 +7,7 @@ use crate::{
 };
 
 const FIELD_SIZE: f64 = 140.42;
-pub const MAX_ERROR: f64 = 5.0;
+pub const MAX_ERROR: f64 = 13.0;
 const MAX_RAYCAST_DIST: f64 = FIELD_SIZE * 2.0;
 const MIN_AXIS_COMPONENT: f64 = 0.95;
 
@@ -53,13 +55,15 @@ impl RaycastLocalization {
                 continue;
             }
 
+            let world_position = sensor.world_position(pose.position(), pose.h);
             let world_angle = sensor.world_angle(pose.h);
             let theta = world_angle.as_radians();
             let dx = theta.cos();
             let dy = theta.sin();
-
+            
             for object in self.objects.iter() {
-                if object.is_intersecting(Vec2::new(dx, dy), world_angle, hit.distance) {
+                if object.is_intersecting(world_position, world_angle, hit.distance) {
+                    debug!("hit: {:?}", object.center());
                     continue 'outer;
                 }
             }

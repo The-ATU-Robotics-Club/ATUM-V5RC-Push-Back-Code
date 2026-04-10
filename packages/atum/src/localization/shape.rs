@@ -18,6 +18,10 @@ impl Circle {
             radius,
         }
     }
+    
+    pub fn center(&self) -> Vec2<f64> {
+        self.center
+    }
 }
 
 impl Shape for Circle {
