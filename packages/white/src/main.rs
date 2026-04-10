@@ -116,6 +116,10 @@ impl Compete for Robot {
                 });
             }
 
+            if mappings.wing.is_now_pressed() {
+                _ = self.wing.toggle(); 
+            }
+
             if mappings.duck_bill.is_pressed() {
                 _ = self.duck_bill.set_high();
             } else {
@@ -225,7 +229,7 @@ async fn main(peripherals: Peripherals) {
             InertialSensor::new(peripherals.port_19),
             InertialSensor::new(peripherals.port_18),
         ],
-        1.0,
+        0.996124876,
     );
 
     imu.calibrate().await;
@@ -236,16 +240,19 @@ async fn main(peripherals: Peripherals) {
                 peripherals.port_20,
                 Vec2::new(7.341, 4.495), //14.9/ 2 14.791
                 Angle::ZERO,
+                70..110,
             ),
             WallDistanceSensor::new(
                 peripherals.port_9,
                 Vec2::new(-1.5085, -5.44),
                 -Angle::QUARTER_TURN,
+                90..130,
             ),
             WallDistanceSensor::new(
                 peripherals.port_10,
                 Vec2::new(-7.45, -1.2645),
                 Angle::HALF_TURN,
+                70..110,
             ),
         ],
         vec![
@@ -271,7 +278,7 @@ async fn main(peripherals: Peripherals) {
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 0,
+        index: 2,
         test_auton: false,
         color_override: false,
     }));

@@ -1,3 +1,6 @@
+use std::ops::Range;
+
+use log::debug;
 use vexide::{math::Angle, prelude::DistanceSensor, smart::{SmartPort, distance::DistanceObjectError}};
 
 use crate::localization::vec2::Vec2;
@@ -20,13 +23,13 @@ pub struct WallDistanceSensor {
     sensor: DistanceSensor,
     offset: Vec2<f64>,
     angle: Angle,
+    wall_size: Range<u32>,
 }
 
 impl WallDistanceSensor {
     const MILLIMETER_TO_INCH: f64 = 1.0 / 25.4;
 
-    const MAX_DISTANCE: f64 = 2000.0 * Self::MILLIMETER_TO_INCH;
-    const MIN_DISTANCE: f64 = 20.0 * Self::MILLIMETER_TO_INCH;
+    const DIST_RANGE: Range<f64> = (20.0 * Self::MILLIMETER_TO_INCH..2000.0 * Self::MILLIMETER_TO_INCH);
 
 
     /// Creates a new Localization Sensor, which is a Distance Sensor that is primarily used for localization.
@@ -37,12 +40,13 @@ impl WallDistanceSensor {
         port: SmartPort,
         offset: Vec2<f64>,
         angle: Angle,
+        wall_size: Range<u32>,
     ) -> Self {
-        Self{
+        Self {
             sensor: DistanceSensor::new(port),
             offset,
             angle,
-            
+            wall_size,
         }
     }
 
@@ -61,8 +65,10 @@ impl WallDistanceSensor {
         };
 
         let dist = object.distance as f64 * Self::MILLIMETER_TO_INCH;
+        let size = object.relative_size.unwrap_or_default();
+        // debug!("size {size}");
 
-        if !(Self::MIN_DISTANCE..=Self::MAX_DISTANCE).contains(&dist) {
+        if !Self::DIST_RANGE.contains(&dist) || !self.wall_size.contains(&size) {
             return Ok(None);
         }
 

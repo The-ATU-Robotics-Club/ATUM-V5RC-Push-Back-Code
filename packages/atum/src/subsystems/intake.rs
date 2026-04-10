@@ -21,7 +21,7 @@ pub enum DoorCommands {
 /// Manages intake motors and the door mechanism
 /// Handles ball color detection and automatic door operation.
 pub struct Intake {
-    voltage: Rc<RefCell<f64>>, // Shared voltage to be applied to motors
+    voltage: Rc<RefCell<(f64, f64)>>, // Shared voltage to be applied to motors
     door_commands: Rc<RefCell<DoorCommands>>,
     _task: Task<()>, // Background task that loops continuously
 }
@@ -44,7 +44,7 @@ impl Intake {
         door_commands: DoorCommands,
         settings: Rc<RefCell<Settings>>,
     ) -> Self {
-        let voltage = Rc::new(RefCell::new(0.0));
+        let voltage = Rc::new(RefCell::new((0.0, 0.0)));
         let door_commands = Rc::new(RefCell::new(door_commands));
 
         // TODO: Separate logic so intake isn't overwhelmingly long
@@ -61,8 +61,8 @@ impl Intake {
 
                     // Read desired motor voltage and apply to motors
                     let voltage = *voltage.borrow(); 
-                    _ = bottom.set_voltage(voltage);
-                    _ = top.set_voltage(voltage);
+                    _ = bottom.set_voltage(voltage.0);
+                    _ = top.set_voltage(voltage.1);
 
                     // Manual door commands
                     door_commands.replace_with(|prev| {
@@ -125,7 +125,15 @@ impl Intake {
     ///
     /// This updates the shared voltage reference that the background task reads.
     pub fn set_voltage(&self, voltage: f64) {
-        self.voltage.replace(voltage);
+        self.voltage.replace((voltage, voltage));
+    }
+
+    pub fn set_bottom(&self, voltage: f64) {
+        self.voltage.borrow_mut().0 = voltage;
+    }
+
+    pub fn set_top(&self, voltage: f64) {
+        self.voltage.borrow_mut().1 = voltage;
     }
 
     pub fn set_door(&self, door_command: DoorCommands) {
