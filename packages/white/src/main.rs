@@ -7,14 +7,30 @@ use std::{
 };
 
 use atum::{
-    backend::start_ui, controllers::pid::Pid, hardware::{
+    backend::start_ui,
+    controllers::pid::Pid,
+    hardware::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
-        tracking_wheel::TrackingWheel, wall_distance_sensor::WallDistanceSensor,
-    }, localization::{odometry::Odometry, pose::Pose, rcl::{MAX_ERROR, RaycastLocalization}, shape::Circle, vec2::Vec2}, logger::Logger, mappings::{ControllerMappings, DriveMode}, motion::{MotionParameters, linear::Linear, turn::Turn}, settings::{Color, Settings}, subsystems::{
+        tracking_wheel::TrackingWheel,
+        wall_distance_sensor::WallDistanceSensor,
+    },
+    localization::{
+        odometry::Odometry,
+        pose::Pose,
+        rcl::{MAX_ERROR, RaycastLocalization},
+        shape::Circle,
+        vec2::Vec2,
+    },
+    logger::Logger,
+    mappings::{ControllerMappings, DriveMode},
+    motion::{MotionParameters, linear::Linear, turn::Turn},
+    settings::{Color, Settings},
+    subsystems::{
         drivetrain::Drivetrain,
         intake::{DoorCommands, Intake},
-    }, theme::STOUT_ROBOT
+    },
+    theme::STOUT_ROBOT,
 };
 use lazy_static::lazy_static;
 use log::{LevelFilter, info};
@@ -158,7 +174,9 @@ impl Compete for Robot {
                         },
                     );
 
-                    _ = turn.turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN).await;
+                    _ = turn
+                        .turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN)
+                        .await;
                 }
             }
 
@@ -202,11 +220,12 @@ async fn main(peripherals: Peripherals) {
         Angle::from_degrees(-45.0),
     );
 
-    let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_19),
-        InertialSensor::new(peripherals.port_18),
-    ],
-    1.0
+    let mut imu = Imu::new(
+        vec![
+            InertialSensor::new(peripherals.port_19),
+            InertialSensor::new(peripherals.port_18),
+        ],
+        1.0,
     );
 
     imu.calibrate().await;
@@ -215,8 +234,8 @@ async fn main(peripherals: Peripherals) {
         vec![
             WallDistanceSensor::new(
                 peripherals.port_20,
-                Vec2::new(7.341, 4.495), //14.9/ 2 14.791 
-                Angle::ZERO
+                Vec2::new(7.341, 4.495), //14.9/ 2 14.791
+                Angle::ZERO,
             ),
             WallDistanceSensor::new(
                 peripherals.port_9,
@@ -226,13 +245,8 @@ async fn main(peripherals: Peripherals) {
             WallDistanceSensor::new(
                 peripherals.port_10,
                 Vec2::new(-7.45, -1.2645),
-                Angle::HALF_TURN
+                Angle::HALF_TURN,
             ),
-            // WallDistanceSensor::new(
-            //     peripherals.port_4,
-            //     Vec2::new(-5.21868874, 1.40196062),
-            //     Angle::QUARTER_TURN,
-            // ),
         ],
         vec![
             Circle::new(Vec2::new(23.5, 2.375), 3.0),
@@ -247,14 +261,13 @@ async fn main(peripherals: Peripherals) {
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
     spawn(async move {
-            loop {
-                let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
-                cloned_pose.replace(corrected);
-                sleep(Duration::from_millis(30)).await;
-            }
-        })
+        loop {
+            let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
+            cloned_pose.replace(corrected);
+            sleep(Duration::from_millis(30)).await;
+        }
+    })
     .detach();
-    
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,

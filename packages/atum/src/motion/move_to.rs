@@ -3,7 +3,10 @@ use std::time::{Duration, Instant};
 use vexide::{math::Angle, time::sleep};
 
 use super::{MotionError, MotionParameters, MotionResult};
-use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
+use crate::{
+    controllers::pid::Pid, localization::vec2::Vec2, motion::desaturate,
+    subsystems::drivetrain::Drivetrain,
+};
 
 /// Controller that drives the robot to a 2D point.
 ///
@@ -93,10 +96,7 @@ impl MoveTo {
                 return Err(MotionError::Timeout(position_error));
             }
 
-            // Heading error between robot and target direction
             let herror = (target_h - heading).wrapped_half();
-
-            // Sideways displacement relative to target direction
             let mut cross_track_error = distance * herror.sin();
 
             // If the target is behind the robot, invert control logic
@@ -105,14 +105,18 @@ impl MoveTo {
                 distance *= -1.0;
             }
 
-            let linear_output = self.linear.output(distance, dt).clamp(-1.0, 1.0) * herror.cos().abs();
-            let angular_output = self.lateral.output(cross_track_error, dt).clamp(-1.0, 1.0);
+            let linear_output = self.linear.output(distance, dt) * herror.cos().abs();
+            let angular_output = self.lateral.output(cross_track_error, dt);
 
-            // Apply output to motors
-            drivetrain.set_arcade(
-                linear_output * self.params.speed,
-                angular_output * self.params.speed,
+            let [left, right] = desaturate(
+                [
+                    linear_output + angular_output,
+                    linear_output - angular_output,
+                ],
+                self.params.speed,
             );
+
+            drivetrain.set_voltages(left, right);
         }
 
         // Stop drivetrain after motion completes
