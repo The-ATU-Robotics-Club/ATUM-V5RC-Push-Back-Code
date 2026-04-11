@@ -1,6 +1,6 @@
 mod autons;
 
-use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use atum::{
     backend::start_ui,
@@ -9,15 +9,8 @@ use atum::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
         tracking_wheel::TrackingWheel,
-        wall_distance_sensor::WallDistanceSensor,
     },
-    localization::{
-        odometry::Odometry,
-        pose::Pose,
-        rcl::{MAX_ERROR, RaycastLocalization},
-        shape::Circle,
-        vec2::Vec2,
-    },
+    localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappingsLever, DriveMode},
     settings::{Color, Settings},
@@ -27,7 +20,6 @@ use atum::{
     },
     theme::STOUT_ROBOT,
 };
-use lazy_static::lazy_static;
 use log::{LevelFilter, info};
 use vexide::{math::Angle, prelude::*};
 
@@ -140,28 +132,27 @@ impl Compete for Robot {
                 _ = self.lift.toggle();
             }
 
-            if mappings.wing.is_now_pressed() {
-                _ = self.wing.toggle(); 
-            }
-
-            if mappings.duck_bill.is_pressed() {
-                _ = self.duck_bill.set_high();
-            } else {
-                _ = self.duck_bill.set_low();
-            }
-
             if mappings.match_load.is_now_pressed() {
                 _ = self.match_loader.toggle();
             }
 
+            if mappings.wing.is_pressed() {
+                _ = self.wing.set_low();
+            } else if self.lift.level().is_ok_and(|level| level.is_high()) {
+                _ = self.wing.set_high();
+            } else {
+                _ = self.wing.set_low();
+            }
+
+            // run autonomous when button is pressed to prevent the need of a competition switch
             if self.settings.borrow().test_auton {
                 self.autonomous().await;
                 self.settings.borrow_mut().test_auton = false;
             }
 
             if state.button_x.is_pressed() {
-                if state.button_down.is_now_pressed() {
-                    // self.drivetrain.set_pose(Pose::new(0.0, 0.0, Angle::QUARTER_TURN));
+                if state.button_down.is_pressed() {
+                    // self.drivetrain.set_pose(Pose::new(97.0, 21.5, Angle::ZERO));
                     self.drivetrain.set_pose(Pose::default());
                 }
             }
@@ -173,13 +164,9 @@ impl Compete for Robot {
     }
 }
 
-lazy_static! {
-    static ref LOGGER: Logger = Logger::new();
-}
-
 #[vexide::main(banner(theme = STOUT_ROBOT))]
 async fn main(peripherals: Peripherals) {
-    LOGGER.init(LevelFilter::Trace).unwrap();
+    Logger.init(LevelFilter::Trace).unwrap();
 
     // RADIO PORTS DO NOT REMOVE
     // drop(peripherals.port_1);
@@ -187,56 +174,16 @@ async fn main(peripherals: Peripherals) {
 
     // TODO - make imu calibrate at the same time
     let mut imu = Imu::new(vec![
-        // InertialSensor::new(peripherals.port_14),
-        // InertialSensor::new(peripherals.port_15),
-    ], 1.0);
+        InertialSensor::new(peripherals.port_7),
+        InertialSensor::new(peripherals.port_8),
+    ]);
     imu.calibrate().await;
 
-    let rcl = RaycastLocalization::new(
-        vec![
-            WallDistanceSensor::new(
-                peripherals.port_17,
-                Vec2::new(7.341, 4.495), //14.9/ 2 14.791
-                Angle::ZERO,
-                70..110,
-            ),
-            WallDistanceSensor::new(
-                peripherals.port_9,
-                Vec2::new(-1.5085, -5.44),
-                -Angle::QUARTER_TURN,
-                90..130,
-            ),
-            WallDistanceSensor::new(
-                peripherals.port_10,
-                Vec2::new(-7.45, -1.2645),
-                Angle::HALF_TURN,
-                70..110,
-            ),
-        ],
-        vec![
-            Circle::new(Vec2::new(23.5, 2.375), 3.0),
-            Circle::new(Vec2::new(116.92, 2.375), 3.0),
-            Circle::new(Vec2::new(23.5, 138.045), 3.0),
-            Circle::new(Vec2::new(116.92, 138.045), 3.0),
-        ],
-    );
-
-    let relative_position = Pose::new(70.2, 23.0, -Angle::QUARTER_TURN);
-    let corrected = rcl.corrected_pose(relative_position, 10.0);
-    let starting_position = Rc::new(RefCell::new(corrected));
-    let cloned_pose = starting_position.clone();
-    spawn(async move {
-        loop {
-            let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
-            cloned_pose.replace(corrected);
-            sleep(Duration::from_millis(30)).await;
-        }
-    })
-    .detach();
+    let starting_position = Rc::new(RefCell::new(Pose::default()));
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 2,
+        index: 0,
         test_auton: false,
         color_override: false,
     }));
@@ -253,21 +200,21 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
                 ],
                 motor_controller,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
                 ],
                 motor_controller,
             ),
@@ -293,15 +240,15 @@ async fn main(peripherals: Peripherals) {
             12.0,
         ),
         lever: Lever::new(
-            Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
                 ],
                 None,
             ),
-            RotationSensor::new(peripherals.port_6, Direction::Forward),
+            RotationSensor::new(peripherals.port_5, Direction::Forward),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_e),
         duck_bill: AdiDigitalOut::new(peripherals.adi_f),
@@ -318,8 +265,7 @@ async fn main(peripherals: Peripherals) {
 
     start_ui(
         peripherals.display,
-        vec!["Select Auton", "Rush Elims", "Skills"],
-        LOGGER.clone_messages(),
+        vec!["Select Auton", "rush control", "skills"],
         settings.clone(),
     );
 }

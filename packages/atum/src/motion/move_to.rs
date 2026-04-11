@@ -4,8 +4,8 @@ use vexide::{math::Angle, time::sleep};
 
 use super::{MotionError, MotionParameters, MotionResult};
 use crate::{
-    controllers::pid::Pid, localization::vec2::Vec2, motion::desaturate,
-    subsystems::drivetrain::Drivetrain,
+    controllers::pid::Pid, localization::vec2::Vec2,
+    subsystems::drivetrain::Drivetrain, utils::desaturate,
 };
 
 /// Controller that drives the robot to a 2D point.

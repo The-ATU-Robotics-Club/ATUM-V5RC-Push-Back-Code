@@ -61,18 +61,3 @@ pub enum MotionError<T> {
     /// Sensor failure.
     Sensor,
 }
-
-/// Scales a set of outputs proportionally so the largest magnitude
-/// equals `max`, preserving the ratio between all values.
-pub fn desaturate<const N: usize>(values: [f64; N], max: f64) -> [f64; N] {
-    // Determine the largest magnitude in the input array
-    let largest_magnitude = values.iter().map(|v| v.abs()).fold(0.0, f64::max);
-
-    // If any value exceeds the allowed maximum,
-    // scale all values proportionally.
-    if largest_magnitude > max {
-        values.map(|v| v * max / largest_magnitude)
-    } else {
-        values
-    }
-}

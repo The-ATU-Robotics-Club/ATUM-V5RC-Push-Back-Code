@@ -1,4 +1,3 @@
-use core::f64;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -8,24 +7,13 @@ use std::{
 use atum::{
     backend::start_ui,
     controllers::pid::Pid,
-    hardware::{
-        imu::Imu,
-        motor_group::{MotorController, MotorGroup},
-        tracking_wheel::TrackingWheel,
-        wall_distance_sensor::WallDistanceSensor,
-    },
-    localization::{
-        rcl::{RaycastLocalization, MAX_ERROR}, odometry::Odometry, pose::Pose, shape::Circle, vec2::Vec2
-    },
+    hardware::{imu::Imu, motor_group::MotorGroup, tracking_wheel::TrackingWheel},
+    localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    motion::{linear::Linear, move_to::MoveTo, turn::Turn, MotionError, MotionParameters},
+    motion::{MotionError, MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn},
     settings::{Color, Settings},
-    subsystems::{
-        drivetrain::Drivetrain,
-        intake::{DoorCommands, Intake},
-    },
-    theme::STOUT_ROBOT,
+    subsystems::{drivetrain::Drivetrain, intakes::basic::Basic},
 };
 use lazy_static::lazy_static;
 use log::{LevelFilter, debug, info};
@@ -34,7 +22,7 @@ use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 struct Robot {
     controller: Controller,
     drivetrain: Drivetrain,
-    intake: Intake,
+    intake: Basic,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
     match_loader: AdiDigitalOut,
@@ -127,16 +115,6 @@ impl Compete for Robot {
                 self.intake.set_voltage(0.0);
             }
 
-            if mappings.lift.is_now_pressed() {
-                _ = self.lift.toggle();
-                let door_command = self.intake.door();
-                self.intake.set_door(match door_command {
-                    DoorCommands::On => DoorCommands::Off,
-                    DoorCommands::Off => DoorCommands::On,
-                    _ => door_command,
-                });
-            }
-
             if mappings.duck_bill.is_pressed() {
                 _ = self.duck_bill.set_high();
             } else {
@@ -159,13 +137,6 @@ impl Compete for Robot {
                 _ = self.brake.set_high();
             } else {
                 _ = self.brake.set_low();
-            }
-
-            if mappings.enable_color.is_now_pressed() {
-                self.intake.set_door(match self.intake.door() {
-                    DoorCommands::ForceOff => DoorCommands::On,
-                    _ => DoorCommands::ForceOff,
-                });
             }
 
             if mappings.swap_color.is_now_pressed() {
@@ -335,13 +306,6 @@ async fn main(peripherals: Peripherals) {
         color_override: false,
     }));
 
-    let motor_controller = Some(MotorController::new(
-        Pid::new(0.025, 0.0, 0.01, 0.014),
-        0.83,
-        0.0167,
-        0.0,
-    ));
-
     let robot = Robot {
         controller: peripherals.primary_controller,
         drivetrain: Drivetrain::new(
@@ -369,14 +333,9 @@ async fn main(peripherals: Peripherals) {
             2.5,
             12.0,
         ),
-        intake: Intake::new(
+        intake: Basic::new(
             Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
             Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
-            AdiDigitalOut::new(peripherals.adi_f),
-            color_sort,
-            Duration::from_millis(85),
-            DoorCommands::On,
-            settings.clone(),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_g),
         duck_bill: AdiDigitalOut::new(peripherals.adi_h),

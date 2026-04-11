@@ -4,18 +4,17 @@ use atum::{
     controllers::pid::Pid,
     localization::{pose::Pose, vec2::Vec2},
     motion::{MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn},
-    subsystems::intake::DoorCommands,
 };
 use futures_lite::future::zip;
 use log::debug;
 use vexide::{
     math::Angle,
-    prelude::{Motor, sleep}, time::Sleep,
+    prelude::{Motor, sleep},
 };
 
 use crate::{
     Robot,
-    autons::{ANGULAR_PID, LINEAR_PID, RED_LEFT_GOAL, RED_LEFT_LOADER},
+    autons::{ANGULAR_PID, LINEAR_PID},
 };
 
 impl Robot {

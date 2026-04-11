@@ -14,7 +14,7 @@ use crate::{
     hardware::motor_group::MotorGroup,
     localization::{odometry::Odometry, pose::Pose},
     mappings::DriveMode,
-    motion::desaturate,
+    utils::{desaturate, apply_curve},
 };
 
 /// Represents a differential drivetrain with left and right motor groups
@@ -93,8 +93,8 @@ impl Drivetrain {
 
         // Apply acceleration curve for Arcade drive
         if matches!(drive_mode, DriveMode::Arcade { .. }) {
-            power_val = apply_curve(power_val, 1);
-            turn_val = apply_curve(turn_val, 2);
+            power_val = apply_curve(power_val, 1, 1.0);
+            turn_val = apply_curve(turn_val, 2, 1.0);
 
             left_val = power_val + turn_val;
             right_val = power_val - turn_val;
@@ -136,17 +136,4 @@ impl Drivetrain {
     pub fn track(&self) -> f64 {
         self.track
     }
-}
-
-/// Apply a polynomial acceleration curve to a joystick input
-///
-/// - `power` – input value from -1.0 to 1.0
-/// - `acceleration` – exponent for scaling
-fn apply_curve(power: f64, acceleration: i32) -> f64 {
-    power.powi(acceleration - 1)
-        * if acceleration % 2 == 0 {
-            power.abs()
-        } else {
-            power
-        }
 }

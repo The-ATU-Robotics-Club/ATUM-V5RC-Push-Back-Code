@@ -4,7 +4,6 @@ use atum::{
     controllers::pid::Pid,
     localization::{pose::Pose, vec2::Vec2},
     motion::{MotionParameters, linear::Linear, move_to::MoveTo, swing::Swing, turn::Turn},
-    subsystems::intake::DoorCommands,
 };
 use futures_lite::future::zip;
 use vexide::{
@@ -59,21 +58,15 @@ impl Robot {
 
         // dt.set_pose(Pose::new(95.945, 20.926, Angle::ZERO));
 
-        self.intake.set_door(DoorCommands::Open);
-
         // Drive to the match loader
         _ = linear
             .timeout(Duration::from_millis(1000))
             .drive_distance(dt, 23.0)
             .await;
 
-        self.intake.set_door(DoorCommands::Close);
-
         _ = turn.timeout(Duration::from_millis(1000))
             .turn_to_point(dt, RED_RIGHT_LOADER, false)
             .await;
-
-        self.intake.set_door(DoorCommands::Off);
 
         // Grab balls from match loader
         self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
@@ -92,7 +85,7 @@ impl Robot {
         sleep(Duration::from_millis(500)).await; // wait for balls to settle in robot
         _ = self.lift.set_high();
         _ = self.wing.set_high();
-        self.intake.set_door(DoorCommands::Off);
+
         _ = turn.timeout(Duration::from_millis(1000))
             .turn_to_point(dt, RED_RIGHT_GOAL, false)
             .await;
@@ -180,7 +173,7 @@ impl Robot {
         sleep(Duration::from_millis(500)).await; // wait for balls to settle in robot
         _ = self.lift.set_high();
         _ = self.wing.set_high();
-        self.intake.set_door(DoorCommands::Off);
+
         _ = turn.settle_velocity(10.0_f64.to_radians())
             .timeout(Duration::from_millis(1000))
             .turn_to_point(dt, BLUE_LEFT_GOAL, false)
