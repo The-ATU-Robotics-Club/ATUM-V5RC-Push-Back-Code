@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use vexide::{prelude::DistanceSensor, time::sleep};
+use vexide::time::sleep;
 
 use super::{MotionError, MotionParameters, MotionResult};
 use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
@@ -15,25 +15,12 @@ pub struct Linear {
 
     /// Motion configuration parameters
     params: MotionParameters<f64>,
-
-    /// Wall distance based
-    distance_sensor: Option<DistanceSensor>,
-    use_distance: bool,
 }
 
 impl Linear {
     /// Creates a new linear motion controller.
-    pub fn new(
-        pid: Pid,
-        params: MotionParameters<f64>,
-        distance_sensor: Option<DistanceSensor>,
-    ) -> Self {
-        Self {
-            pid,
-            params,
-            distance_sensor,
-            use_distance: false,
-        }
+    pub fn new(pid: Pid, params: MotionParameters<f64>) -> Self {
+        Self { pid, params }
     }
 
     /// Drives the robot to a target point on the field.
@@ -82,26 +69,11 @@ impl Linear {
             prev_time = now;
 
             let pose = drivetrain.pose();
-            let error = if !self.use_distance {
-                // Integrate forward velocity to estimate distance traveled
-                traveled += pose.vf * dt.as_secs_f64();
 
-                // Remaining distance to target
-                target - traveled
-            } else {
-                // Do not that if this returns early, the drivetrain will still move if it occurs
-                // mid motion. For now, do a safety check and stop drivetrain if it fails.
-                let distance_sensor = self.distance_sensor.as_ref().ok_or(MotionError::Sensor)?;
-
-                let object = distance_sensor
-                    .object()
-                    .map_err(|_| MotionError::Sensor)?
-                    .ok_or(MotionError::Sensor)?;
-
-                (object.distance as f64 / 25.4) - target
-            };
-
-            let output = self.pid.output(error, dt);
+            // Integrate forward velocity to estimate distance traveled
+            traveled += pose.vf * dt.as_secs_f64();
+            let error = target - traveled;
+            let output = self.pid.output(error, dt).clamp(-1.0, 1.0);
 
             // Motion is complete if:
             // 1. Error is within tolerance
@@ -157,11 +129,6 @@ impl Linear {
     /// Scales the maximum speed used for the motion.
     pub fn speed(&mut self, speed: f64) -> &mut Self {
         self.params.speed = speed;
-        self
-    }
-
-    pub fn switch_sensor(&mut self) -> &mut Self {
-        self.use_distance = !self.use_distance;
         self
     }
 }

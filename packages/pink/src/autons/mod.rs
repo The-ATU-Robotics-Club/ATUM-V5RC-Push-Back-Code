@@ -3,8 +3,8 @@ pub mod skills;
 
 use atum::{controllers::pid::Pid, localization::vec2::Vec2};
 
-const LINEAR_PID: Pid = Pid::new(1.17, 0.0, 0.1, 0.3);
-const ANGULAR_PID: Pid = Pid::new(17.0, 0.75, 1.1, 40.0);
+const LINEAR_PID: Pid = Pid::new(1.17/12.0, 0.0, 0.1/12.0, 0.3);
+const ANGULAR_PID: Pid = Pid::new(17.0/12.0, 0.75/12.0, 1.1/12.0, 40.0);
 
 const RED_LEFT_LOADER: Vec2<f64> = Vec2::new(27.0, 2.5);
 const RED_RIGHT_LOADER: Vec2<f64> = Vec2::new(144.0 - 24.0, 2.5);

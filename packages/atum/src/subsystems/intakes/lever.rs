@@ -1,6 +1,5 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-use log::debug;
 use vexide::{
     math::Angle,
     prelude::{Motor, RotationSensor},

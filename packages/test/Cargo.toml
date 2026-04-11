@@ -17,3 +17,5 @@ compress = true
 atum = { workspace = true }
 vexide = { workspace = true }
 log = { workspace = true }
+
+lazy_static = "1.5.0"

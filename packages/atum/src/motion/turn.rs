@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use vexide::{math::Angle, prelude::Motor, time::sleep};
+use vexide::{math::Angle, prelude::Motor, smart::motor::BrakeMode, time::sleep};
 
 use super::{MotionError, MotionParameters, MotionResult};
 use crate::{controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain};
@@ -40,7 +40,7 @@ impl Turn {
             target += Angle::HALF_TURN;
         }
 
-        self.turn_to(drivetrain, target).await?;
+        self.speed(self.params.speed).turn_to(drivetrain, target).await?;
 
         Ok(())
     }
@@ -71,7 +71,7 @@ impl Turn {
             // Compute shortest angular error between target and heading
             // `wrapped_half()` ensures the error stays within [-π, π)
             let error = (target - heading).wrapped_half();
-            let output = self.pid.output(error.as_radians(), dt);
+            let output = self.pid.output(error.as_radians(), dt).clamp(-1.0, 1.0);
 
             // Motion is complete if:
             // 1. Angular error is within tolerance
@@ -91,7 +91,7 @@ impl Turn {
                 .timeout
                 .is_some_and(|timeout| start_time.elapsed() > timeout)
             {
-                drivetrain.set_voltages(0.0, 0.0);
+                drivetrain.brake(BrakeMode::Brake);
                 return Err(MotionError::Timeout(error));
             }
 
@@ -100,7 +100,7 @@ impl Turn {
         }
 
         // Stop drivetrain after the turn completes
-        drivetrain.set_voltages(0.0, 0.0);
+        drivetrain.brake(BrakeMode::Brake);
 
         Ok(())
     }

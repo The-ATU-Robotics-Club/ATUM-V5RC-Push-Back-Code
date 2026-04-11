@@ -8,12 +8,15 @@
 //! - [`imu`] – Inertial Measurement Unit wrapper for heading and rotation.
 //! - [`motor_group`] – Groups of motors with convenient control methods.
 //! - [`tracking_wheel`] – Passive tracking wheels used for odometry.
+//! - [`wall_distance_sensor`] – Distance Sensor wrapper for localization
+//! 
 //!
 //! # Utilities
 //! - `average` – Computes the arithmetic mean of a list of f64 values
 pub mod imu;
 pub mod motor_group;
 pub mod tracking_wheel;
+pub mod wall_distance_sensor;
 
 fn average(values: Vec<f64>) -> f64 {
     values.iter().sum::<f64>() / values.len() as f64

@@ -21,6 +21,7 @@ use atum::{
     subsystems::{drivetrain::Drivetrain, intakes::basic::Basic},
     theme::STOUT_ROBOT,
 };
+use lazy_static::lazy_static;
 use log::{LevelFilter, info};
 use vexide::{math::Angle, prelude::*, smart::motor::BrakeMode};
 
@@ -134,9 +135,13 @@ impl Compete for Robot {
     }
 }
 
+lazy_static! {
+    static ref LOGGER: Logger = Logger::new();
+}
+
 #[vexide::main(banner(theme = STOUT_ROBOT))]
 async fn main(peripherals: Peripherals) {
-    Logger.init(LevelFilter::Trace).unwrap();
+    LOGGER.init(LevelFilter::Trace).unwrap();
 
     // RADIO PORTS DO NOT REMOVE
     drop(peripherals.port_1);
@@ -167,7 +172,10 @@ async fn main(peripherals: Peripherals) {
     let mut imu = Imu::new(vec![
         InertialSensor::new(peripherals.port_14),
         InertialSensor::new(peripherals.port_15),
-    ]);
+
+        ],
+        1.0059722222,
+    );
     imu.calibrate().await;
 
     let starting_position = Rc::new(RefCell::new(Pose::default()));
@@ -178,7 +186,7 @@ async fn main(peripherals: Peripherals) {
         test_auton: false,
         color_override: false,
     }));
-
+    
     let motor_controller = Some(MotorController::new(
         Pid::new(0.025, 0.0, 0.01, 0.014),
         0.83,
@@ -233,6 +241,7 @@ async fn main(peripherals: Peripherals) {
     start_ui(
         peripherals.display,
         vec!["Select Auton", "rush control", "skills"],
+        LOGGER.clone_messages(),
         settings.clone(),
     );
 }

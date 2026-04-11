@@ -1,6 +1,42 @@
 import { Page } from "./common.slint";
+import { VerticalBox, ListView } from "std-widgets.slint";
+import { Palette } from "common.slint";
 
-// TODO: Add diagnostics and logging states
+export struct Log {
+    time: string,
+    level: string,
+    level-color: color,
+    message: string,
+}
+
 export component DiagnosticPage inherits Page {
-    header: @tr("your robot is overheating");
+    in-out property <[Log]> logs;
+
+    VerticalLayout {
+        padding: 10px;
+
+        for log in root.logs: HorizontalLayout {
+            spacing: 5px;
+            alignment: start;
+            Text {
+                text: log.time;
+                color: Palette.text-primary;
+                font-size: Palette.base-font-size;
+            }
+
+            Text {
+                text: "[" + log.level + "]";
+                color: log.level-color;
+                font-size: Palette.base-font-size;
+                min-width: 65px;
+                horizontal-alignment: left;
+            }
+
+            Text {
+                text: log.message;
+                color: Palette.text-primary;
+                font-size: Palette.base-font-size;
+            }
+        }
+    }
 }
