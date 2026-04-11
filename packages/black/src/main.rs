@@ -1,6 +1,6 @@
 mod autons;
 
-use std::{cell::RefCell, rc::Rc, time::Instant};
+use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
 
 use atum::{
     backend::start_ui,
@@ -8,9 +8,9 @@ use atum::{
     hardware::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
-        tracking_wheel::TrackingWheel,
+        tracking_wheel::TrackingWheel, wall_distance_sensor::WallDistanceSensor,
     },
-    localization::{odometry::Odometry, pose::Pose, vec2::Vec2},
+    localization::{odometry::Odometry, pose::Pose, rcl::{RaycastLocalization, MAX_ERROR}, shape::Circle, vec2::Vec2},
     logger::Logger,
     mappings::{ControllerMappingsLever, DriveMode},
     settings::{Color, Settings},
@@ -149,8 +149,6 @@ impl Compete for Robot {
             }
 
             if mappings.wing.is_pressed() {
-                _ = self.wing.set_low();
-            } else if self.lift.level().is_ok_and(|level| level.is_high()) {
                 _ = self.wing.set_high();
             } else {
                 _ = self.wing.set_low();
@@ -166,6 +164,10 @@ impl Compete for Robot {
                 if state.button_down.is_pressed() {
                     // self.drivetrain.set_pose(Pose::new(97.0, 21.5, Angle::ZERO));
                     self.drivetrain.set_pose(Pose::default());
+                }
+
+                if state.button_up.is_now_pressed() {
+                    self.settings.borrow_mut().test_auton = true;
                 }
             }
 
@@ -188,6 +190,21 @@ async fn main(peripherals: Peripherals) {
     // drop(peripherals.port_1);
     drop(peripherals.port_21);
 
+    let wheel_1 = TrackingWheel::new(
+        peripherals.adi_g,
+        peripherals.adi_h,
+        2.362204724,
+        Vec2::new(1.61226751, 1.00183612),
+        Angle::from_degrees(45.0),
+    );
+    let wheel_2 = TrackingWheel::new(
+        peripherals.adi_e,
+        peripherals.adi_f,
+        2.362204724,
+        Vec2::new(1.61226751, -1.00183612),
+        Angle::from_degrees(-45.0),
+    );
+
     // TODO - make imu calibrate at the same time
     let mut imu = Imu::new(
         vec![
@@ -198,8 +215,41 @@ async fn main(peripherals: Peripherals) {
     );
     imu.calibrate().await;
 
-    let starting_position = Rc::new(RefCell::new(Pose::default()));
+    let rcl = RaycastLocalization::new(
+        vec![
+            WallDistanceSensor::new(
+                peripherals.port_1,
+                Vec2::new(-4.783, 4.806), //14.9/ 2 14.791
+                Angle::HALF_TURN,
+                70..130,
+            ),
+            WallDistanceSensor::new(
+                peripherals.port_2,
+                Vec2::new(-4.635, 4.61),
+                Angle::QUARTER_TURN,
+                70..130,
+            ),
+        ],
+        vec![
+            Circle::new(Vec2::new(23.5, 2.375), 3.0),
+            Circle::new(Vec2::new(116.92, 2.375), 3.0),
+            Circle::new(Vec2::new(23.5, 138.045), 3.0),
+            Circle::new(Vec2::new(116.92, 138.045), 3.0),
+        ],
+    );
 
+    let relative_position = Pose::new(70.2, 23.0, -Angle::QUARTER_TURN);
+    let corrected = rcl.corrected_pose(relative_position, 10.0);
+    let starting_position = Rc::new(RefCell::new(corrected));
+    let cloned_pose = starting_position.clone();
+    spawn(async move {
+        loop {
+            let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
+            cloned_pose.replace(corrected);
+            sleep(Duration::from_millis(30)).await;
+        }
+    })
+    .detach();
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
         index: 0,
@@ -237,24 +287,7 @@ async fn main(peripherals: Peripherals) {
                 ],
                 motor_controller,
             ),
-            Odometry::new(
-                starting_position.clone(),
-                TrackingWheel::new(
-                    peripherals.adi_a,
-                    peripherals.adi_b,
-                    2.362204724,
-                    Vec2::new(-5.93824103, 1.00288550),
-                    Angle::from_degrees(45.0),
-                ),
-                TrackingWheel::new(
-                    peripherals.adi_c,
-                    peripherals.adi_d,
-                    2.362204724,
-                    Vec2::new(-5.93824103, -1.00288550),
-                    Angle::from_degrees(-45.0),
-                ),
-                imu,
-            ),
+            Odometry::new(starting_position.clone(), wheel_1, wheel_2, imu),
             2.5,
             12.0,
         ),
@@ -269,10 +302,10 @@ async fn main(peripherals: Peripherals) {
             ),
             RotationSensor::new(peripherals.port_5, Direction::Forward),
         ),
-        lift: AdiDigitalOut::new(peripherals.adi_e),
-        duck_bill: AdiDigitalOut::new(peripherals.adi_f),
-        match_loader: AdiDigitalOut::new(peripherals.adi_g),
-        wing: AdiDigitalOut::new(peripherals.adi_h),
+        lift: AdiDigitalOut::new(peripherals.adi_d),
+        duck_bill: AdiDigitalOut::new(peripherals.adi_a),
+        match_loader: AdiDigitalOut::new(peripherals.adi_c),
+        wing: AdiDigitalOut::new(peripherals.adi_b),
         pose: starting_position,
         settings: settings.clone(),
     };

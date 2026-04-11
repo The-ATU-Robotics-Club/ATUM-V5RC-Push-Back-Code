@@ -1,6 +1,10 @@
 mod autons;
 
-use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
 use atum::{
     backend::start_ui,
@@ -59,8 +63,14 @@ impl Compete for Robot {
         let mut lever_voltage = Motor::V5_MAX_VOLTAGE;
         let mut open_bill = false;
         let mut smart_score = false;
-        _ = self.controller.set_text(format!("lever voltage: {lever_voltage}"), 1, 1).await;
-        _ = self.controller.set_text(format!("smart score: {smart_score}"), 2, 1).await;
+        _ = self
+            .controller
+            .set_text(format!("lever voltage: {lever_voltage}"), 1, 1)
+            .await;
+        _ = self
+            .controller
+            .set_text(format!("smart score: {smart_score}"), 2, 1)
+            .await;
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -71,12 +81,12 @@ impl Compete for Robot {
                 },
                 intake: state.button_r1,
                 outake: state.button_r2,
-                lever: state.button_l1,
-                lspeed: state.button_a,
-                lift: state.button_y,
+                lever: state.button_a,
+                lspeed: state.button_y,
+                lift: state.button_x,
                 duck_bill: state.button_up,
                 wing: state.button_l2,
-                match_load: state.button_right,
+                match_load: state.button_up,
                 brake: state.button_b,
             };
 
@@ -96,7 +106,10 @@ impl Compete for Robot {
 
             if state.button_power.is_now_pressed() {
                 smart_score = !smart_score;
-                _ = self.controller.set_text(format!("smart score: {smart_score}"), 2, 1).await;
+                _ = self
+                    .controller
+                    .set_text(format!("smart score: {smart_score}"), 2, 1)
+                    .await;
             }
 
             match self.lever.stage() {
@@ -132,16 +145,20 @@ impl Compete for Robot {
                     lever_voltage = 4.0;
                 }
 
-                _ = self.controller.set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1).await;
-                
+                _ = self
+                    .controller
+                    .set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1)
+                    .await;
             }
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
             }
 
-            if mappings.wing.is_now_pressed() {
-                _ = self.wing.toggle(); 
+            if mappings.wing.is_pressed() {
+                _ = self.wing.set_high();
+            } else {
+                _ = self.wing.set_low();
             }
 
             if mappings.duck_bill.is_pressed() {
@@ -185,32 +202,44 @@ async fn main(peripherals: Peripherals) {
     // drop(peripherals.port_1);
     drop(peripherals.port_21);
 
+    let wheel_1 = TrackingWheel::new(
+        peripherals.adi_e,
+        peripherals.adi_f,
+        2.362204724,
+        Vec2::new(1.61226751, 1.00183612),
+        Angle::from_degrees(45.0),
+    );
+    let wheel_2 = TrackingWheel::new(
+        peripherals.adi_g,
+        peripherals.adi_h,
+        2.362204724,
+        Vec2::new(1.61226751, -1.00183612),
+        Angle::from_degrees(-45.0),
+    );
+
     // TODO - make imu calibrate at the same time
-    let mut imu = Imu::new(vec![
-        // InertialSensor::new(peripherals.port_14),
-        // InertialSensor::new(peripherals.port_15),
-    ], 1.0);
+    let mut imu = Imu::new(
+        vec![
+            InertialSensor::new(peripherals.port_5),
+            InertialSensor::new(peripherals.port_6),
+        ],
+        1.0,
+    );
     imu.calibrate().await;
 
     let rcl = RaycastLocalization::new(
         vec![
             WallDistanceSensor::new(
                 peripherals.port_17,
-                Vec2::new(7.341, 4.495), //14.9/ 2 14.791
-                Angle::ZERO,
-                70..110,
+                Vec2::new(-4.783, -4.806), //14.9/ 2 14.791
+                Angle::HALF_TURN,
+                70..130,
             ),
             WallDistanceSensor::new(
                 peripherals.port_9,
-                Vec2::new(-1.5085, -5.44),
+                Vec2::new(-4.635, -4.61),
                 -Angle::QUARTER_TURN,
-                90..130,
-            ),
-            WallDistanceSensor::new(
-                peripherals.port_10,
-                Vec2::new(-7.45, -1.2645),
-                Angle::HALF_TURN,
-                70..110,
+                70..130,
             ),
         ],
         vec![
@@ -221,7 +250,7 @@ async fn main(peripherals: Peripherals) {
         ],
     );
 
-    let relative_position = Pose::new(70.2, 23.0, -Angle::QUARTER_TURN);
+    let relative_position = Pose::new(0.0, 0.0, Angle::ZERO);
     let corrected = rcl.corrected_pose(relative_position, 10.0);
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
@@ -267,28 +296,11 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+                    // Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
                 ],
                 motor_controller,
             ),
-            Odometry::new(
-                starting_position.clone(),
-                TrackingWheel::new(
-                    peripherals.adi_a,
-                    peripherals.adi_b,
-                    2.362204724,
-                    Vec2::new(-5.93824103, 1.00288550),
-                    Angle::from_degrees(45.0),
-                ),
-                TrackingWheel::new(
-                    peripherals.adi_c,
-                    peripherals.adi_d,
-                    2.362204724,
-                    Vec2::new(-5.93824103, -1.00288550),
-                    Angle::from_degrees(-45.0),
-                ),
-                imu,
-            ),
+            Odometry::new(starting_position.clone(), wheel_1, wheel_2, imu),
             2.5,
             12.0,
         ),
@@ -301,12 +313,12 @@ async fn main(peripherals: Peripherals) {
                 ],
                 None,
             ),
-            RotationSensor::new(peripherals.port_6, Direction::Forward),
+            RotationSensor::new(peripherals.port_8, Direction::Forward),
         ),
-        lift: AdiDigitalOut::new(peripherals.adi_e),
-        duck_bill: AdiDigitalOut::new(peripherals.adi_f),
-        match_loader: AdiDigitalOut::new(peripherals.adi_g),
-        wing: AdiDigitalOut::new(peripherals.adi_h),
+        lift: AdiDigitalOut::new(peripherals.adi_a),
+        duck_bill: AdiDigitalOut::new(peripherals.adi_b),
+        match_loader: AdiDigitalOut::new(peripherals.adi_c),
+        wing: AdiDigitalOut::new(peripherals.adi_d),
         pose: starting_position,
         settings: settings.clone(),
     };
