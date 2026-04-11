@@ -168,6 +168,10 @@ impl Compete for Robot {
                         .turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN)
                         .await;
                 }
+
+                if state.button_left.is_now_pressed() {
+                    self.settings.borrow_mut().test_auton = true;
+                }
             }
 
             info!("{}", self.drivetrain.pose());

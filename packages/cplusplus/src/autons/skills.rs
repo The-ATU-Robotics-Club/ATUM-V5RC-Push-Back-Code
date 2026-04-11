@@ -52,43 +52,49 @@ impl Robot {
         self.intake.set_bottom(Motor::V5_MAX_VOLTAGE);
         sleep(Duration::from_millis(500)).await;
 
-       _ = linear.speed(0.3).drive_distance(dt, -10.0).await;
+        // grab balls from park zone
+        _ = linear.speed(0.3).drive_distance(dt, -10.0).await;
         sleep(Duration::from_millis(300)).await;
-       _ = linear.speed(0.3).drive_distance(dt, 5.0).await;
-       _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
+        _ = linear.speed(0.3).drive_distance(dt, 5.0).await;
+        _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
 
-
-       _ = turn.turn_to(dt, Angle::ZERO).await;
-
+        _ = turn.turn_to(dt, Angle::ZERO).await;
         _ = self.wing.set_low();
 
-       _ = move_to.timeout(Duration::from_millis(2500)).move_to_point(dt, Vec2::new(130.5,23.0)).await;
+        // drive to wall to pick up more balls
+        _ = move_to.timeout(Duration::from_millis(2500)).move_to_point(dt, Vec2::new(130.5,23.0)).await;
         sleep(Duration::from_millis(500)).await;
 
-       _ = move_to.speed(0.3).settle_velocity(5.0).move_to_point(dt, Vec2::new(87.0,22.0)).await;
-
+        // collect middle ball
+        _ = move_to.speed(0.3).settle_velocity(5.0).move_to_point(dt, Vec2::new(87.0,22.0)).await;
         _ = turn.turn_to(dt, Angle::QUARTER_TURN).await;
-
         _ = move_to.speed(0.5).settle_velocity(5.0).move_to_point(dt, Vec2::new(91.0,64.0)).await;
         
+        // align to upper goal
         sleep(Duration::from_millis(1000)).await;
         self.intake.set_bottom(0.0);
-        _ = move_to.speed(0.3).settle_velocity(5.0).tolerance(0.75).move_to_point(dt, Vec2::new(86.0,87.0)).await;
+        _ = move_to.speed(0.3).settle_velocity(5.0).tolerance(0.75).move_to_point(dt, Vec2::new(88.25,88.25)).await;
         
         _ = turn.tolerance(Angle::from_degrees(0.5)).turn_to(dt, Angle::from_degrees(-135.0)).await;
 
+        // score in upper goal
         _ = self.duck_bill.set_high();
-        _ = self.wing.set_high();
-        _ = linear.speed(0.3).timeout(Duration::from_millis(2000)).drive_distance(dt, 7.5).await;
+        _ = linear.speed(0.3).timeout(Duration::from_millis(2000)).drive_distance(dt, 8.75).await;
 
+        self.intake.set_bottom(-12.0);
+        sleep(Duration::from_millis(250)).await;
         self.intake.set_bottom(12.0);
-        self.intake.set_top(8.0);
-        sleep(Duration::from_millis(1000)).await;
         self.intake.set_top(6.0);
+        sleep(Duration::from_millis(1000)).await;
+        self.intake.set_top(4.75);
+        sleep(Duration::from_millis(1000)).await;
+        self.intake.set_top(3.75);
 
-        sleep(Duration::from_millis(7000)).await;
+        sleep(Duration::from_millis(5000)).await;
 
+        // move backwards
         _ = move_to.speed(0.6).move_to_point(dt, Vec2::new(98.0,116.0)).await;
+        self.intake.set_top(0.0);
         _ = self.wing.set_low();
 
         _ = self.duck_bill.set_low();
@@ -96,44 +102,54 @@ impl Robot {
 
         sleep(Duration::from_millis(300)).await;
 
+        // reset position and move towards balls on the wall
         dt.set_pose(Pose::new(98.0, 116.0, dt.pose().h));
         sleep(Duration::from_millis(250)).await;    
         debug!("pose: {}", dt.pose());
         sleep(Duration::from_millis(300)).await;
 
         _ = turn.turn_to(dt, Angle::ZERO).await;
-        
         _ = move_to.speed(0.75).move_to_point(dt, Vec2::new(131.5,118.0)).await;
 
+        // move towards park zone
         _ = move_to.speed(0.4).move_to_point(dt, Vec2::new(69.0, 110.0)).await;
-
         _ = turn.timeout(Duration::from_millis(750)).tolerance(Angle::from_degrees(1.0)).speed(0.2).turn_to(dt, Angle::QUARTER_TURN).await;
 
+        // collect balls in park zone
         _ = linear.timeout(Duration::from_millis(1500)).speed(0.2).drive_distance(dt, 6.5).await;
-
         _ = self.wing.set_high();
 
         sleep(Duration::from_millis(500)).await;
 
         _ = linear.speed(0.3).drive_distance(dt, -10.0).await;
         sleep(Duration::from_millis(300)).await;
-       _ = linear.speed(0.3).drive_distance(dt, 5.0).await;
-       _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
+        _ = linear.speed(0.3).drive_distance(dt, 7.5).await;
+        _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
         
-       _ = linear.speed(0.3).drive_distance(dt, 5.0).await;
-       _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
+        _ = linear.speed(0.3).drive_distance(dt, 5.0).await;
+        // _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
 
 
-        _ = turn.turn_to(dt, Angle::HALF_TURN).await;
-        _ = linear.speed(0.3).drive_distance(dt, 10.0).await;
-        _ = turn.turn_to_point(dt, Vec2::new(57.0, 76.0), false).await;
-        
-       _ = self.wing.set_low();
+        // _ = turn.turn_to(dt, Angle::HALF_TURN).await;
+        // _ = linear.speed(0.3).drive_distance(dt, 10.0).await;
+
+        // collect ball in middle
+        _ = turn.turn_to_point(dt, Vec2::new(58.0, 110.0), false).await;
+        _ = move_to.speed(0.4).move_to_point(dt, Vec2::new(58.0, 110.0)).await;
+        _ = turn.turn_to_point(dt, Vec2::new(47.5, 76.5), false).await;
+        _ = self.wing.set_low();
          
-        _ = move_to.move_to_point(dt, Vec2::new(57.0,76.0)).await;
+        _ = move_to.speed(0.4).move_to_point(dt, Vec2::new(47.5, 77.5)).await;
 
+        // align to lower goal and score
+        _ = turn.speed(0.75).turn_to_point(dt, Vec2::new(52.0, 88.0), true).await;
+        _ = linear.drive_to_point(dt, Vec2::new(52.0, 88.0), true).await;
+        _ = turn.speed(0.75).turn_to(dt, Angle::from_degrees(-45.0)).await;
+        _ = linear.drive_distance(dt, 7.5).await;
 
+        _ = self.intake.set_voltage(-5.0);
 
-
+        // delay autonomous
+        sleep(Duration::from_secs(10)).await;
     }
 }
