@@ -18,3 +18,4 @@ vexide = { workspace = true }
 log = { workspace = true }
 
 futures-lite = "2"
+lazy_static = "1.5.0"

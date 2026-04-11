@@ -20,6 +20,7 @@ use atum::{
     },
     theme::STOUT_ROBOT,
 };
+use lazy_static::lazy_static;
 use log::{LevelFilter, info};
 use vexide::{math::Angle, prelude::*};
 
@@ -51,8 +52,14 @@ impl Compete for Robot {
         let mut lever_voltage = Motor::V5_MAX_VOLTAGE;
         let mut open_bill = false;
         let mut smart_score = false;
-        _ = self.controller.set_text(format!("lever voltage: {lever_voltage}"), 1, 1).await;
-        _ = self.controller.set_text(format!("smart score: {smart_score}"), 2, 1).await;
+        _ = self
+            .controller
+            .set_text(format!("lever voltage: {lever_voltage}"), 1, 1)
+            .await;
+        _ = self
+            .controller
+            .set_text(format!("smart score: {smart_score}"), 2, 1)
+            .await;
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -88,7 +95,10 @@ impl Compete for Robot {
 
             if state.button_power.is_now_pressed() {
                 smart_score = !smart_score;
-                _ = self.controller.set_text(format!("smart score: {smart_score}"), 2, 1).await;
+                _ = self
+                    .controller
+                    .set_text(format!("smart score: {smart_score}"), 2, 1)
+                    .await;
             }
 
             match self.lever.stage() {
@@ -124,8 +134,10 @@ impl Compete for Robot {
                     lever_voltage = 4.0;
                 }
 
-                _ = self.controller.set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1).await;
-                
+                _ = self
+                    .controller
+                    .set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1)
+                    .await;
             }
 
             if mappings.lift.is_now_pressed() {
@@ -164,19 +176,26 @@ impl Compete for Robot {
     }
 }
 
+lazy_static! {
+    static ref LOGGER: Logger = Logger::new();
+}
+
 #[vexide::main(banner(theme = STOUT_ROBOT))]
 async fn main(peripherals: Peripherals) {
-    Logger.init(LevelFilter::Trace).unwrap();
+    LOGGER.init(LevelFilter::Trace).unwrap();
 
     // RADIO PORTS DO NOT REMOVE
     // drop(peripherals.port_1);
     drop(peripherals.port_21);
 
     // TODO - make imu calibrate at the same time
-    let mut imu = Imu::new(vec![
-        InertialSensor::new(peripherals.port_7),
-        InertialSensor::new(peripherals.port_8),
-    ]);
+    let mut imu = Imu::new(
+        vec![
+            InertialSensor::new(peripherals.port_7),
+            InertialSensor::new(peripherals.port_8),
+        ],
+        1.0,
+    );
     imu.calibrate().await;
 
     let starting_position = Rc::new(RefCell::new(Pose::default()));
@@ -266,6 +285,7 @@ async fn main(peripherals: Peripherals) {
     start_ui(
         peripherals.display,
         vec!["Select Auton", "rush control", "skills"],
+        LOGGER.clone_messages(),
         settings.clone(),
     );
 }
