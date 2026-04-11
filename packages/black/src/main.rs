@@ -42,6 +42,7 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
+            1 => self.shhhhhh().await,
             _ => (),
         }
 
@@ -49,9 +50,9 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        let mut lever_voltage = Motor::V5_MAX_VOLTAGE;
+        let mut lever_voltage = Motor::V5_MAX_VOLTAGE / 2.0;
         let mut open_bill = false;
-        let mut smart_score = false;
+        let mut smart_score = true;
         _ = self
             .controller
             .set_text(format!("lever voltage: {lever_voltage}"), 1, 1)
@@ -166,7 +167,7 @@ impl Compete for Robot {
                     self.drivetrain.set_pose(Pose::default());
                 }
 
-                if state.button_up.is_now_pressed() {
+                if state.button_left.is_now_pressed() {
                     self.settings.borrow_mut().test_auton = true;
                 }
             }
@@ -218,13 +219,13 @@ async fn main(peripherals: Peripherals) {
     let rcl = RaycastLocalization::new(
         vec![
             WallDistanceSensor::new(
-                peripherals.port_1,
+                peripherals.port_3,
                 Vec2::new(-4.783, 4.806), //14.9/ 2 14.791
                 Angle::HALF_TURN,
                 70..130,
             ),
             WallDistanceSensor::new(
-                peripherals.port_2,
+                peripherals.port_4,
                 Vec2::new(-4.635, 4.61),
                 Angle::QUARTER_TURN,
                 70..130,
@@ -238,7 +239,7 @@ async fn main(peripherals: Peripherals) {
         ],
     );
 
-    let relative_position = Pose::new(70.2, 23.0, -Angle::QUARTER_TURN);
+    let relative_position = Pose::new(70.2, 23.0, Angle::HALF_TURN);
     let corrected = rcl.corrected_pose(relative_position, 10.0);
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
@@ -252,7 +253,7 @@ async fn main(peripherals: Peripherals) {
     .detach();
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 0,
+        index: 1,
         test_auton: false,
         color_override: false,
     }));
@@ -317,7 +318,7 @@ async fn main(peripherals: Peripherals) {
 
     start_ui(
         peripherals.display,
-        vec!["Select Auton", "rush control", "skills"],
+        vec!["Select Auton", "super stout better than layke's chud ass auton route", "skills"],
         LOGGER.clone_messages(),
         settings.clone(),
     );
