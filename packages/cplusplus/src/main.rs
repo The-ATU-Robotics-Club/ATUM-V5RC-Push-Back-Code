@@ -97,7 +97,8 @@ impl Compete for Robot {
             }
 
             if mappings.intake.is_pressed() {
-                self.intake.set_voltage(Motor::V5_MAX_VOLTAGE);
+                self.intake.set_bottom(Motor::V5_MAX_VOLTAGE);
+                self.intake.set_top(6.0);
             } else if mappings.outake.is_pressed() {
                 self.intake.set_voltage(-Motor::V5_MAX_VOLTAGE);
             } else {
@@ -303,7 +304,7 @@ async fn main(peripherals: Peripherals) {
             12.0,
         ),
         intake: Basic::new(
-            Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+            Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
             Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_f),

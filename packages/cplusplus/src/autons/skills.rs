@@ -73,24 +73,24 @@ impl Robot {
         
         sleep(Duration::from_millis(1000)).await;
         self.intake.set_bottom(0.0);
-        _ = move_to.speed(0.3).settle_velocity(5.0).tolerance(0.75).move_to_point(dt, Vec2::new(86.5,86.5)).await;
+        _ = move_to.speed(0.3).settle_velocity(5.0).tolerance(0.75).move_to_point(dt, Vec2::new(86.0,87.0)).await;
         
         _ = turn.tolerance(Angle::from_degrees(0.5)).turn_to(dt, Angle::from_degrees(-135.0)).await;
 
         _ = self.duck_bill.set_high();
-        // _ = self.wing.set_high();
-        _ = linear.speed(0.3).timeout(Duration::from_millis(2000)).drive_distance(dt, 6.5).await;
+        _ = self.wing.set_high();
+        _ = linear.speed(0.3).timeout(Duration::from_millis(2000)).drive_distance(dt, 7.5).await;
 
-        self.intake.set_top(12.0);
+        self.intake.set_bottom(12.0);
+        self.intake.set_top(8.0);
         sleep(Duration::from_millis(1000)).await;
         self.intake.set_top(6.0);
-        self.intake.set_bottom(12.0);
 
-        sleep(Duration::from_millis(3000)).await;
-        self.intake.set_top(3.0);
-        sleep(Duration::from_millis(3000)).await;
+        sleep(Duration::from_millis(7000)).await;
 
         _ = move_to.speed(0.6).move_to_point(dt, Vec2::new(98.0,116.0)).await;
+        _ = self.wing.set_low();
+
         _ = self.duck_bill.set_low();
         _ = turn.turn_to(dt, Angle::HALF_TURN).await;
 
@@ -124,9 +124,13 @@ impl Robot {
        _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
 
 
-        _ = turn.speed(0.3).turn_to_point(dt, Vec2::new(53.0,76.0), false).await;
+        _ = turn.turn_to(dt, Angle::HALF_TURN).await;
+        _ = linear.speed(0.3).drive_distance(dt, 10.0).await;
+        _ = turn.turn_to_point(dt, Vec2::new(57.0, 76.0), false).await;
+        
+       _ = self.wing.set_low();
          
-        _ = move_to.move_to_point(dt, Vec2::new(60.0,76.0)).await;
+        _ = move_to.move_to_point(dt, Vec2::new(57.0,76.0)).await;
 
 
 
