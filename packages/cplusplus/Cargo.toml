@@ -1,5 +1,6 @@
 [package]
-name = "white"
+name = "cplusplus"
+description = "old white bot"
 version = "0.1.0"
 edition = "2024"
 
@@ -9,7 +10,7 @@ edition = "2024"
 [package.metadata.v5]
 upload-strategy = "differential"
 slot = 1
-icon = "cool-x"
+icon = "robot"
 compress = true
 
 [dependencies]

@@ -174,8 +174,8 @@ async fn main(peripherals: Peripherals) {
 
     // TODO - make imu calibrate at the same time
     let mut imu = Imu::new(vec![
-        // InertialSensor::new(peripherals.port_14),
-        // InertialSensor::new(peripherals.port_15),
+        InertialSensor::new(peripherals.port_7),
+        InertialSensor::new(peripherals.port_8),
     ]);
     imu.calibrate().await;
 
@@ -200,21 +200,21 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
                 ],
                 motor_controller,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
                 ],
                 motor_controller,
             ),
@@ -240,15 +240,15 @@ async fn main(peripherals: Peripherals) {
             12.0,
         ),
         lever: Lever::new(
-            Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
                 ],
                 None,
             ),
-            RotationSensor::new(peripherals.port_6, Direction::Forward),
+            RotationSensor::new(peripherals.port_5, Direction::Forward),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_e),
         duck_bill: AdiDigitalOut::new(peripherals.adi_f),

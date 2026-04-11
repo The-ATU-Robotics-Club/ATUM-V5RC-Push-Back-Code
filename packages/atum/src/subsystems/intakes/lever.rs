@@ -55,7 +55,6 @@ impl Lever {
                                 voltage += apply_curve(added, 2, range)
                             }
 
-                            debug!("{}", voltage);
                             lever.set_voltage(voltage);
                         }
                         LeverStage::Reset => {
