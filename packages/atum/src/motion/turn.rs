@@ -40,7 +40,7 @@ impl Turn {
             target += Angle::HALF_TURN;
         }
 
-        self.turn_to(drivetrain, target).await?;
+        self.speed(self.params.speed).turn_to(drivetrain, target).await?;
 
         Ok(())
     }

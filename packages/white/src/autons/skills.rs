@@ -74,7 +74,7 @@ impl Robot {
         
         sleep(Duration::from_millis(1000)).await;
         self.intake.set_bottom(0.0);
-        _ = move_to.speed(0.3).settle_velocity(5.0).tolerance(0.75).move_to_point(dt, Vec2::new(87.0,87.0)).await;
+        _ = move_to.speed(0.3).settle_velocity(5.0).tolerance(0.75).move_to_point(dt, Vec2::new(86.5,86.5)).await;
         
         _ = turn.tolerance(Angle::from_degrees(0.5)).turn_to(dt, Angle::from_degrees(-135.0)).await;
 
@@ -82,13 +82,14 @@ impl Robot {
         // _ = self.wing.set_high();
         _ = linear.speed(0.3).timeout(Duration::from_millis(2000)).drive_distance(dt, 6.5).await;
 
-        self.intake.set_top(3.0);
-        sleep(Duration::from_millis(500)).await;
+        self.intake.set_top(12.0);
+        sleep(Duration::from_millis(1000)).await;
+        self.intake.set_top(6.0);
         self.intake.set_bottom(12.0);
 
-        sleep(Duration::from_millis(4000)).await;
+        sleep(Duration::from_millis(3000)).await;
         self.intake.set_top(3.0);
-        sleep(Duration::from_millis(2000)).await;
+        sleep(Duration::from_millis(3000)).await;
 
         _ = move_to.speed(0.6).move_to_point(dt, Vec2::new(98.0,116.0)).await;
         _ = self.duck_bill.set_low();
@@ -107,7 +108,7 @@ impl Robot {
 
         _ = move_to.speed(0.4).move_to_point(dt, Vec2::new(69.0, 110.0)).await;
 
-        _ = turn.timeout(Duration::from_millis(850)).speed(0.2).turn_to(dt, Angle::QUARTER_TURN).await;
+        _ = turn.timeout(Duration::from_millis(750)).tolerance(Angle::from_degrees(1.0)).speed(0.2).turn_to(dt, Angle::QUARTER_TURN).await;
 
         _ = linear.timeout(Duration::from_millis(1500)).speed(0.2).drive_distance(dt, 6.5).await;
 
@@ -115,9 +116,18 @@ impl Robot {
 
         sleep(Duration::from_millis(500)).await;
 
-        _ = linear.timeout(Duration::from_millis(1500)).drive_distance(dt, -7.0).await;
+        _ = linear.speed(0.3).drive_distance(dt, -10.0).await;
+        sleep(Duration::from_millis(300)).await;
+       _ = linear.speed(0.3).drive_distance(dt, 5.0).await;
+       _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
         
-        _ = turn.turn_to_point(dt, Vec2::new(49.0,76.0), false).await;
+       _ = linear.speed(0.3).drive_distance(dt, 5.0).await;
+       _ = linear.speed(0.3).drive_distance(dt, -5.0).await;
+
+
+        _ = turn.speed(0.3).turn_to_point(dt, Vec2::new(53.0,76.0), false).await;
+         
+        _ = move_to.move_to_point(dt, Vec2::new(60.0,76.0)).await;
 
 
 
