@@ -33,7 +33,7 @@ use atum::{
 };
 use lazy_static::lazy_static;
 use log::{LevelFilter, info};
-use vexide::{math::Angle, prelude::*};
+use vexide::{adi::digital::LogicLevel, math::Angle, prelude::*};
 
 struct Robot {
     controller: Controller,
@@ -53,6 +53,8 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
+            1 => self.shhhhhh().await,
+            2 => self.inch().await,
             _ => (),
         }
 
@@ -60,9 +62,9 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        let mut lever_voltage = Motor::V5_MAX_VOLTAGE;
+        let mut lever_voltage = Motor::V5_MAX_VOLTAGE/2.0;
         let mut open_bill = false;
-        let mut smart_score = false;
+        let mut smart_score = true;
         _ = self
             .controller
             .set_text(format!("lever voltage: {lever_voltage}"), 1, 1)
@@ -81,10 +83,10 @@ impl Compete for Robot {
                 },
                 intake: state.button_r1,
                 outake: state.button_r2,
-                lever: state.button_a,
-                lspeed: state.button_y,
+                lever: state.button_l1,
+                lspeed: state.button_left,
                 lift: state.button_x,
-                duck_bill: state.button_up,
+                duck_bill: state.button_a,
                 wing: state.button_l2,
                 match_load: state.button_up,
                 brake: state.button_b,
@@ -161,12 +163,6 @@ impl Compete for Robot {
                 _ = self.wing.set_low();
             }
 
-            if mappings.duck_bill.is_pressed() {
-                _ = self.duck_bill.set_high();
-            } else {
-                _ = self.duck_bill.set_low();
-            }
-
             if mappings.match_load.is_now_pressed() {
                 _ = self.match_loader.toggle();
             }
@@ -183,7 +179,7 @@ impl Compete for Robot {
                 }
             }
 
-            info!("Drivetrain: {}", self.drivetrain.pose());
+            info!("Pose: {}",self.drivetrain.pose() );
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
@@ -200,7 +196,7 @@ async fn main(peripherals: Peripherals) {
 
     // RADIO PORTS DO NOT REMOVE
     // drop(peripherals.port_1);
-    drop(peripherals.port_21);
+    drop(peripherals.port_3);
 
     let wheel_1 = TrackingWheel::new(
         peripherals.adi_e,
@@ -230,13 +226,13 @@ async fn main(peripherals: Peripherals) {
     let rcl = RaycastLocalization::new(
         vec![
             WallDistanceSensor::new(
-                peripherals.port_17,
+                peripherals.port_2,
                 Vec2::new(-4.783, -4.806), //14.9/ 2 14.791
                 Angle::HALF_TURN,
                 70..130,
             ),
             WallDistanceSensor::new(
-                peripherals.port_9,
+                peripherals.port_1,
                 Vec2::new(-4.635, -4.61),
                 -Angle::QUARTER_TURN,
                 70..130,
@@ -250,7 +246,7 @@ async fn main(peripherals: Peripherals) {
         ],
     );
 
-    let relative_position = Pose::new(0.0, 0.0, Angle::ZERO);
+    let relative_position = Pose::new(70.2, 23.0, Angle::ZERO);
     let corrected = rcl.corrected_pose(relative_position, 10.0);
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
@@ -265,7 +261,7 @@ async fn main(peripherals: Peripherals) {
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 2,
+        index: 1,
         test_auton: false,
         color_override: false,
     }));
@@ -282,21 +278,21 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Forward),
                 ],
                 motor_controller,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_1, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_3, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_4, Gearset::Blue, Direction::Reverse),
-                    // Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
                 ],
                 motor_controller,
             ),
@@ -305,20 +301,20 @@ async fn main(peripherals: Peripherals) {
             12.0,
         ),
         lever: Lever::new(
-            Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
                 ],
                 None,
             ),
-            RotationSensor::new(peripherals.port_8, Direction::Forward),
+            RotationSensor::new(peripherals.port_7, Direction::Forward),
         ),
-        lift: AdiDigitalOut::new(peripherals.adi_a),
-        duck_bill: AdiDigitalOut::new(peripherals.adi_b),
-        match_loader: AdiDigitalOut::new(peripherals.adi_c),
-        wing: AdiDigitalOut::new(peripherals.adi_d),
+        lift: AdiDigitalOut::with_initial_level(peripherals.adi_a, LogicLevel::Low),
+        duck_bill: AdiDigitalOut::with_initial_level(peripherals.adi_d, LogicLevel::Low),
+        match_loader: AdiDigitalOut::with_initial_level(peripherals.adi_c, LogicLevel::Low),
+        wing: AdiDigitalOut::with_initial_level(peripherals.adi_b, LogicLevel::Low),
         pose: starting_position,
         settings: settings.clone(),
     };
@@ -328,9 +324,9 @@ async fn main(peripherals: Peripherals) {
     })
     .detach();
 
-    start_ui(
+     start_ui(
         peripherals.display,
-        vec!["Select Auton", "Rush Elims", "Skills"],
+        vec!["Select Auton", "super stout better than layke's chud ass auton route", "INCH"],
         LOGGER.clone_messages(),
         settings.clone(),
     );
