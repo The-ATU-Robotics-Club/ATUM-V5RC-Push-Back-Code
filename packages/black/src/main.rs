@@ -1,6 +1,10 @@
 mod autons;
 
-use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
 use atum::{
     backend::start_ui,
@@ -8,9 +12,16 @@ use atum::{
     hardware::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
-        tracking_wheel::TrackingWheel, wall_distance_sensor::WallDistanceSensor,
+        tracking_wheel::TrackingWheel,
+        wall_distance_sensor::WallDistanceSensor,
     },
-    localization::{odometry::Odometry, pose::Pose, rcl::{RaycastLocalization, MAX_ERROR}, shape::Circle, vec2::Vec2},
+    localization::{
+        odometry::Odometry,
+        pose::Pose,
+        rcl::{MAX_ERROR, RaycastLocalization},
+        shape::Circle,
+        vec2::Vec2,
+    },
     logger::Logger,
     mappings::{ControllerMappingsLever, DriveMode},
     settings::{Color, Settings},
@@ -43,6 +54,7 @@ impl Compete for Robot {
 
         match route {
             1 => self.shhhhhh().await,
+            2 => self.shhhhhh_pt2().await,
             _ => (),
         }
 
@@ -50,17 +62,11 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        let mut lever_voltage = Motor::V5_MAX_VOLTAGE / 2.0;
+        let scoring = [LeverStage::Score(8.0, 3.0), LeverStage::Score(6.0, 12.0)];
+        let mut selected = 1;
         let mut open_bill = false;
-        let mut smart_score = true;
-        _ = self
-            .controller
-            .set_text(format!("lever voltage: {lever_voltage}"), 1, 1)
-            .await;
-        _ = self
-            .controller
-            .set_text(format!("smart score: {smart_score}"), 2, 1)
-            .await;
+
+        _ = self.controller.set_text(format!("Upper Stage"), 1, 1).await;
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -74,7 +80,7 @@ impl Compete for Robot {
                 lever: state.button_l1,
                 lspeed: state.button_a,
                 lift: state.button_y,
-                duck_bill: state.button_up,
+                duck_bill: state.button_left,
                 wing: state.button_l2,
                 match_load: state.button_right,
                 brake: state.button_b,
@@ -94,12 +100,15 @@ impl Compete for Robot {
                 open_bill = !open_bill;
             }
 
+            // make automatic when the lift is raised
             if state.button_power.is_now_pressed() {
-                smart_score = !smart_score;
-                _ = self
-                    .controller
-                    .set_text(format!("smart score: {smart_score}"), 2, 1)
-                    .await;
+                if selected == 1 {
+                    _ = self.controller.set_text("Upper Stage", 1, 1).await;
+                    selected = 0;
+                } else {
+                    _ = self.controller.set_text("Lower Stage", 1, 1).await;
+                    selected = 1;
+                }
             }
 
             match self.lever.stage() {
@@ -118,28 +127,19 @@ impl Compete for Robot {
                 let lever_stage = match self.lever.stage() {
                     LeverStage::Score(..) => LeverStage::Reset,
                     LeverStage::Reset => LeverStage::Idle,
-                    LeverStage::Idle => LeverStage::Score(lever_voltage, smart_score),
+                    LeverStage::Idle => scoring[selected],
                 };
 
                 self.lever.score(lever_stage);
             }
 
-            if mappings.lspeed.is_now_pressed() {
-                if lever_voltage == 4.0 {
-                    lever_voltage += 2.0;
-                } else {
-                    lever_voltage += 3.0;
-                }
+            // if mappings.
 
-                if lever_voltage > 12.0 {
-                    lever_voltage = 4.0;
-                }
-
-                _ = self
-                    .controller
-                    .set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1)
-                    .await;
-            }
+            // _ = self
+            //     .controller
+            //     .set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1)
+            //     .await;
+            // }
 
             if mappings.lift.is_now_pressed() {
                 _ = self.lift.toggle();
@@ -172,7 +172,7 @@ impl Compete for Robot {
                 }
             }
 
-            info!("Drivetrain: {}", self.drivetrain.pose());
+            // info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
@@ -270,21 +270,21 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
-                ],
-                motor_controller,
-            ),
-            MotorGroup::new(
-                vec![
                     Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                ],
+                motor_controller,
+            ),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
                 ],
                 motor_controller,
             ),
@@ -318,7 +318,11 @@ async fn main(peripherals: Peripherals) {
 
     start_ui(
         peripherals.display,
-        vec!["Select Auton", "super stout better than layke's chud ass auton route", "skills"],
+        vec![
+            "Select Auton",
+            "super stout better than layke's chud auton route",
+            "not so super stout and probably not better than layke's chud auton route",
+        ],
         LOGGER.clone_messages(),
         settings.clone(),
     );

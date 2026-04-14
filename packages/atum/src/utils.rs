@@ -1,4 +1,4 @@
-/// Apply a polynomial acceleration curve to a joystick input
+/// Apply a polynomial acceleration curve
 ///
 /// - `power` – input value from -1.0 to 1.0
 /// - `acceleration` – exponent for scaling

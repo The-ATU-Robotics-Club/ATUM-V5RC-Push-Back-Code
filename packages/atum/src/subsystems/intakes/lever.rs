@@ -1,5 +1,6 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
+use log::info;
 use vexide::{
     math::Angle,
     prelude::{Motor, RotationSensor},
@@ -7,11 +8,11 @@ use vexide::{
     time::sleep,
 };
 
-use crate::{hardware::motor_group::MotorGroup, utils::apply_curve};
+use crate::{hardware::motor_group::MotorGroup};
 
 #[derive(Copy, Clone)]
 pub enum LeverStage {
-    Score(f64, bool),
+    Score(f64, f64),
     Reset,
     Idle,
 }
@@ -41,18 +42,26 @@ impl Lever {
                     let position = -rotation.position().unwrap_or_default().wrapped_half();
 
                     match *lever_stage {
-                        LeverStage::Score(mut voltage, smart_score) => {
-                            if position > Angle::from_degrees(120.0) {
+                        LeverStage::Score(start, end) => {
+                            if position > Angle::from_degrees(125.0) {
                                 *lever_stage = LeverStage::Reset;
                                 drop(lever_stage);
                                 sleep(Duration::from_millis(50)).await;
                             }
 
-                            if smart_score {
-                                let range = Motor::V5_MAX_VOLTAGE - voltage;
-                                let added = position.as_degrees() * (range) / 110.0;
-                                voltage += apply_curve(added, 2, range)
-                            }
+                            let max = start.max(end);
+                            let min = start.min(end);
+                            let range = max - min;
+                            let change = position.as_degrees() * range / 125.0;
+                            let voltage = if start < end {
+                                (start + change).clamp(start, end)
+                            } else {
+                                // voltage += apply_curve(added, 2, range);
+                                // voltage = 12.0 - apply_curve(added, 2, range);
+                                (start - change).clamp(end, start)
+                            };
+
+                            info!("{voltage} - {change}");
 
                             lever.set_voltage(voltage);
                         }

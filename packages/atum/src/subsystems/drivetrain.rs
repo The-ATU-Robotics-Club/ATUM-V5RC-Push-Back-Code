@@ -94,7 +94,7 @@ impl Drivetrain {
         // Apply acceleration curve for Arcade drive
         if matches!(drive_mode, DriveMode::Arcade { .. }) {
             power_val = apply_curve(power_val, 1, 1.0);
-            turn_val = apply_curve(turn_val, 2, 1.0);
+            turn_val = apply_curve(turn_val, 2, 1.0) * 0.75;
 
             left_val = power_val + turn_val;
             right_val = power_val - turn_val;
