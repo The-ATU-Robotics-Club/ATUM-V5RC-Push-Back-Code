@@ -2,15 +2,9 @@ use std::time::Duration;
 
 use atum::{
     controllers::pid::Pid,
-    localization::{pose::Pose, vec2::Vec2},
-    motion::{linear::Linear, move_to::MoveTo, turn::Turn, MotionParameters}, subsystems::intakes::lever::LeverStage,
+    motion::{MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn},
 };
-use futures_lite::future::zip;
-use log::debug;
-use vexide::{
-    math::Angle,
-    prelude::{sleep, Motor}, smart::motor::BrakeMode,
-};
+use vexide::{math::Angle, prelude::Motor};
 
 use crate::{
     Robot,

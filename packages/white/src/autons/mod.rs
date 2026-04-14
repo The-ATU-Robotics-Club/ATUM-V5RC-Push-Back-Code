@@ -3,7 +3,7 @@ pub mod inch;
 pub mod skills;
 pub mod skills2;
 
-use atum::{controllers::pid::Pid, localization::vec2::Vec2};
+use atum::controllers::pid::Pid;
 
 pub const LINEAR_PID: Pid = Pid::new(0.06, 0.02, 0.004, 5.0);
 pub const ANGULAR_PID: Pid = Pid::new(0.78, 0.05, 0.05, 13.5);

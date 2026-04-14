@@ -2,11 +2,11 @@ use std::time::Duration;
 
 use atum::{
     controllers::pid::Pid,
-    localization::{pose::Pose, vec2::Vec2},
-    motion::{linear::Linear, move_to::MoveTo, turn::Turn, MotionParameters}, subsystems::intakes::lever::LeverStage,
+    localization::vec2::Vec2,
+    motion::{MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn},
+    subsystems::intakes::lever::LeverStage,
 };
 use futures_lite::future::zip;
-use log::debug;
 use vexide::{
     math::Angle,
     prelude::{sleep, Motor}, smart::motor::BrakeMode,
@@ -72,7 +72,7 @@ impl Robot {
                     sleep(Duration::from_millis(10)).await;
                 }
                 _ = self.duck_bill.set_high();
-                self.lever.score(LeverStage::Score(56.0, true));
+                self.lever.score(LeverStage::Score(6.0, 12.0));
             },
         ).await;
 

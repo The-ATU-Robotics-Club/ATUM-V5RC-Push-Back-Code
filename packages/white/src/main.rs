@@ -7,21 +7,30 @@ use std::{
 };
 
 use atum::{
-    backend::start_ui, controllers::pid::Pid, hardware::{
+    backend::start_ui,
+    controllers::pid::Pid,
+    hardware::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
         tracking_wheel::TrackingWheel,
         wall_distance_sensor::WallDistanceSensor,
-    }, localization::{
+    },
+    localization::{
         odometry::Odometry,
         pose::Pose,
         rcl::{MAX_ERROR, RaycastLocalization},
         shape::Circle,
         vec2::Vec2,
-    }, logger::Logger, mappings::{ControllerMappingsLever, DriveMode}, motion::{MotionParameters, linear::Linear, turn::Turn}, settings::{Color, Settings}, subsystems::{
+    },
+    logger::Logger,
+    mappings::{ControllerMappingsLever, DriveMode},
+    motion::{MotionParameters, linear::Linear, turn::Turn},
+    settings::{Color, Settings},
+    subsystems::{
         drivetrain::Drivetrain,
         intakes::lever::{Lever, LeverStage},
-    }, theme::STOUT_ROBOT
+    },
+    theme::STOUT_ROBOT,
 };
 use lazy_static::lazy_static;
 use log::{LevelFilter, info};
@@ -56,17 +65,11 @@ impl Compete for Robot {
     }
 
     async fn driver(&mut self) {
-        let mut lever_voltage = Motor::V5_MAX_VOLTAGE/2.0;
+        let scoring = [LeverStage::Score(8.0, 3.0), LeverStage::Score(6.0, 12.0)];
+        let mut selected = 1;
         let mut open_bill = false;
-        let mut smart_score = true;
-        _ = self
-            .controller
-            .set_text(format!("lever voltage: {lever_voltage}"), 1, 1)
-            .await;
-        _ = self
-            .controller
-            .set_text(format!("smart score: {smart_score}"), 2, 1)
-            .await;
+        
+        _ = self.controller.set_text(format!("Upper Stage"), 1, 1).await;
 
         loop {
             let state = self.controller.state().unwrap_or_default();
@@ -100,12 +103,15 @@ impl Compete for Robot {
                 open_bill = !open_bill;
             }
 
+            // make automatic when the lift is raised
             if state.button_power.is_now_pressed() {
-                smart_score = !smart_score;
-                _ = self
-                    .controller
-                    .set_text(format!("smart score: {smart_score}"), 2, 1)
-                    .await;
+                if selected == 1 {
+                    _ = self.controller.set_text("Upper Stage", 1, 1).await;
+                    selected = 0;
+                } else {
+                    _ = self.controller.set_text("Lower Stage", 1, 1).await;
+                    selected = 1;
+                }
             }
 
             match self.lever.stage() {
@@ -124,27 +130,10 @@ impl Compete for Robot {
                 let lever_stage = match self.lever.stage() {
                     LeverStage::Score(..) => LeverStage::Reset,
                     LeverStage::Reset => LeverStage::Idle,
-                    LeverStage::Idle => LeverStage::Score(lever_voltage, smart_score),
+                    LeverStage::Idle => scoring[selected],
                 };
 
                 self.lever.score(lever_stage);
-            }
-
-            if mappings.lspeed.is_now_pressed() {
-                if lever_voltage == 4.0 {
-                    lever_voltage += 2.0;
-                } else {
-                    lever_voltage += 3.0;
-                }
-
-                if lever_voltage > 12.0 {
-                    lever_voltage = 4.0;
-                }
-
-                _ = self
-                    .controller
-                    .set_text(format!("lever voltage: {lever_voltage:2}"), 1, 1)
-                    .await;
             }
 
             if mappings.lift.is_now_pressed() {
@@ -186,7 +175,7 @@ impl Compete for Robot {
                 }
             }
 
-            info!("Pose: {}",self.drivetrain.pose() );
+            info!("Pose: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
@@ -331,9 +320,15 @@ async fn main(peripherals: Peripherals) {
     })
     .detach();
 
-     start_ui(
+    start_ui(
         peripherals.display,
-        vec!["Select Auton", "super stout better than layke's chud ass auton route", "INCH", "skills", "skulls"],
+        vec![
+            "Select Auton",
+            "super stout better than layke's chud ass auton route",
+            "INCH",
+            "skills",
+            "skulls",
+        ],
         LOGGER.clone_messages(),
         settings.clone(),
     );
