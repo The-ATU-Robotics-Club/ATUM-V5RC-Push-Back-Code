@@ -18,7 +18,7 @@ use crate::{
 };
 
 impl Robot {
-    pub async fn skills(&mut self){
+    pub async fn skills2(&mut self){
         let mut linear = Linear::new(
             LINEAR_PID,
             MotionParameters {
@@ -55,11 +55,40 @@ impl Robot {
 
         _ = self.lift.set_high();
 
+        let mut target = Vec2::new(7.1,self.pose.borrow().y);
+
+        _ = linear.speed(0.67).drive_to_point(dt, target, true).await;
+        _ = linear.speed(1.0).timeout(Duration::from_millis(500)).drive_distance(dt, 5.0).await;
+        _ = linear.speed(1.0).timeout(Duration::from_millis(500)).drive_distance(dt, -5.0).await;
+
+        
+        target = Vec2::new(23.5, self.pose.borrow().y);
+
+        _ = linear.timeout(Duration::from_millis(2500)).speed(0.7).drive_to_point(dt, target, false).await;
+
+        _ = turn.turn_to(dt,Angle::QUARTER_TURN).await;
+
+        zip(
+            async {
+                _ = linear.timeout(Duration::from_millis(3000)).speed(0.6).drive_distance(dt, 25.0).await;
+            },
+            async {
+                sleep(Duration::from_millis(250)).await;
+                while self.pose.borrow().vf > 1.0 {
+                    sleep(Duration::from_millis(10)).await;
+                }
+                _ = self.duck_bill.set_high();
+                self.lever.score(LeverStage::Score(5.0, false));
+            },
+        ).await;
+
         _ = linear.speed(0.75).drive_to_point(dt, Vec2::new(23.5, 22.0), true).await; 
         _ = self.match_loader.set_high();
 
         _ = turn.turn_to(dt, Angle::QUARTER_TURN).await;
         sleep(Duration::from_millis(500)).await;
+        _ = self.duck_bill.set_low();
+
 
         _ = linear.drive_distance(dt, -13.0).await;
         sleep(Duration::from_millis(1000)).await;
@@ -72,7 +101,7 @@ impl Robot {
         _ = self.match_loader.set_low();
         _ = turn.turn_to(dt, Angle::ZERO).await;
 
-        _ = linear.drive_distance(dt, -9.0).await;
+        _ = linear.drive_distance(dt, -11.0).await;
         _ = turn.turn_to(dt, -Angle::QUARTER_TURN).await;
         _ = linear.drive_distance(dt, -65.0).await;
         _ = turn.turn_to(dt, Angle::ZERO).await;
@@ -108,14 +137,14 @@ impl Robot {
 
         _ = turn.speed(0.2).turn_to(dt, Angle::from_degrees(-95.0)).await;
 
-        _ = linear.speed(0.35).drive_distance(dt, -24.0).await;
+        _ = linear.speed(0.35).drive_distance(dt, -28.0).await;
         sleep(Duration::from_millis(1000)).await;
         _ = linear.speed(0.6).drive_distance(dt,7.0).await;
-        _ = turn.turn_to(dt, Angle::from_degrees(-87.0)).await;
+        _ = turn.turn_to(dt, Angle::from_degrees(-88.0)).await;
 
         zip(
             async {
-                _ = linear.timeout(Duration::from_millis(3000)).speed(0.6).drive_distance(dt, 25.0).await;
+                _ = linear.timeout(Duration::from_millis(3000)).speed(0.6).drive_distance(dt, 28.0).await;
             },
             async {
                 sleep(Duration::from_millis(250)).await;
@@ -123,15 +152,11 @@ impl Robot {
                     sleep(Duration::from_millis(10)).await;
                 }
                 _ = self.duck_bill.set_high();
-                self.lever.score(LeverStage::Score(3.7, false));
+                self.lever.score(LeverStage::Score(3.4, false));
             },
         ).await;
-
-
-
-
-
-
+        sleep(Duration::from_millis(750)).await;
+        _ = linear.drive_distance(dt, 22.0).await;
 
 
     }

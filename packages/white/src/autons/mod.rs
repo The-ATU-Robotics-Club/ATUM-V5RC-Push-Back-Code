@@ -1,6 +1,7 @@
 pub mod betterthanbetterthanlaykeauto;
 pub mod inch;
 pub mod skills;
+pub mod skills2;
 
 use atum::{controllers::pid::Pid, localization::vec2::Vec2};
 

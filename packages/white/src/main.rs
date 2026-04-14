@@ -48,6 +48,7 @@ impl Compete for Robot {
             1 => self.shhhhhh().await,
             2 => self.inch().await,
             3 => self.skills().await,
+            4 => self.skills2().await,
             _ => (),
         }
 
@@ -332,7 +333,7 @@ async fn main(peripherals: Peripherals) {
 
      start_ui(
         peripherals.display,
-        vec!["Select Auton", "super stout better than layke's chud ass auton route", "INCH", "skills"],
+        vec!["Select Auton", "super stout better than layke's chud ass auton route", "INCH", "skills", "skulls"],
         LOGGER.clone_messages(),
         settings.clone(),
     );
