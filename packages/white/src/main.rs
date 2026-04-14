@@ -7,29 +7,21 @@ use std::{
 };
 
 use atum::{
-    backend::start_ui,
-    controllers::pid::Pid,
-    hardware::{
+    backend::start_ui, controllers::pid::Pid, hardware::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
         tracking_wheel::TrackingWheel,
         wall_distance_sensor::WallDistanceSensor,
-    },
-    localization::{
+    }, localization::{
         odometry::Odometry,
         pose::Pose,
         rcl::{MAX_ERROR, RaycastLocalization},
         shape::Circle,
         vec2::Vec2,
-    },
-    logger::Logger,
-    mappings::{ControllerMappingsLever, DriveMode},
-    settings::{Color, Settings},
-    subsystems::{
+    }, logger::Logger, mappings::{ControllerMappingsLever, DriveMode}, motion::{MotionParameters, linear::Linear, turn::Turn}, settings::{Color, Settings}, subsystems::{
         drivetrain::Drivetrain,
         intakes::lever::{Lever, LeverStage},
-    },
-    theme::STOUT_ROBOT,
+    }, theme::STOUT_ROBOT
 };
 use lazy_static::lazy_static;
 use log::{LevelFilter, info};
@@ -55,6 +47,7 @@ impl Compete for Robot {
         match route {
             1 => self.shhhhhh().await,
             2 => self.inch().await,
+            3 => self.skills().await,
             _ => (),
         }
 
@@ -172,10 +165,23 @@ impl Compete for Robot {
                 self.settings.borrow_mut().test_auton = false;
             }
 
-            if state.button_x.is_pressed() {
+            if state.button_y.is_pressed() {
                 if state.button_down.is_now_pressed() {
                     // self.drivetrain.set_pose(Pose::new(0.0, 0.0, Angle::QUARTER_TURN));
                     self.drivetrain.set_pose(Pose::default());
+                }
+                if state.button_left.is_now_pressed() {
+                    let mut turn = Turn::new(
+                        Pid::new(0.78, 0.05, 0.05, 13.5),
+                        MotionParameters {
+                            tolerance: Angle::from_degrees(1.0),
+                            timeout: Some(Duration::from_millis(5000)),
+                            speed: 0.75,
+                            ..Default::default()
+                        },
+                    );
+
+                    _ = turn.turn_to(&mut self.drivetrain, Angle::ZERO).await;
                 }
             }
 
@@ -196,7 +202,7 @@ async fn main(peripherals: Peripherals) {
 
     // RADIO PORTS DO NOT REMOVE
     // drop(peripherals.port_1);
-    drop(peripherals.port_3);
+    drop(peripherals.port_4);
 
     let wheel_1 = TrackingWheel::new(
         peripherals.adi_e,
@@ -219,14 +225,14 @@ async fn main(peripherals: Peripherals) {
             InertialSensor::new(peripherals.port_5),
             InertialSensor::new(peripherals.port_6),
         ],
-        1.0,
+        1.0127149171,
     );
     imu.calibrate().await;
 
     let rcl = RaycastLocalization::new(
         vec![
             WallDistanceSensor::new(
-                peripherals.port_2,
+                peripherals.port_3,
                 Vec2::new(-4.783, -4.806), //14.9/ 2 14.791
                 Angle::HALF_TURN,
                 70..130,
@@ -246,7 +252,7 @@ async fn main(peripherals: Peripherals) {
         ],
     );
 
-    let relative_position = Pose::new(70.2, 23.0, Angle::ZERO);
+    let relative_position = Pose::new(56.0, 21.5, Angle::ZERO);
     let corrected = rcl.corrected_pose(relative_position, 10.0);
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
@@ -261,7 +267,7 @@ async fn main(peripherals: Peripherals) {
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 1,
+        index: 3,
         test_auton: false,
         color_override: false,
     }));
@@ -326,7 +332,7 @@ async fn main(peripherals: Peripherals) {
 
      start_ui(
         peripherals.display,
-        vec!["Select Auton", "super stout better than layke's chud ass auton route", "INCH"],
+        vec!["Select Auton", "super stout better than layke's chud ass auton route", "INCH", "skills"],
         LOGGER.clone_messages(),
         settings.clone(),
     );
