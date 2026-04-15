@@ -233,6 +233,12 @@ async fn main(peripherals: Peripherals) {
                 -Angle::QUARTER_TURN,
                 70..130,
             ),
+            WallDistanceSensor::new(
+                peripherals.port_21,
+                Vec2::new(9.804, 0.0),
+                Angle::ZERO,
+                70..130,
+            ),
         ],
         vec![
             Circle::new(Vec2::new(23.5, 2.375), 3.0),

@@ -43,7 +43,7 @@ impl Lever {
 
                     match *lever_stage {
                         LeverStage::Score(start, end) => {
-                            if position > Angle::from_degrees(125.0) {
+                            if position > Angle::from_degrees(120.0) {
                                 *lever_stage = LeverStage::Reset;
                                 drop(lever_stage);
                                 sleep(Duration::from_millis(50)).await;
@@ -52,7 +52,7 @@ impl Lever {
                             let max = start.max(end);
                             let min = start.min(end);
                             let range = max - min;
-                            let change = position.as_degrees() * range / 125.0;
+                            let change = position.as_degrees() * range / 120.0;
                             let voltage = if start < end {
                                 (start + change).clamp(start, end)
                             } else {
