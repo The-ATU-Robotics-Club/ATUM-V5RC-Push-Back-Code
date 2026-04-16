@@ -59,7 +59,6 @@ impl Swing {
             // Shortest angular difference to the target
             let error = (target - heading).wrapped_half();
 
-            // PID output representing angular velocity command
             let output = self.pid.output(error.as_radians(), dt);
 
             // Current angular velocity from odometry
@@ -73,6 +72,9 @@ impl Swing {
                     .params
                     .velocity_tolerance
                     .is_none_or(|tolerance| omega.abs() < tolerance)
+                || self.params.min_velocity.is_some_and(|velocity| {
+                    omega.abs() < velocity && error.abs() < self.params.tolerance * 3.0
+                })
             {
                 break;
             }

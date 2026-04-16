@@ -20,9 +20,10 @@ pub struct MotionParameters<T: Copy + PartialEq + PartialOrd + Default> {
     /// Acceptable position error required to consider the motion complete.
     pub tolerance: T,
 
-    /// Optional velocity threshold used to determine if the robot has
-    /// fully settled at the target.
+    /// The maximum velocity at which the robot has to be settled
+    /// The minimum velocity at which the robot will consider the motion settled
     pub velocity_tolerance: Option<f64>,
+    pub min_velocity: Option<f64>,
 
     /// Optional timeout used to terminate the motion if it takes too long.
     pub timeout: Option<Duration>,
@@ -46,6 +47,7 @@ impl<T: Copy + PartialEq + PartialOrd + Default> Default for MotionParameters<T>
         Self {
             tolerance: T::default(),
             velocity_tolerance: Default::default(),
+            min_velocity: Default::default(),
             timeout: Default::default(),
             speed: 1.0,
         }

@@ -4,8 +4,8 @@ use vexide::{math::Angle, time::sleep};
 
 use super::{MotionError, MotionParameters, MotionResult};
 use crate::{
-    controllers::pid::Pid, localization::vec2::Vec2,
-    subsystems::drivetrain::Drivetrain, utils::desaturate,
+    controllers::pid::Pid, localization::vec2::Vec2, subsystems::drivetrain::Drivetrain,
+    utils::desaturate,
 };
 
 /// Controller that drives the robot to a 2D point.
@@ -82,6 +82,9 @@ impl MoveTo {
                     .params
                     .velocity_tolerance
                     .is_none_or(|tolerance| pose.vf.abs() < tolerance)
+                || self.params.min_velocity.is_some_and(|velocity| {
+                    pose.vf.abs() < velocity && distance.abs() < self.params.tolerance * 3.0
+                })
             {
                 break;
             }
@@ -106,7 +109,11 @@ impl MoveTo {
             }
 
             let linear_output = self.linear.output(distance, dt) * herror.cos().abs();
-            let angular_output = self.lateral.output(cross_track_error, dt);
+            let angular_output = if distance.abs() < 3.0 {
+                0.0
+            } else {
+                self.lateral.output(cross_track_error, dt)
+            };
 
             let [left, right] = desaturate(
                 [

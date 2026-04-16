@@ -79,10 +79,13 @@ impl Linear {
             // 1. Error is within tolerance
             // 2. Velocity is sufficiently small (robot has settled)
             if error.abs() < self.params.tolerance
-                && (self
+                && self
                     .params
                     .velocity_tolerance
-                    .is_none_or(|tolerance| pose.vf.abs() < tolerance))
+                    .is_none_or(|tolerance| pose.vf.abs() < tolerance)
+                || self.params.min_velocity.is_some_and(|velocity| {
+                    pose.vf.abs() < velocity && error.abs() < self.params.tolerance * 3.0
+                })
             {
                 break;
             }
