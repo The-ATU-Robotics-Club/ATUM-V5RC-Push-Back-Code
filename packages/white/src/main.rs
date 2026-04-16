@@ -181,8 +181,6 @@ impl Compete for Robot {
                 
             }
 
-            info!("Pose: {}", self.drivetrain.pose());
-
             sleep(Controller::UPDATE_INTERVAL).await;
         }
     }
@@ -269,6 +267,8 @@ async fn main(peripherals: Peripherals) {
         loop {
             let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
+            info!("Pose: {}", corrected);
+
             sleep(Duration::from_millis(30)).await;
         }
     })

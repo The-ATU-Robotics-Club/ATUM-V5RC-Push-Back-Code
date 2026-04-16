@@ -144,8 +144,8 @@ impl MoveTo {
         self
     }
 
-    pub fn min_velocity(&mut self, velocity: f64) -> &mut Self {
-        self.params.min_velocity = Some(velocity);
+    pub fn min_velocity(&mut self, velocity: Option<f64>) -> &mut Self {
+        self.params.min_velocity = velocity;
         self
     }
 
