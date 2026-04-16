@@ -73,7 +73,7 @@ impl Lever {
                             lever.set_voltage(-Motor::V5_MAX_VOLTAGE);
                         }
                         LeverStage::Idle => {
-                            lever.set_voltage(-1.0);
+                            lever.set_voltage(-2.0);
                         }
                     }
                 }

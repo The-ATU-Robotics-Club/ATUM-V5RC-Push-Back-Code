@@ -83,7 +83,7 @@ impl MoveTo {
                     .velocity_tolerance
                     .is_none_or(|tolerance| pose.vf.abs() < tolerance)
                 || self.params.min_velocity.is_some_and(|velocity| {
-                    pose.vf.abs() < velocity && distance.abs() < self.params.tolerance * 3.0
+                    pose.vf.abs() < velocity && distance.abs() < self.params.tolerance * 2.0
                 })
             {
                 break;

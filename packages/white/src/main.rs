@@ -24,7 +24,7 @@ use atum::{
     },
     logger::Logger,
     mappings::{ControllerMappingsLever, DriveMode},
-    motion::{MotionParameters, linear::Linear, turn::Turn},
+    motion::{MotionParameters, linear::Linear, move_to::{self, MoveTo}, turn::Turn},
     settings::{Color, Settings},
     subsystems::{
         drivetrain::Drivetrain,
@@ -161,18 +161,24 @@ impl Compete for Robot {
                     self.drivetrain.set_pose(Pose::default());
                 }
                 if state.button_left.is_now_pressed() {
-                    let mut turn = Turn::new(
-                        Pid::new(0.78, 0.05, 0.05, 13.5),
+                    let mut move_to = MoveTo::new(
+                        Pid::new(0.045, 0.0, 0.002, 12.0),
+                        Pid::new(0.08, 0.0, 0.005, 0.0),
                         MotionParameters {
-                            tolerance: Angle::from_degrees(1.0),
-                            timeout: Some(Duration::from_millis(5000)),
-                            speed: 0.75,
+                            tolerance: 1.0,
+                            speed: 1.0,
                             ..Default::default()
                         },
                     );
-
-                    _ = turn.turn_to(&mut self.drivetrain, Angle::ZERO).await;
+                    let dt = &mut self.drivetrain;
+                    move_to.timeout(Duration::from_millis(5000)).move_to_point(dt, Vec2::new(-27.0, -2.0)).await;
+                
                 }
+                if state.button_right.is_now_pressed(){
+                    self.autonomous().await;
+                }
+        
+                
             }
 
             info!("Pose: {}", self.drivetrain.pose());
@@ -223,7 +229,7 @@ async fn main(peripherals: Peripherals) {
         vec![
             WallDistanceSensor::new(
                 peripherals.port_3,
-                Vec2::new(-4.783, -4.806), //14.9/ 2 14.791
+                Vec2::new(-4.783, -4.806), 
                 Angle::HALF_TURN,
                 70..130,
             ),
@@ -235,10 +241,17 @@ async fn main(peripherals: Peripherals) {
             ),
             WallDistanceSensor::new(
                 peripherals.port_21,
-                Vec2::new(9.804, 0.0),
+                Vec2::new(6.35, 0.0),
                 Angle::ZERO,
                 70..130,
             ),
+            WallDistanceSensor::new(
+                peripherals.port_2,
+                Vec2::new(-4.635,4.61),
+                Angle::QUARTER_TURN,
+                70..130,
+
+            )
         ],
         vec![
             Circle::new(Vec2::new(23.5, 2.375), 3.0),
@@ -263,7 +276,7 @@ async fn main(peripherals: Peripherals) {
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 3,
+        index: 4,
         test_auton: false,
         color_override: false,
     }));
