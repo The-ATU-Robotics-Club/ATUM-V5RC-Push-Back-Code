@@ -115,6 +115,11 @@ impl Swing {
         self
     }
 
+    pub fn min_velocity(&mut self, velocity: f64) -> &mut Self {
+        self.params.min_velocity = Some(velocity);
+        self
+    }
+
     /// Sets a timeout for the motion.
     pub fn timeout(&mut self, duration: Duration) -> &mut Self {
         self.params.timeout = Some(duration);
