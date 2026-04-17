@@ -282,8 +282,8 @@ async fn main(peripherals: Peripherals) {
                 vec![
                     Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
                 ],
                 motor_controller,
