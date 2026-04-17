@@ -166,7 +166,7 @@ impl Robot {
                     sleep(Duration::from_millis(10)).await;
                 }
                 _ = self.duck_bill.set_high();
-                self.lever.score(LeverStage::Score(5.0, 3.0));
+                self.lever.score(LeverStage::Score(5.0, 4.0));
             },
         ).await;
         sleep(Duration::from_millis(850)).await;
@@ -198,7 +198,7 @@ impl Robot {
                     sleep(Duration::from_millis(10)).await;
                 }
                 _ = self.duck_bill.set_high();
-                self.lever.score(LeverStage::Score(3.7, 3.7));
+                self.lever.score(LeverStage::Score(5.0, 4.0));
             },
         ).await;
         _ = self.duck_bill.set_low();
