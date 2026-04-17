@@ -62,6 +62,14 @@ impl Robot {
         _ = linear.speed(1.0).timeout(Duration::from_millis(500)).drive_distance(dt, 5.0).await;
         _ = linear.speed(1.0).timeout(Duration::from_millis(500)).drive_distance(dt, -5.0).await;
 
+        // _ = move_to.move_to_point(dt, Vec2::new(10.0, 23.0)).await;
+        // _ = linear.speed(0.67).timeout(Duration::from_millis(1800)).drive_to_point(dt, target, true).await;
+        // sleep(Duration::from_millis(125));
+        // dt.set_voltages(-3.0, 0.0);
+        // sleep(Duration::from_millis(325)).await;
+        // dt.set_arcade(-10.0, 0.0);
+        // sleep(Duration::from_millis(325)).await;
+
         
         let target = Vec2::new(23.5, self.pose.borrow().y);
 

@@ -66,13 +66,13 @@ impl Robot {
         let mut target = Vec2::new(23.5, self.pose.borrow().y);
 
         _ = linear.timeout(Duration::from_millis(1400)).speed(1.0).drive_to_point(dt, target, false).await;
-        _ = turn.timeout(Duration::from_millis(1000)).turn_to_point(dt, Vec2::new(23.0,42.0), false).await;
+        _ = turn.timeout(Duration::from_millis(750)).turn_to_point(dt, Vec2::new(23.0,42.0), false).await;
         _ = self.match_loader.set_high();
         sleep(Duration::from_millis(300)).await;
 
         zip(
             async {
-                _ = linear.timeout(Duration::from_millis(2300)).speed(0.6).drive_distance(dt, 27.0).await;
+                _ = linear.timeout(Duration::from_millis(1400)).speed(0.6).drive_distance(dt, 27.0).await;
             },
             async {
                 sleep(Duration::from_millis(250)).await;
@@ -107,11 +107,11 @@ impl Robot {
             },
             async {
                 sleep(Duration::from_millis(250)).await;
-                while self.pose.borrow().vf > 1.0 {
+                while self.pose.borrow().vf > 0.5 {
                     sleep(Duration::from_millis(10)).await;
                 }
                 _ = self.duck_bill.set_high();
-                self.lever.score(LeverStage::Score(5.0, 4.0));
+                self.lever.score(LeverStage::Score(4.0, 4.0));
             },
         ).await;
 
@@ -121,6 +121,7 @@ impl Robot {
         _ = move_to.speed(0.4).min_velocity(Some(0.25)).move_to_point(dt, Vec2::new(23.0,128.0)).await;
         // dt.brake(BrakeMode::Hold);
         dt.set_arcade(-0.25, 0.0);
+        self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
         sleep(Duration::from_millis(1500)).await;
 
 
@@ -146,8 +147,8 @@ impl Robot {
         target = Vec2::new(8.0, self.pose.borrow().y);
 
         _ = linear.timeout(Duration::from_millis(1500)).drive_to_point(dt, target, true).await;
-        _ = linear.speed(1.0).timeout(Duration::from_millis(500)).drive_distance(dt, 5.0).await;
-        _ = linear.speed(1.0).timeout(Duration::from_millis(500)).drive_distance(dt, -10.0).await;
+        _ = linear.speed(1.0).timeout(Duration::from_millis(350)).drive_distance(dt, 5.0).await;
+        _ = linear.speed(1.0).timeout(Duration::from_millis(400)).drive_distance(dt, -10.0).await;
 
         target = Vec2::new(116.0, self.pose.borrow().y);
 
@@ -158,7 +159,9 @@ impl Robot {
 
         zip(
             async {
-                _ = move_to.min_velocity(None).timeout(Duration::from_millis(1250)).speed(0.7).move_to_point(dt, Vec2::new(117.0, 95.0)).await;
+                _ = move_to.min_velocity(None).timeout(Duration::from_millis(1250)).speed(0.7).move_to_point(dt, Vec2::new(117.5, 95.0)).await;
+                dt.set_arcade(2.0, 0.0);
+
             },
             async {
                 sleep(Duration::from_millis(250)).await;
@@ -166,16 +169,16 @@ impl Robot {
                     sleep(Duration::from_millis(10)).await;
                 }
                 _ = self.duck_bill.set_high();
-                self.lever.score(LeverStage::Score(5.0, 4.0));
+                self.lever.score(LeverStage::Score(8.0, 6.0));
             },
         ).await;
         sleep(Duration::from_millis(850)).await;
         _ = self.duck_bill.set_low();
-
+        self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
         _ = move_to.min_velocity(Some(0.25)).speed(0.4).move_to_point(dt, Vec2::new(116.0, 129.0)).await;
         // dt.brake(BrakeMode::Hold);
-
         dt.set_arcade(-0.25, 0.0);
+    
         sleep(Duration::from_millis(1700)).await;
         _ = self.match_loader.set_low();
 
