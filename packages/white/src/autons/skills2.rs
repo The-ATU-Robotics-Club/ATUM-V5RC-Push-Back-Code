@@ -94,8 +94,7 @@ impl Robot {
         ////////////// Grabs first 6 balls ^^
         _ = self.match_loader.set_low();
         _ = move_to.tolerance(15.0).speed(1.0).move_to_point(dt, Vec2::new(7.5, 54.5)).await;
-        self.lever.set_intake(0.0);
-        _ = move_to.speed(0.8).timeout(Duration::from_millis(2500)).tolerance(10.0).move_to_point(dt, Vec2::new(18.0, 95.0)).await;
+        _ = move_to.speed(0.8).timeout(Duration::from_millis(2500)).tolerance(7.5).move_to_point(dt, Vec2::new(18.0, 95.0)).await;
         _ = move_to.timeout(Duration::from_millis(1500)).speed(0.4).tolerance(2.0).move_to_point(dt, Vec2::new(25.5, 110.0)).await;
         _ = turn.turn_to_point(dt, Vec2::new(23.5, 95.0), false).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
@@ -182,14 +181,14 @@ impl Robot {
 
         _ = move_to.tolerance(15.0).speed(1.0).move_to_point(dt, Vec2::new(132.5, 86.0)).await;
         _ = move_to.speed(0.8).timeout(Duration::from_millis(2500)).tolerance(10.0).move_to_point(dt, Vec2::new(126.0, 45.0)).await;
-        _ = move_to.speed(0.4).tolerance(2.0).move_to_point(dt, Vec2::new(118.0, 32.0)).await;
+        _ = move_to.timeout(Duration::from_millis(1500)).speed(0.4).tolerance(2.0).move_to_point(dt, Vec2::new(118.0, 32.0)).await;
 
-        _ = turn.speed(1.0).turn_to_point(dt, Vec2::new(115.0, 48.0), false).await;
+        _ = turn.speed(1.0).turn_to_point(dt, Vec2::new(117.0, 48.0), false).await;
 
         _ = self.match_loader.set_high();
         zip(
             async {
-                _ = move_to.min_velocity(None).timeout(Duration::from_millis(2000)).speed(0.5).move_to_point(dt, Vec2::new(116.0, 48.0)).await;
+                _ = move_to.min_velocity(None).timeout(Duration::from_millis(2000)).speed(0.5).move_to_point(dt, Vec2::new(117.0, 48.0)).await;
                 dt.set_arcade(2.0, 0.0);
 
             },
@@ -203,13 +202,13 @@ impl Robot {
             },
         ).await;
         _ = self.duck_bill.set_low();
-        _ = move_to.min_velocity(Some(0.5)).speed(0.4).move_to_point(dt, Vec2::new(116.0 ,11.0)).await;
+        _ = move_to.min_velocity(Some(0.5)).speed(0.4).move_to_point(dt, Vec2::new(117.0 ,11.0)).await;
         dt.set_arcade(-0.25, 0.0);
         sleep(Duration::from_millis(1750)).await;
 
         zip(
             async {
-                _ = move_to.min_velocity(None).speed(0.4).timeout(Duration::from_millis(3000)).move_to_point(dt, Vec2::new(116.5, 48.0)).await;
+                _ = move_to.min_velocity(None).speed(0.4).timeout(Duration::from_millis(3000)).move_to_point(dt, Vec2::new(117.0, 48.0)).await;
                 dt.set_arcade(2.0, 0.0);
             },
             async {
