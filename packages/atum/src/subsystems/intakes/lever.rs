@@ -56,8 +56,6 @@ impl Lever {
                             let voltage = if start < end {
                                 (start + change).clamp(start, end)
                             } else {
-                                // voltage += apply_curve(added, 2, range);
-                                // voltage = 12.0 - apply_curve(added, 2, range);
                                 (start - change).clamp(end, start)
                             };
 
@@ -73,7 +71,7 @@ impl Lever {
                             lever.set_voltage(-Motor::V5_MAX_VOLTAGE);
                         }
                         LeverStage::Idle => {
-                            lever.set_voltage(-2.0);
+                            lever.set_voltage(-1.0);
                         }
                     }
                 }
