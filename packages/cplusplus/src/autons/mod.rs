@@ -1,10 +1,9 @@
-pub mod rushelims;
 pub mod skills;
 
 use atum::{controllers::pid::Pid, localization::vec2::Vec2};
 
-pub const LINEAR_PID: Pid = Pid::new(0.44, 0.00, 0.06, 12.0);
-pub const ANGULAR_PID: Pid = Pid::new(1.67, 0.76, 0.19, 40.0);
+pub const LINEAR_PID: Pid = Pid::new(0.08, 0.04, 0.009, 8.0);
+pub const ANGULAR_PID: Pid = Pid::new(2.175, 0.2, 0.25, 10.0);
 
 const RED_LEFT_LOADER: Vec2<f64> = Vec2::new(28.0, 2.5);
 const RED_RIGHT_LOADER: Vec2<f64> = Vec2::new(144.0 - 24.0, 2.5);

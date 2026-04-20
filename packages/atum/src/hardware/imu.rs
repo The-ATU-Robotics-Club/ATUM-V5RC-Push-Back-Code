@@ -1,6 +1,6 @@
 use std::f64::consts::TAU;
 
-use log::{error, info};
+use log::{debug, error, info};
 use vexide::{math::Angle, prelude::InertialSensor};
 
 use super::average;
@@ -56,11 +56,22 @@ impl Imu {
             }
         }
 
-        Angle::from_radians(average(angles)*self.ratio)
+        Angle::from_radians(average(&angles)*self.ratio)
     }
 
     /// Returns the robot heading normalized to `[0, 2π)`.
     pub fn heading(&self) -> Angle {
         self.rotation().wrapped_full()
+    }
+
+    pub fn pitch(&self) -> Vec<Angle> {
+        let mut pitch = vec![];
+        for imu in self.imus.iter() {
+            if let Ok(euler) = imu.euler() {
+                pitch.push(euler.a);
+            }
+        }
+
+        pitch
     }
 }

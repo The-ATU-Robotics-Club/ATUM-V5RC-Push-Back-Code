@@ -240,7 +240,7 @@ async fn main(peripherals: Peripherals) {
     );
 
     let relative_position = Pose::new(70.2, 23.0, Angle::HALF_TURN);
-    let corrected = rcl.corrected_pose(relative_position, 10.0);
+    let corrected = rcl.corrected_pose(relative_position, 48.0);
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
     spawn(async move {
@@ -285,6 +285,7 @@ async fn main(peripherals: Peripherals) {
                     Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                    
                 ],
                 motor_controller,
             ),
