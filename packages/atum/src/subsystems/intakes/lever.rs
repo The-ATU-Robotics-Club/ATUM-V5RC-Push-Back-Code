@@ -61,7 +61,7 @@ impl Lever {
                                 (start - change).clamp(end, start)
                             };
 
-                            // info!("{voltage} - {change}");
+                            info!("{voltage} - {change}");
 
                             lever.set_voltage(voltage);
                         }

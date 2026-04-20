@@ -53,8 +53,7 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.shhhhhh().await,
-            2 => self.shhhhhh_pt2().await,
+
             _ => (),
         }
 
@@ -192,24 +191,24 @@ async fn main(peripherals: Peripherals) {
     drop(peripherals.port_21);
 
     let wheel_1 = TrackingWheel::new(
-        peripherals.adi_g,
-        peripherals.adi_h,
+        peripherals.adi_a,
+        peripherals.adi_b,
         2.362204724,
         Vec2::new(1.61226751, 1.00183612),
         Angle::from_degrees(45.0),
     );
     let wheel_2 = TrackingWheel::new(
-        peripherals.adi_e,
-        peripherals.adi_f,
+        peripherals.adi_c,
+        peripherals.adi_d,
         2.362204724,
         Vec2::new(1.61226751, -1.00183612),
         Angle::from_degrees(-45.0),
     );
-
+   
     // TODO - make imu calibrate at the same time
     let mut imu = Imu::new(
         vec![
-            InertialSensor::new(peripherals.port_7),
+            InertialSensor::new(peripherals.port_5),
             InertialSensor::new(peripherals.port_8),
         ],
         1.0,
@@ -224,12 +223,12 @@ async fn main(peripherals: Peripherals) {
                 Angle::HALF_TURN,
                 70..130,
             ),
-            WallDistanceSensor::new(
-                peripherals.port_4,
-                Vec2::new(-4.635, 4.61),
-                Angle::QUARTER_TURN,
-                70..130,
-            ),
+            // WallDistanceSensor::new(
+            //     peripherals.port_4,
+            //     Vec2::new(-4.635, 4.61),
+            //     Angle::QUARTER_TURN,
+            //     70..130,
+            // ),
         ],
         vec![
             Circle::new(Vec2::new(23.5, 2.375), 3.0),
@@ -270,21 +269,22 @@ async fn main(peripherals: Peripherals) {
         drivetrain: Drivetrain::new(
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
                 ],
+                
                 motor_controller,
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_15, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_17, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_18, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_19, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_20, Gearset::Blue, Direction::Reverse),
                 ],
                 motor_controller,
             ),
@@ -293,20 +293,20 @@ async fn main(peripherals: Peripherals) {
             12.0,
         ),
         lever: Lever::new(
-            Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_9, Gearset::Blue, Direction::Reverse),
                 ],
                 None,
             ),
-            RotationSensor::new(peripherals.port_5, Direction::Forward),
+            RotationSensor::new(peripherals.port_4, Direction::Forward),
         ),
-        lift: AdiDigitalOut::new(peripherals.adi_d),
-        duck_bill: AdiDigitalOut::new(peripherals.adi_a),
-        match_loader: AdiDigitalOut::new(peripherals.adi_c),
-        wing: AdiDigitalOut::new(peripherals.adi_b),
+        lift: AdiDigitalOut::new(peripherals.adi_f),
+        duck_bill: AdiDigitalOut::new(peripherals.adi_g),
+        match_loader: AdiDigitalOut::new(peripherals.adi_e),
+        wing: AdiDigitalOut::new(peripherals.adi_h),
         pose: starting_position,
         settings: settings.clone(),
     };
