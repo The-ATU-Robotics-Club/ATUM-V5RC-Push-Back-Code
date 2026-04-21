@@ -24,7 +24,12 @@ use atum::{
     },
     logger::Logger,
     mappings::{ControllerMappingsLever, DriveMode},
-    motion::{MotionParameters, linear::Linear, move_to::{self, MoveTo}, turn::Turn},
+    motion::{
+        MotionParameters,
+        linear::Linear,
+        move_to::{self, MoveTo},
+        turn::Turn,
+    },
     settings::{Color, Settings},
     subsystems::{
         drivetrain::Drivetrain,
@@ -68,7 +73,7 @@ impl Compete for Robot {
         let scoring = [LeverStage::Score(8.0, 3.0), LeverStage::Score(6.0, 12.0)];
         let mut selected = 1;
         let mut open_bill = false;
-        
+
         _ = self.controller.set_text(format!("Upper Stage"), 1, 1).await;
 
         loop {
@@ -171,14 +176,14 @@ impl Compete for Robot {
                         },
                     );
                     let dt = &mut self.drivetrain;
-                    move_to.timeout(Duration::from_millis(5000)).move_to_point(dt, Vec2::new(-27.0, -2.0)).await;
-                
+                    _ = move_to
+                        .timeout(Duration::from_millis(5000))
+                        .move_to_point(dt, Vec2::new(-27.0, -2.0))
+                        .await;
                 }
-                if state.button_right.is_now_pressed(){
+                if state.button_right.is_now_pressed() {
                     self.autonomous().await;
                 }
-        
-                
             }
 
             sleep(Controller::UPDATE_INTERVAL).await;
@@ -227,7 +232,7 @@ async fn main(peripherals: Peripherals) {
         vec![
             WallDistanceSensor::new(
                 peripherals.port_3,
-                Vec2::new(-4.783, -4.806), 
+                Vec2::new(-4.783, -4.806),
                 Angle::HALF_TURN,
                 70..130,
             ),
@@ -245,11 +250,10 @@ async fn main(peripherals: Peripherals) {
             ),
             WallDistanceSensor::new(
                 peripherals.port_2,
-                Vec2::new(-4.635,4.61),
+                Vec2::new(-4.635, 4.61),
                 Angle::QUARTER_TURN,
                 70..130,
-
-            )
+            ),
         ],
         vec![
             Circle::new(Vec2::new(23.5, 2.375), 3.0),
@@ -260,14 +264,14 @@ async fn main(peripherals: Peripherals) {
     );
 
     let relative_position = Pose::new(56.0, 21.5, Angle::ZERO);
-    let corrected = rcl.corrected_pose(relative_position, 10.0);
+    let corrected = rcl.corrected_pose(relative_position, 24.0);
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
     spawn(async move {
         loop {
             let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
-            // info!("Pose: {}", corrected);
+            info!("Pose: {}", corrected);
 
             sleep(Duration::from_millis(30)).await;
         }
@@ -276,7 +280,7 @@ async fn main(peripherals: Peripherals) {
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 1,
+        index: 4,
         test_auton: false,
         color_override: false,
     }));
@@ -343,7 +347,7 @@ async fn main(peripherals: Peripherals) {
         peripherals.display,
         vec![
             "Select Auton",
-            "super stout better than layke's chud ass auton route",
+            "copyrighted",
             "INCH",
             "skills",
             "skulls",

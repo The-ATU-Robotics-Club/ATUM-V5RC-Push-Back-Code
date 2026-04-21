@@ -54,7 +54,6 @@ impl Robot {
 
         let dt = &mut self.drivetrain;
 
-        _ = self.lift.set_high();
         self.intake.set_bottom(Motor::V5_MAX_VOLTAGE);
 
         // grab balls from park zone
@@ -80,6 +79,7 @@ impl Robot {
         self.intake.set_bottom(0.0);
 
         // align to the long goal
+        _ = self.lift.set_high();
         _ = turn.tolerance(Angle::from_degrees(5.0)).turn_to_point(dt, Vec2::new(118.0, 40.0), false).await;
         _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(118.0, 40.0)).await;
         dt.set_arcade(3.0, 0.0);
@@ -121,9 +121,9 @@ impl Robot {
         sleep(Duration::from_millis(250)).await;
         self.intake.set_bottom(12.0);
         self.intake.set_top(5.0);
-        sleep(Duration::from_millis(1750)).await;
-        self.intake.set_top(6.5);
-        sleep(Duration::from_millis(600)).await;
+        sleep(Duration::from_millis(3000)).await;
+        dt.set_arcade(0.2, 0.0);
+        sleep(Duration::from_millis(250)).await;
         
         // collect wall balls
         _ = linear.speed(1.0).drive_distance(dt, -46.0).await;
@@ -173,8 +173,8 @@ impl Robot {
         _ = turn.tolerance(Angle::from_degrees(5.0)).turn_to_point(dt, Vec2::new(52.0, 89.0), true).await;
         _ = self.lift.set_high();
         _ = move_to.speed(1.25).move_to_point(dt, Vec2::new(52.0, 89.0)).await;
-        _ = turn.settle_velocity(10.0).tolerance(Angle::from_degrees(0.75)).turn_to(dt, Angle::from_degrees(-44.0)).await;
-        _ = linear.drive_distance(dt, 9.5).await;
+        _ = turn.settle_velocity(10.0).tolerance(Angle::from_degrees(0.75)).turn_to(dt, Angle::from_degrees(-42.5)).await;
+        _ = linear.drive_distance(dt, 9.75).await;
         dt.brake(BrakeMode::Hold);
         info!("score low goal: {}", start.elapsed().as_millis());
         self.intake.set_voltage(-12.0);
@@ -190,17 +190,23 @@ impl Robot {
         _ = turn.turn_to(dt, Angle::from_degrees(-17.5)).await;
         info!("parking: {}", start.elapsed().as_millis());
 
-        dt.set_arcade(0.5, 0.0);
+        dt.set_arcade(0.45, 0.0);
+        sleep(Duration::from_millis(500)).await;
         let mut scuff = Duration::ZERO;
-        while dt.odometry.pitch() > Angle::from_degrees(-1.5) && scuff < Duration::from_millis(1450) {
+        while dt.odometry.pitch() > Angle::from_degrees(0.0) && scuff < Duration::from_millis(900) {
             sleep(Duration::from_millis(10)).await;
             scuff += Duration::from_millis(10);
-            debug!("scuff {}", scuff.as_millis());
             debug!("pitch {}", dt.odometry.pitch().as_degrees());
         }
 
+        info!("parked {}", scuff.as_millis());
+
         self.intake.set_bottom(0.0);
         dt.brake(BrakeMode::Hold);
+
+        // check position of the robot after it parks
+        sleep(Duration::from_secs(1)).await;
+        debug!("pitch {}", dt.odometry.pitch().as_degrees());
 
         sleep_until(start + Duration::from_mins(1)).await;
     }
