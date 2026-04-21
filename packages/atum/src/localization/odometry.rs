@@ -26,9 +26,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+use log::debug;
 use vexide::{
-    task::{Task, spawn},
-    time::sleep,
+    math::Angle, task::{spawn, Task}, time::sleep
 };
 
 use super::pose::Pose;
@@ -40,6 +40,9 @@ use crate::{
 pub struct Odometry {
     /// Shared robot pose that other subsystems can read.
     pose: Rc<RefCell<Pose>>,
+
+    // for parking purposes
+    pitch: Rc<RefCell<Vec<Angle>>>,
 
     /// Handle to the background odometry task.
     _task: Task<()>,
@@ -56,8 +59,11 @@ impl Odometry {
         mut wheel_2: TrackingWheel,
         imu: Imu,
     ) -> Self {
+        let pitch = Rc::new(RefCell::new(Vec::new()));
+
         Self {
             pose: pose.clone(),
+            pitch: pitch.clone(),
             _task: spawn(async move {
                 let mut prev_time = Instant::now();
                 let mut prev_heading = imu.rotation();
@@ -85,6 +91,7 @@ impl Odometry {
                     let ds2 = wheel_2.traveled();
 
                     let heading = imu.rotation();
+                    pitch.replace(imu.pitch());
 
                     // Change in robot heading since last update
                     let dh_angle = heading - prev_heading;
@@ -151,5 +158,9 @@ impl Odometry {
     /// synchronizing with a known field position.
     pub fn set_pose(&mut self, pose: Pose) {
         *self.pose.borrow_mut() = pose;
+    }
+
+    pub fn pitch(&mut self) -> Angle {
+        (*self.pitch.borrow())[0]
     }
 }

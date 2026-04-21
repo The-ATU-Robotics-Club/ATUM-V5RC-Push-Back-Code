@@ -67,7 +67,7 @@ impl MotorGroup {
                 voltages.push(voltage);
             }
         }
-        average(voltages)
+        average(&voltages)
     }
 
     /// Compute the average velocity of all motors in the group
@@ -78,7 +78,7 @@ impl MotorGroup {
                 velocities.push(velocity);
             }
         }
-        average(velocities)
+        average(&velocities)
     }
 
     /// Get a mutable iterator over the motors

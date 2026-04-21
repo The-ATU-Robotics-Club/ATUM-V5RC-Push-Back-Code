@@ -24,7 +24,7 @@ use atum::{
     },
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    motion::{linear::Linear, turn::Turn, MotionParameters},
+    motion::{linear::Linear, move_to::MoveTo, turn::Turn, MotionParameters},
     settings::{Color, Settings},
     subsystems::{
         drivetrain::Drivetrain, intakes::basic::Basic,
@@ -43,8 +43,7 @@ struct Robot {
     intake: Basic,
     lift: AdiDigitalOut,
     duck_bill: AdiDigitalOut,
-    match_loader: AdiDigitalOut,
-    wing: AdiDigitalOut,
+    rake: AdiDigitalOut,
     pose: Rc<RefCell<Pose>>,
     settings: Rc<RefCell<Settings>>,
 }
@@ -56,8 +55,7 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.rushelims().await,
-            2 => self.skills().await,
+            1 => self.skills().await,
             _ => (),
         }
 
@@ -110,17 +108,13 @@ impl Compete for Robot {
             }
 
             if mappings.wing.is_now_pressed() {
-                _ = self.wing.toggle(); 
+                _ = self.rake.toggle(); 
             }
 
             if mappings.duck_bill.is_pressed() {
                 _ = self.duck_bill.set_high();
             } else {
                 _ = self.duck_bill.set_low();
-            }
-
-            if mappings.match_load.is_now_pressed() {
-                _ = self.match_loader.toggle();
             }
 
             if mappings.swap_color.is_now_pressed() {
@@ -135,42 +129,66 @@ impl Compete for Robot {
 
             if state.button_x.is_pressed() {
                 if state.button_down.is_now_pressed() {
-                    // self.drivetrain.set_pose(Pose::new(0.0, 0.0, Angle::QUARTER_TURN));
                     self.drivetrain.set_pose(Pose::default());
                 }
 
                 if state.button_up.is_now_pressed() {
-                    let mut linear = Linear::new(
-                        LINEAR_PID,
-                        MotionParameters {
-                            tolerance: 1.0,
-                            velocity_tolerance: Some(2.5),
-                            speed: 0.5,
-                            ..Default::default()
-                        },
-                    );
+                    // let mut linear = Linear::new(
+                    //     LINEAR_PID,
+                    //     MotionParameters {
+                    //         tolerance: 0.5,
+                    //         velocity_tolerance: Some(2.5),
+                    //         ..Default::default()
+                    //     },
+                    // );
+                    //
+                    // _ = linear.drive_distance(&mut self.drivetrain, 12.0).await;
+                    self.drivetrain.set_arcade(0.4, 0.0);
+                    // let mut pitch = self.drivetrain.odometry.pitch();
+                    while self.drivetrain.odometry.pitch() > Angle::from_degrees(-1.0) {
+                        sleep(Duration::from_millis(10)).await;
+                        // pitch = self.drivetrain.odometry.pitch();
+                    }
 
-                    _ = linear.drive_distance(&mut self.drivetrain, 36.0).await;
+                    brake = true;
                 }
 
                 if state.button_right.is_now_pressed() {
-                    let mut turn = Turn::new(
-                        ANGULAR_PID,
-                        MotionParameters {
-                            tolerance: Angle::from_degrees(1.0),
-                            velocity_tolerance: Some(15.0_f64.to_radians()),
-                            timeout: Some(Duration::from_millis(2000)),
-                            ..Default::default()
-                        },
-                    );
-
-                    _ = turn
-                        .turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN)
-                        .await;
+                    // let mut turn = Turn::new(
+                    //     ANGULAR_PID,
+                    //     MotionParameters {
+                    //         tolerance: Angle::from_degrees(1.0),
+                    //         velocity_tolerance: Some(10.0_f64.to_radians()),
+                    //         timeout: Some(Duration::from_millis(2000)),
+                    //         ..Default::default()
+                    //     },
+                    // );
+                    //
+                    // _ = turn
+                    //     .turn_to(&mut self.drivetrain, -Angle::QUARTER_TURN)
+                    //     .await;
+                    self.intake.set_voltage(-6.0);
+                    sleep(Duration::from_millis(1000)).await;
+                    self.intake.set_voltage(-4.5);
+                    sleep(Duration::from_millis(1000)).await;
+                    self.intake.set_voltage(-3.0);
+                    sleep(Duration::from_millis(500)).await;
                 }
 
                 if state.button_left.is_now_pressed() {
-                    self.settings.borrow_mut().test_auton = true;
+                    // let mut move_to = MoveTo::new(
+                    //     Pid::new(0.04, 0.0, 0.0025, 12.0),
+                    //     Pid::new(0.03, 0.0, 0.003, 0.0),
+                    //     MotionParameters {
+                    //         tolerance: 0.5,
+                    //         velocity_tolerance: Some(2.5),
+                    //         timeout: Some(Duration::from_millis(3000)),
+                    //         ..Default::default()
+                    //     },
+                    // );
+                    //
+                    // _ = move_to.move_to_point(&mut self.drivetrain, Vec2::new(24.0, 0.0)).await;
+                    self.autonomous().await;
                 }
             }
 
@@ -188,8 +206,6 @@ lazy_static! {
 #[vexide::main(banner(theme = STOUT_ROBOT))]
 async fn main(peripherals: Peripherals) {
     LOGGER.init(LevelFilter::Trace).unwrap();
-
-    let adi_expander = AdiExpander::new(peripherals.port_3);
 
     let mut color_sort = OpticalSensor::new(peripherals.port_17);
     _ = color_sort.set_led_brightness(1.0);
@@ -230,19 +246,25 @@ async fn main(peripherals: Peripherals) {
                 peripherals.port_20,
                 Vec2::new(7.341, 4.495), //14.9/ 2 14.791
                 Angle::ZERO,
-                70..110,
+                70..130,
             ),
             WallDistanceSensor::new(
                 peripherals.port_9,
                 Vec2::new(-1.5085, -5.44),
                 -Angle::QUARTER_TURN,
-                90..130,
+                70..130,
+            ),
+            WallDistanceSensor::new(
+                peripherals.port_21,
+                Vec2::new(-1.5085, 5.44),
+                Angle::QUARTER_TURN,
+                70..130,
             ),
             WallDistanceSensor::new(
                 peripherals.port_10,
                 Vec2::new(-7.45, -1.2645),
                 Angle::HALF_TURN,
-                70..110,
+                70..130,
             ),
         ],
         vec![
@@ -254,7 +276,7 @@ async fn main(peripherals: Peripherals) {
     );
 
     let relative_position = Pose::new(70.2, 23.0, -Angle::QUARTER_TURN);
-    let corrected = rcl.corrected_pose(relative_position, 10.0);
+    let corrected = rcl.corrected_pose(relative_position, 48.0);
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
     spawn(async move {
@@ -268,7 +290,7 @@ async fn main(peripherals: Peripherals) {
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 2,
+        index: 1,
         test_auton: false,
         color_override: false,
     }));
@@ -287,7 +309,6 @@ async fn main(peripherals: Peripherals) {
                 vec![
                     Motor::new(peripherals.port_15, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_12, Gearset::Blue, Direction::Reverse),
-                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_14, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_11, Gearset::Blue, Direction::Forward),
                 ],
@@ -297,7 +318,6 @@ async fn main(peripherals: Peripherals) {
                 vec![
                     Motor::new(peripherals.port_4, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_7, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_2, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
                 ],
@@ -313,8 +333,7 @@ async fn main(peripherals: Peripherals) {
         ),
         lift: AdiDigitalOut::new(peripherals.adi_f),
         duck_bill: AdiDigitalOut::new(peripherals.adi_g),
-        match_loader: AdiDigitalOut::new(adi_expander.adi_a),
-        wing: AdiDigitalOut::with_initial_level(peripherals.adi_h, LogicLevel::High),
+        rake: AdiDigitalOut::with_initial_level(peripherals.adi_h, LogicLevel::High),
         pose: starting_position,
         settings: settings.clone(),
     };
@@ -326,7 +345,7 @@ async fn main(peripherals: Peripherals) {
 
     start_ui(
         peripherals.display,
-        vec!["Select Auton", "Rush Elims", "Skills"],
+        vec!["Select Auton", "Skills"],
         LOGGER.clone_messages(),
         settings.clone(),
     );

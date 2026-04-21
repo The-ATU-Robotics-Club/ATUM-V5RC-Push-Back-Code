@@ -109,11 +109,7 @@ impl MoveTo {
             }
 
             let linear_output = self.linear.output(distance, dt) * herror.cos().abs();
-            let angular_output = if distance.abs() < 3.0 {
-                0.0
-            } else {
-                self.lateral.output(cross_track_error, dt)
-            };
+            let angular_output = self.lateral.output(cross_track_error, dt);
 
             let [left, right] = desaturate(
                 [

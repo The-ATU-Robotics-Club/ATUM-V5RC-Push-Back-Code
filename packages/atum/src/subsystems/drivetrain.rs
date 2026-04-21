@@ -22,7 +22,7 @@ use crate::{
 pub struct Drivetrain {
     pub left: MotorGroup,
     pub right: MotorGroup,
-    odometry: Odometry,
+    pub odometry: Odometry,
     wheel_circum: f64,
     track: f64,
 }

@@ -1,0 +1,22 @@
+[package]
+name = "Champ"
+description = "New white Bot"
+version = "0.1.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# These fields configure default behavior for uploads with `cargo v5`.
+[package.metadata.v5]
+upload-strategy = "differential"
+slot = 1
+icon = "robot"
+compress = true
+
+[dependencies]
+atum = { workspace = true }
+vexide = { workspace = true }
+log = { workspace = true }
+
+futures-lite = "2"
+lazy_static = "1.5.0"
