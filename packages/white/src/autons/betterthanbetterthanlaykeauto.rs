@@ -18,7 +18,7 @@ use crate::{
 };
 
 impl Robot {
-    pub async fn shhhhhh(&mut self) {
+    pub async fn rush(&mut self) {
         let mut linear = Linear::new(
             LINEAR_PID,
             MotionParameters {
@@ -32,16 +32,16 @@ impl Robot {
         let mut turn = Turn::new(
             ANGULAR_PID,
             MotionParameters {
-                tolerance: Angle::from_degrees(0.75),
+                tolerance: Angle::from_degrees(1.0),
                 velocity_tolerance: Some(10.0_f64.to_radians()),
-                timeout: Some(Duration::from_millis(1000)),
+                timeout: Some(Duration::from_millis(750)),
                 ..Default::default()
             },
         );
 
         let mut move_to = MoveTo::new(
-            Pid::new(25.0/12.0, 0.0/12.0, 3.0/12.0, 12.0),
-            Pid::new(20.0/12.0, 0.0, 0.0, 0.0),
+            Pid::new(0.045, 0.0, 0.002, 12.0),
+            Pid::new(0.08, 0.0, 0.005, 0.0),
             MotionParameters {
                 tolerance: 1.0,
                 speed: 0.75,
@@ -50,21 +50,18 @@ impl Robot {
         );
 
         let dt = &mut self.drivetrain;
-        
-        _ = self.match_loader.set_high();
-        let target = Vec2::new(140.42-116.5, self.pose.borrow().y);
-        _ = linear.speed(0.6).drive_to_point(dt, target, true).await;
         _ = self.lift.set_high();
-
-        _ = turn.speed(0.3).turn_to(dt, Angle::from_degrees(90.0)).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
-
-        _ = linear.timeout(Duration::from_millis(1100)).speed(0.3).drive_distance(dt, -13.0).await;
-        // _ = turn.speed(1.25).turn_to(dt, Angle::from_degrees(90.0)).await;
+        let mut target = Vec2::new(35.5, self.pose.borrow().y);
+        _ = linear.settle_velocity(7.5).timeout(Duration::from_millis(750)).speed(2.0).drive_to_point(dt, target, true).await;
+        _ = self.match_loader.set_high();
+        _ = turn.speed(2.0).min_velocity(1.0_f64.to_radians()).tolerance(Angle::from_degrees(3.0)).timeout(Duration::from_millis(600)).turn_to_point(dt, Vec2::new(23.5,12.0), true).await;
+        _ = move_to.timeout(Duration::from_millis(975)).min_velocity(Some(0.5)).speed(1.0).move_to_point(dt, Vec2::new(23.5,11.0)).await;
 
         zip(
             async {
-                _ = linear.timeout(Duration::from_millis(3000)).speed(0.6).drive_distance(dt, 32.0).await;
+                _ = move_to.speed(3.0).move_to_point(dt, Vec2::new(23.0,46.0)).await;
+                dt.set_arcade(2.0, 0.0);
             },
             async {
                 sleep(Duration::from_millis(250)).await;
@@ -72,18 +69,20 @@ impl Robot {
                     sleep(Duration::from_millis(10)).await;
                 }
                 _ = self.duck_bill.set_high();
-                self.lever.score(LeverStage::Score(6.0, 12.0));
+                self.lever.score(LeverStage::Score(6.0, 6.0));
             },
         ).await;
+        _ = move_to.speed(5.0).timeout(Duration::from_millis(650)).move_to_point(dt, Vec2::new(12.0, 35.0)).await;
+        _ = turn.turn_to(dt, Angle::QUARTER_TURN).await;
 
-        _ = self.match_loader.set_low();
-        _ = turn.speed(0.65).turn_to(dt, Angle::from_degrees(-90.0)).await;
-        _ = self.wing.set_high();
-        _ = linear.speed(1.0).drive_distance(dt, -28.0).await;
 
-        self.drivetrain.brake(BrakeMode::Hold);
 
-        // delay autonomous
-        sleep(Duration::from_secs(4)).await;
+
+
+
+
+
+        
+        
     }
 }

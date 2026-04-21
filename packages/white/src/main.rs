@@ -54,7 +54,7 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.shhhhhh().await,
+            1 => self.rush().await,
             2 => self.inch().await,
             3 => self.skills().await,
             4 => self.skills2().await,
@@ -267,7 +267,7 @@ async fn main(peripherals: Peripherals) {
         loop {
             let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
-            info!("Pose: {}", corrected);
+            // info!("Pose: {}", corrected);
 
             sleep(Duration::from_millis(30)).await;
         }
@@ -276,7 +276,7 @@ async fn main(peripherals: Peripherals) {
 
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 4,
+        index: 1,
         test_auton: false,
         color_override: false,
     }));

@@ -7,29 +7,21 @@ use std::{
 };
 
 use atum::{
-    backend::start_ui,
-    controllers::pid::Pid,
-    hardware::{
+    backend::start_ui, controllers::pid::Pid, hardware::{
         imu::Imu,
         motor_group::{MotorController, MotorGroup},
         tracking_wheel::TrackingWheel,
         wall_distance_sensor::WallDistanceSensor,
-    },
-    localization::{
+    }, localization::{
         odometry::Odometry,
         pose::Pose,
         rcl::{MAX_ERROR, RaycastLocalization},
         shape::Circle,
         vec2::Vec2,
-    },
-    logger::Logger,
-    mappings::{ControllerMappingsLever, DriveMode},
-    settings::{Color, Settings},
-    subsystems::{
+    }, logger::Logger, mappings::{ControllerMappingsLever, DriveMode}, motion::{MotionParameters, linear::Linear, turn::Turn}, settings::{Color, Settings}, subsystems::{
         drivetrain::Drivetrain,
         intakes::lever::{Lever, LeverStage},
-    },
-    theme::STOUT_ROBOT,
+    }, theme::STOUT_ROBOT
 };
 use lazy_static::lazy_static;
 use log::{LevelFilter, info};
@@ -166,12 +158,10 @@ impl Compete for Robot {
                     self.drivetrain.set_pose(Pose::default());
                 }
 
-                if state.button_left.is_now_pressed() {
-                    self.settings.borrow_mut().test_auton = true;
-                }
+            
             }
 
-            // info!("Drivetrain: {}", self.drivetrain.pose());
+            info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
@@ -191,17 +181,17 @@ async fn main(peripherals: Peripherals) {
     drop(peripherals.port_21);
 
     let wheel_1 = TrackingWheel::new(
-        peripherals.adi_a,
-        peripherals.adi_b,
-        2.362204724,
-        Vec2::new(1.61226751, 1.00183612),
-        Angle::from_degrees(45.0),
-    );
-    let wheel_2 = TrackingWheel::new(
         peripherals.adi_c,
         peripherals.adi_d,
         2.362204724,
         Vec2::new(1.61226751, -1.00183612),
+        Angle::from_degrees(45.0),
+    );
+    let wheel_2 = TrackingWheel::new(
+        peripherals.adi_a,
+        peripherals.adi_b,
+        2.362204724,
+        Vec2::new(1.61226751, 1.00183612),
         Angle::from_degrees(-45.0),
     );
    
@@ -218,17 +208,24 @@ async fn main(peripherals: Peripherals) {
     let rcl = RaycastLocalization::new(
         vec![
             WallDistanceSensor::new(
-                peripherals.port_3,
-                Vec2::new(-4.783, 4.806), //14.9/ 2 14.791
-                Angle::HALF_TURN,
+                peripherals.port_2,
+                Vec2::new(4.783, 4.806), //14.9/ 2 14.791
+                Angle::ZERO,
                 70..130,
             ),
-            // WallDistanceSensor::new(
-            //     peripherals.port_4,
-            //     Vec2::new(-4.635, 4.61),
-            //     Angle::QUARTER_TURN,
-            //     70..130,
-            // ),
+            WallDistanceSensor::new(
+                peripherals.port_3,
+                Vec2::new(4.635, 4.61),
+                Angle::QUARTER_TURN,
+                70..130,
+            ),
+            WallDistanceSensor::new(
+                peripherals.port_6,
+                Vec2::new(4.635, -4.61),
+                -Angle::QUARTER_TURN,
+                70..130,
+            ),
+
         ],
         vec![
             Circle::new(Vec2::new(23.5, 2.375), 3.0),
