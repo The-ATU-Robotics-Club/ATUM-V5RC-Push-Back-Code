@@ -287,7 +287,7 @@ async fn main(peripherals: Peripherals) {
             ),
             Odometry::new(starting_position.clone(), wheel_1, wheel_2, imu),
             2.5,
-            12.0,
+            10.506,
         ),
         lever: Lever::new(
             Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
