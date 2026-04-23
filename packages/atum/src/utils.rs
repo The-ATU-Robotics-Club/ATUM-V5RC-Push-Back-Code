@@ -1,3 +1,7 @@
+use std::time::{Duration, Instant};
+
+use vexide::time::sleep;
+
 /// Apply a polynomial acceleration curve
 ///
 /// - `power` – input value from -1.0 to 1.0
@@ -21,5 +25,16 @@ pub fn desaturate<const N: usize>(values: [f64; N], max: f64) -> [f64; N] {
         values.map(|v| v * max / largest_magnitude)
     } else {
         values
+    }
+}
+
+pub async fn wait_with_timeout<F>(timeout: Duration, mut f: F)
+where
+    F: FnMut() -> bool,
+{
+    let start = Instant::now();
+
+    while f() || start.elapsed() < timeout {
+        sleep(Duration::from_millis(10)).await;
     }
 }
