@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use log::debug;
 use vexide::time::sleep;
 
 use super::{MotionError, MotionParameters, MotionResult};
@@ -35,6 +36,7 @@ impl Linear {
     ) -> MotionResult<f64> {
         let pose = drivetrain.pose().position();
         let mut target_distance = (point - pose).length();
+        debug!("distance {}", target_distance);
 
         if reverse {
             target_distance *= -1.0;

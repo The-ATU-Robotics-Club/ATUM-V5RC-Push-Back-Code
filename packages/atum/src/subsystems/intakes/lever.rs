@@ -40,7 +40,6 @@ impl Lever {
 
                     let mut lever_stage = lever_stage.borrow_mut();
                     let position = -rotation.position().unwrap_or_default().wrapped_half();
-
                     match *lever_stage {
                         LeverStage::Score(start, end) => {
                             if position > Angle::from_degrees(120.0) {
@@ -71,7 +70,7 @@ impl Lever {
                             lever.set_voltage(-Motor::V5_MAX_VOLTAGE);
                         }
                         LeverStage::Idle => {
-                            lever.set_voltage(-1.0);
+                            lever.set_voltage(-2.0);
                         }
                     }
                 }

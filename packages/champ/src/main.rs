@@ -45,7 +45,8 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-
+            1 => self.midthenrush().await,
+            2 => self.rushthenmid().await,
             _ => (),
         }
 
@@ -153,12 +154,14 @@ impl Compete for Robot {
             }
 
             if state.button_x.is_pressed() {
-                if state.button_down.is_pressed() {
-                    // self.drivetrain.set_pose(Pose::new(97.0, 21.5, Angle::ZERO));
-                    self.drivetrain.set_pose(Pose::default());
-                }
+                // if state.button_down.is_pressed() {
+                //     // self.drivetrain.set_pose(Pose::new(97.0, 21.5, Angle::ZERO));
+                //     self.drivetrain.set_pose(Pose::default());
+                // }
 
-            
+                if state.button_up.is_now_pressed() {
+                    self.autonomous().await;
+                }
             }
 
             info!("Drivetrain: {}", self.drivetrain.pose());
@@ -214,7 +217,7 @@ async fn main(peripherals: Peripherals) {
                 70..130,
             ),
             WallDistanceSensor::new(
-                peripherals.port_3,
+                peripherals.port_4,
                 Vec2::new(4.635, 4.61),
                 Angle::QUARTER_TURN,
                 70..130,
@@ -249,7 +252,7 @@ async fn main(peripherals: Peripherals) {
     .detach();
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 1,
+        index: 2,
         test_auton: false,
         color_override: false,
     }));
@@ -298,7 +301,7 @@ async fn main(peripherals: Peripherals) {
                 ],
                 None,
             ),
-            RotationSensor::new(peripherals.port_4, Direction::Forward),
+            RotationSensor::new(peripherals.port_3, Direction::Forward),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_f),
         duck_bill: AdiDigitalOut::new(peripherals.adi_g),
@@ -317,8 +320,8 @@ async fn main(peripherals: Peripherals) {
         peripherals.display,
         vec![
             "Select Auton",
-            "super stout better than layke's chud auton route",
-            "not so super stout and probably not better than layke's chud auton route",
+            "Mid Then Rush",
+            "Rush Then Mid",
         ],
         LOGGER.clone_messages(),
         settings.clone(),
