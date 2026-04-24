@@ -74,28 +74,28 @@ impl Robot {
             }
         ).await;
         dt.set_arcade(8.0, 0.0);
-        sleep(Duration::from_millis(250)).await;
-        _ = move_to.move_to_point(dt, Vec2::new(117.0, 23.0)).await;
-        self.intake.set_bottom(0.0);
+        sleep(Duration::from_millis(500)).await;
+        _ = move_to.timeout(Duration::from_millis(800)).move_to_point(dt, Vec2::new(117.0, 23.0)).await;
 
         // align to the long goal
-        _ = self.lift.set_high();
         _ = turn.tolerance(Angle::from_degrees(5.0)).turn_to_point(dt, Vec2::new(118.0, 40.0), false).await;
+        _ = self.lift.set_high();
+        self.intake.set_bottom(0.0);
+        self.intake.set_top(12.0);
         _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(118.0, 40.0)).await;
-        dt.set_arcade(3.0, 0.0);
 
         // score one red block
         _ = self.duck_bill.set_high();
-        self.intake.set_top(12.0);
-        sleep(Duration::from_millis(250)).await;
+        dt.set_arcade(3.0, 0.0);
+        sleep(Duration::from_millis(225)).await;
         self.intake.set_voltage(0.0);
-        sleep(Duration::from_millis(125)).await;
+        sleep(Duration::from_millis(100)).await;
         _ = self.duck_bill.set_low();
 
         // move away while reseting pnuematic postion
         _ = self.rake.set_high();
         _ = self.lift.set_low();
-        _ = move_to.timeout(Duration::from_millis(2000)).move_to_point(dt, Vec2::new(85.0, 26.0)).await;
+        _ = move_to.timeout(Duration::from_millis(1500)).move_to_point(dt, Vec2::new(86.0, 24.0)).await;
         _ = self.rake.set_low();
 
         // collect block in the middle
@@ -107,7 +107,7 @@ impl Robot {
         // _ = self.lift.set_low();
 
         // align to the upper goal
-        _ = move_to.timeout(Duration::from_millis(2000)).move_to_point(dt, Vec2::new(85.5, 86.0)).await;
+        _ = move_to.timeout(Duration::from_millis(2000)).move_to_point(dt, Vec2::new(86.0, 86.0)).await;
         self.intake.set_bottom(0.0);
 
         _ = turn.turn_to(dt, Angle::from_degrees(-135.0)).await;
@@ -117,34 +117,36 @@ impl Robot {
         dt.brake(BrakeMode::Hold);
 
         // score blocks in the upper goal
-        _ = self.intake.set_bottom(-12.0);
-        sleep(Duration::from_millis(250)).await;
+        // _ = self.intake.set_bottom(-12.0);
+        // sleep(Duration::from_millis(250)).await;
+        self.intake.set_top(4.0);
+        sleep(Duration::from_millis(500)).await;
         self.intake.set_bottom(12.0);
-        self.intake.set_top(5.0);
-        sleep(Duration::from_millis(3000)).await;
+        sleep(Duration::from_millis(2750)).await;
+        self.intake.set_top(6.0);
         dt.set_arcade(0.2, 0.0);
         sleep(Duration::from_millis(250)).await;
         
         // collect wall balls
-        _ = linear.speed(1.0).drive_distance(dt, -46.0).await;
+        _ = linear.speed(1.0).drive_distance(dt, -48.0).await;
         self.intake.set_top(0.0);
         _ = self.duck_bill.set_low();
-        _ = self.lift.set_high();
+        // _ = self.lift.set_high();
         _ = turn.turn_to(dt, Angle::ZERO).await;
         _ = linear.drive_distance(dt, 14.0).await;
         dt.set_arcade(8.0, 0.0);
         sleep(Duration::from_millis(250)).await;
 
         // move towards the park to collect balls
-        _ = move_to.min_velocity(None).move_to_point(dt, Vec2::new(71.5, 95.0)).await;
-        _ = turn.timeout(Duration::from_millis(1000)).turn_to(dt, Angle::QUARTER_TURN).await;
+        _ = move_to.min_velocity(None).move_to_point(dt, Vec2::new(70.5, 95.0)).await;
+        _ = turn.timeout(Duration::from_millis(1000)).turn_to(dt, Angle::from_degrees(92.0)).await;
 
         // wait until the robot has moved to the other side
-        sleep_until(start + Duration::from_secs(23)).await;
+        sleep_until(start + Duration::from_secs(24)).await;
 
         _ = linear.speed(0.75).drive_distance(dt, 22.5).await;
         _ = self.rake.set_high();
-        _ = self.lift.set_low();
+        // _ = self.lift.set_low();
         sleep(Duration::from_millis(325)).await;
 
         _ = linear.drive_distance(dt, -7.5).await;
@@ -154,52 +156,49 @@ impl Robot {
         // collect block in the middle
         sleep(Duration::from_millis(250)).await;
         _ = turn.turn_to(dt, Angle::from_degrees(-170.0)).await;
-        _ = linear.drive_distance(dt, 7.5).await;
+        _ = linear.drive_distance(dt, 20.0).await;
+        let target = Vec2::new(50.0, 75.5);
+        _ = turn.tolerance(Angle::from_degrees(10.0)).turn_to_point(dt, target, false).await;
         _ = self.rake.set_low();
-        let target = Vec2::new(54.5, 76.0);
-        zip(
-            async {
-                _ = move_to.move_to_point(dt, target).await;
-            },
-            async {
-                while (target - self.pose.borrow().position()).length() > 12.0 {
-                    sleep(Duration::from_millis(10)).await;
-                }
-                _ = self.rake.set_low();
-            }
-        ).await;
+        _ = move_to.move_to_point(dt, target).await;
+        sleep(Duration::from_millis(500)).await;
+        self.intake.set_bottom(0.0);
 
         // score in the lower goal
-        _ = turn.tolerance(Angle::from_degrees(5.0)).turn_to_point(dt, Vec2::new(52.0, 89.0), true).await;
+        _ = turn.tolerance(Angle::from_degrees(1.0)).turn_to_point(dt, Vec2::new(52.0, 90.0), true).await;
         _ = self.lift.set_high();
-        _ = move_to.speed(1.25).move_to_point(dt, Vec2::new(52.0, 89.0)).await;
-        _ = turn.settle_velocity(10.0).tolerance(Angle::from_degrees(0.75)).turn_to(dt, Angle::from_degrees(-42.5)).await;
-        _ = linear.drive_distance(dt, 9.75).await;
+        // _ = move_to.speed(1.25).move_to_point(dt, Vec2::new(52.0, 90.0)).await;
+        _ = move_to.move_to_point(dt, Vec2::new(52.0, 90.0)).await;
+        _ = self.intake.set_bottom(12.0);
+        _ = turn.settle_velocity(10.0).tolerance(Angle::from_degrees(0.75)).turn_to(dt, Angle::from_degrees(-42.0)).await;
+        _ = linear.drive_distance(dt, 11.0).await;
         dt.brake(BrakeMode::Hold);
         info!("score low goal: {}", start.elapsed().as_millis());
         self.intake.set_voltage(-12.0);
-        sleep(Duration::from_millis(2750)).await;
+        sleep(Duration::from_millis(2500)).await;
         self.intake.set_voltage(0.0);
-        sleep(Duration::from_millis(250)).await;
-        _ = linear.speed(0.5).drive_distance(dt, -4.0).await;
+        sleep(Duration::from_millis(500)).await;
+        _ = linear.speed(0.5).drive_distance(dt, -4.25).await;
 
         // park
         _ = linear.drive_distance(dt, -20.0).await;
         self.intake.set_bottom(12.0);
-        _ = move_to.speed(1.0).move_to_point(dt, Vec2::new(36.0, 8.0)).await;
+        _ = move_to.speed(1.0).move_to_point(dt, Vec2::new(40.0, 8.0)).await;
         _ = turn.turn_to(dt, Angle::from_degrees(-17.5)).await;
         info!("parking: {}", start.elapsed().as_millis());
 
-        dt.set_arcade(0.45, 0.0);
+        dt.set_arcade(0.49, 0.0);
         sleep(Duration::from_millis(500)).await;
         let mut scuff = Duration::ZERO;
-        while dt.odometry.pitch() > Angle::from_degrees(0.0) && scuff < Duration::from_millis(900) {
+        while dt.odometry.pitch() > Angle::from_degrees(0.0) && scuff < Duration::from_millis(800) {
             sleep(Duration::from_millis(10)).await;
             scuff += Duration::from_millis(10);
             debug!("pitch {}", dt.odometry.pitch().as_degrees());
         }
 
         info!("parked {}", scuff.as_millis());
+        dt.set_arcade(0.4, 0.0);
+        sleep(Duration::from_millis(40)).await;
 
         self.intake.set_bottom(0.0);
         dt.brake(BrakeMode::Hold);

@@ -18,17 +18,15 @@ use atum::{
     localization::{
         odometry::Odometry,
         pose::Pose,
-        rcl::{RaycastLocalization, MAX_ERROR},
+        rcl::{MAX_ERROR, RaycastLocalization},
         shape::Circle,
         vec2::Vec2,
     },
     logger::Logger,
     mappings::{ControllerMappings, DriveMode},
-    motion::{linear::Linear, move_to::MoveTo, turn::Turn, MotionParameters},
+    motion::{MotionParameters, linear::Linear, move_to::MoveTo, turn::Turn},
     settings::{Color, Settings},
-    subsystems::{
-        drivetrain::Drivetrain, intakes::basic::Basic,
-    },
+    subsystems::{drivetrain::Drivetrain, intakes::basic::Basic},
     theme::STOUT_ROBOT,
 };
 use lazy_static::lazy_static;
@@ -108,7 +106,7 @@ impl Compete for Robot {
             }
 
             if mappings.wing.is_now_pressed() {
-                _ = self.rake.toggle(); 
+                _ = self.rake.toggle();
             }
 
             if mappings.duck_bill.is_pressed() {
@@ -316,9 +314,9 @@ async fn main(peripherals: Peripherals) {
             ),
             MotorGroup::new(
                 vec![
-                    Motor::new(peripherals.port_4, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_2, Gearset::Blue, Direction::Forward),
                     Motor::new(peripherals.port_6, Gearset::Blue, Direction::Forward),
-                    Motor::new(peripherals.port_2, Gearset::Blue, Direction::Reverse),
+                    Motor::new(peripherals.port_1, Gearset::Blue, Direction::Reverse),
                     Motor::new(peripherals.port_5, Gearset::Blue, Direction::Reverse),
                 ],
                 motor_controller,
@@ -329,7 +327,13 @@ async fn main(peripherals: Peripherals) {
         ),
         intake: Basic::new(
             Motor::new(peripherals.port_8, Gearset::Blue, Direction::Reverse),
-            Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+            MotorGroup::new(
+                vec![
+                    Motor::new(peripherals.port_13, Gearset::Blue, Direction::Forward),
+                    Motor::new(peripherals.port_16, Gearset::Blue, Direction::Reverse),
+                ],
+                None,
+            ),
         ),
         lift: AdiDigitalOut::new(peripherals.adi_f),
         duck_bill: AdiDigitalOut::new(peripherals.adi_g),

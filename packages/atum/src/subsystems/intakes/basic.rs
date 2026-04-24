@@ -6,13 +6,15 @@ use vexide::{
     time::sleep,
 };
 
+use crate::hardware::motor_group::MotorGroup;
+
 pub struct Basic {
     voltage: Rc<RefCell<(f64, f64)>>,
     _task: Task<()>,
 }
 
 impl Basic {
-    pub fn new(mut top: Motor, mut bottom: Motor) -> Self {
+    pub fn new(mut top: Motor, mut bottom: MotorGroup) -> Self {
         let voltage = Rc::new(RefCell::new((0.0, 0.0)));
 
         Self {
