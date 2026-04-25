@@ -45,10 +45,10 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.midthenrush().await,
-            2 => self.rushthenmid().await,
-            3 => self.decaball().await,
-            4 => self.justrush().await,
+            1 => self.decaball().await,
+            2 => self.justrush().await,
+            3 => self.midthenrush().await,
+            4 => self.rushthenmid().await,
             5 => self.troll().await,
             _ => (),
         }
@@ -323,8 +323,11 @@ async fn main(peripherals: Peripherals) {
         peripherals.display,
         vec![
             "Select Auton",
-            "Mid Then Rush",
-            "Rush Then Mid",
+            "Decaball",
+            "Just Rush",
+            "Mid then Rush",
+            "Rush then Mid",
+            "Troll",
         ],
         LOGGER.clone_messages(),
         settings.clone(),
