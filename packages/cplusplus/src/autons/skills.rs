@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::{time::{Duration, Instant}, vec};
 
 use atum::{
     controllers::pid::Pid,
@@ -74,11 +74,11 @@ impl Robot {
             }
         ).await;
         dt.set_arcade(8.0, 0.0);
-        sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(525)).await;
         _ = move_to.timeout(Duration::from_millis(800)).move_to_point(dt, Vec2::new(117.0, 23.0)).await;
 
         // align to the long goal
-        _ = turn.tolerance(Angle::from_degrees(5.0)).turn_to_point(dt, Vec2::new(118.0, 40.0), false).await;
+        _ = turn.tolerance(Angle::from_degrees(5.0)).turn_to_point(dt, Vec2::new(117.0, 40.0), false).await;
         _ = self.lift.set_high();
         self.intake.set_bottom(0.0);
         self.intake.set_top(12.0);
@@ -110,20 +110,24 @@ impl Robot {
         _ = move_to.timeout(Duration::from_millis(2000)).move_to_point(dt, Vec2::new(86.0, 86.0)).await;
         self.intake.set_bottom(0.0);
 
+        // _ = turn.turn_to_point(dt, Vec2::new(71.0, 71.0), false).await;
         _ = turn.turn_to(dt, Angle::from_degrees(-135.0)).await;
         _ = self.duck_bill.set_high();
-        _ = linear.min_velocity(1.0).drive_distance(dt, 7.25).await;
+        _ = linear.min_velocity(0.5).drive_distance(dt, 7.5).await;
+        // _ = linear.drive_distance(dt, 7.5).await;
         sleep(Duration::from_millis(50)).await;
-        dt.brake(BrakeMode::Hold);
+        // dt.brake(BrakeMode::Hold);
 
         // score blocks in the upper goal
-        self.intake.set_top(4.0);
+        self.intake.set_top(4.5);
         sleep(Duration::from_millis(500)).await;
-        self.intake.set_bottom(12.0);
-        sleep(Duration::from_millis(2750)).await;
-        self.intake.set_top(6.5);
+        self.intake.set_bottom(10.0);
+        sleep(Duration::from_millis(2500)).await;
+        self.intake.set_top(7.5);
+        sleep(Duration::from_millis(250)).await;
         dt.set_arcade(0.2, 0.0);
         sleep(Duration::from_millis(250)).await;
+        // _ = linear.speed(0.5).drive_distance(dt, -4.25).await;
         
         // collect wall balls
         _ = linear.speed(1.0).drive_distance(dt, -48.0).await;
@@ -132,16 +136,16 @@ impl Robot {
         _ = turn.turn_to(dt, Angle::ZERO).await;
         _ = linear.drive_distance(dt, 14.0).await;
         dt.set_arcade(8.0, 0.0);
-        sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(525)).await;
 
         // move towards the park to collect balls
-        _ = move_to.min_velocity(None).move_to_point(dt, Vec2::new(70.5, 95.0)).await;
+        _ = move_to.min_velocity(None).tolerance(1.0).move_to_point(dt, Vec2::new(70.5, 93.0)).await;
         _ = turn.timeout(Duration::from_millis(1000)).turn_to(dt, Angle::from_degrees(92.0)).await;
 
         // wait until the robot has moved to the other side
         sleep_until(start + Duration::from_secs(24)).await;
 
-        _ = linear.speed(0.75).drive_distance(dt, 22.5).await;
+        _ = linear.speed(0.75).drive_distance(dt, 24.5).await;
         _ = self.rake.set_high();
         // _ = self.lift.set_low();
         sleep(Duration::from_millis(325)).await;
@@ -158,7 +162,7 @@ impl Robot {
         _ = turn.tolerance(Angle::from_degrees(10.0)).turn_to_point(dt, target, false).await;
         _ = self.rake.set_low();
         _ = move_to.move_to_point(dt, target).await;
-        sleep(Duration::from_millis(500)).await;
+        sleep(Duration::from_millis(400)).await;
         self.intake.set_bottom(0.0);
 
         // score in the lower goal
@@ -167,7 +171,7 @@ impl Robot {
         // _ = move_to.speed(1.25).move_to_point(dt, Vec2::new(52.0, 90.0)).await;
         _ = move_to.move_to_point(dt, Vec2::new(50.0, 90.0)).await;
         self.intake.set_top(-12.0);
-        self.intake.set_bottom(12.0);
+        self.intake.set_bottom(10.5);
         // _ = turn.settle_velocity(10.0).tolerance(Angle::from_degrees(0.75)).turn_to(dt, Angle::from_degrees(-43.0)).await;
         _ = turn.settle_velocity(10.0).tolerance(Angle::from_degrees(0.75)).turn_to_point(dt, Vec2::new(71.0, 71.0), false).await;
         _ = linear.drive_distance(dt, 11.0).await;
@@ -186,7 +190,7 @@ impl Robot {
         _ = turn.turn_to(dt, Angle::from_degrees(-17.5)).await;
         info!("parking: {}", start.elapsed().as_millis());
 
-        dt.set_arcade(0.49, 0.0);
+        dt.set_arcade(0.48, 0.0);
         sleep(Duration::from_millis(500)).await;
         let mut scuff = Duration::ZERO;
         while dt.odometry.pitch() > Angle::from_degrees(0.0) && scuff < Duration::from_millis(800) {
@@ -197,7 +201,7 @@ impl Robot {
 
         info!("parked {}", scuff.as_millis());
         dt.set_arcade(0.4, 0.0);
-        sleep(Duration::from_millis(40)).await;
+        sleep(Duration::from_millis(45)).await;
 
         self.intake.set_bottom(0.0);
         dt.brake(BrakeMode::Hold);
