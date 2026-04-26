@@ -222,7 +222,7 @@ async fn main(peripherals: Peripherals) {
     let mut imu = Imu::new(
         vec![
             InertialSensor::new(peripherals.port_5),
-            InertialSensor::new(peripherals.port_6),
+            InertialSensor::new(peripherals.port_21),
         ],
         1.0127149171,
     );
@@ -243,7 +243,7 @@ async fn main(peripherals: Peripherals) {
                 70..130,
             ),
             WallDistanceSensor::new(
-                peripherals.port_21,
+                peripherals.port_10,
                 Vec2::new(6.35, 0.0),
                 Angle::ZERO,
                 70..130,
@@ -271,7 +271,7 @@ async fn main(peripherals: Peripherals) {
         loop {
             let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
-            info!("Pose: {}", corrected);
+            info!("{}", corrected);
 
             sleep(Duration::from_millis(30)).await;
         }
@@ -320,7 +320,7 @@ async fn main(peripherals: Peripherals) {
             12.0,
         ),
         lever: Lever::new(
-            Motor::new(peripherals.port_10, Gearset::Blue, Direction::Reverse),
+            Motor::new(peripherals.port_6, Gearset::Blue, Direction::Reverse),
             MotorGroup::new(
                 vec![
                     Motor::new(peripherals.port_8, Gearset::Blue, Direction::Forward),

@@ -2,5 +2,5 @@ mod betterthanlaykeauto;
 
 use atum::controllers::pid::Pid;
 
-pub const LINEAR_PID: Pid = Pid::new(0.1, 0.0, 0.009, 0.0);
-pub const ANGULAR_PID: Pid = Pid::new(0.67, 0.05, 0.067, 13.5);
+pub const LINEAR_PID: Pid = Pid::new(0.06, 0.02, 0.004, 5.0);
+pub const ANGULAR_PID: Pid = Pid::new(0.78, 0.05, 0.05, 13.5);

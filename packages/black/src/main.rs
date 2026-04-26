@@ -53,8 +53,10 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.shhhhhh().await,
-            2 => self.shhhhhh_pt2().await,
+            1 => self.blf().await,
+            2 => self.benten().await,
+            3 => self.bmw().await,
+            4 => self.candycrush().await,
             _ => (),
         }
 
@@ -167,12 +169,12 @@ impl Compete for Robot {
                     self.drivetrain.set_pose(Pose::default());
                 }
 
-                if state.button_left.is_now_pressed() {
-                    self.settings.borrow_mut().test_auton = true;
+                if state.button_up.is_now_pressed() {
+                    info!("Start Auto");
+                    self.autonomous().await;
                 }
             }
 
-            // info!("Drivetrain: {}", self.drivetrain.pose());
 
             sleep(Controller::UPDATE_INTERVAL).await;
         }
@@ -230,6 +232,12 @@ async fn main(peripherals: Peripherals) {
                 Angle::QUARTER_TURN,
                 70..130,
             ),
+            WallDistanceSensor::new(
+                peripherals.port_1,
+                Vec2::new(-4.635, -4.61),
+                -Angle::QUARTER_TURN,
+                70..130,
+            )
         ],
         vec![
             Circle::new(Vec2::new(23.5, 2.375), 3.0),
@@ -240,20 +248,24 @@ async fn main(peripherals: Peripherals) {
     );
 
     let relative_position = Pose::new(70.2, 23.0, Angle::HALF_TURN);
-    let corrected = rcl.corrected_pose(relative_position, 48.0);
+    let corrected = rcl.corrected_pose(relative_position, 24.0);
     let starting_position = Rc::new(RefCell::new(corrected));
     let cloned_pose = starting_position.clone();
     spawn(async move {
         loop {
+
             let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
+            info!("Drivetrain: {}", *cloned_pose.borrow());
+
             sleep(Duration::from_millis(30)).await;
+
+
         }
-    })
-    .detach();
+    }).detach();
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 2,
+        index: 4,
         test_auton: false,
         color_override: false,
     }));
@@ -321,8 +333,12 @@ async fn main(peripherals: Peripherals) {
         peripherals.display,
         vec![
             "Select Auton",
-            "super stout better than layke's chud auton route",
-            "not so super stout and probably not better than layke's chud auton route",
+            "awp",
+            "Ben 10 Solos",
+            "bottom first",
+            "Candry C-rush",
+
+
         ],
         LOGGER.clone_messages(),
         settings.clone(),

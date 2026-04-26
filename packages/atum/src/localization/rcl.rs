@@ -9,7 +9,7 @@ use crate::{
 const FIELD_SIZE: f64 = 140.42;
 pub const MAX_ERROR: f64 = 13.0;
 const MAX_RAYCAST_DIST: f64 = FIELD_SIZE * 2.0;
-const MIN_AXIS_COMPONENT: f64 = 0.95;
+const MIN_AXIS_COMPONENT: f64 = 0.8;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PoseCorrection {
@@ -63,7 +63,6 @@ impl RaycastLocalization {
             
             for object in self.objects.iter() {
                 if object.is_intersecting(world_position, world_angle, hit.distance) {
-                    debug!("hit: {:?}", object.center());
                     continue 'outer;
                 }
             }
