@@ -1,5 +1,5 @@
 use core::borrow;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use atum::{
     controllers::pid::Pid,
@@ -10,7 +10,7 @@ use atum::{
 use futures_lite::future::zip;
 use vexide::{
     math::Angle,
-    prelude::{sleep, Motor}, smart::motor::BrakeMode,
+    prelude::{sleep, Motor}, smart::motor::BrakeMode, time::sleep_until,
 };
 
 use crate::{
@@ -20,6 +20,8 @@ use crate::{
 
 impl Robot {
     pub async fn midthenrush(&mut self) {
+        let timer = Instant::now();
+
         let mut linear = Linear::new(
             LINEAR_PID,
             MotionParameters {
@@ -50,7 +52,6 @@ impl Robot {
         );
 
         let dt = &mut self.drivetrain;
-        // DONEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
         // Drive to and collect matchload balls
         let mut target = Vec2::new(24.5, self.pose.borrow().y);
         _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, target).await;
@@ -58,23 +59,24 @@ impl Robot {
         _ = self.match_loader.set_high();
         _ = turn.speed(0.6).timeout(Duration::from_millis(500)).turn_to(dt, Angle::from_degrees(-90.0)).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
-        _ = linear.speed(0.8).timeout(Duration::from_millis(860)).drive_distance(dt, 12.0).await;
+        _ = linear.speed(0.8).timeout(Duration::from_millis(875)).drive_distance(dt, 12.0).await;
         
         // Drive to mid goal
-        target = Vec2::new(56.575, 57.25);
         _ = self.lift.set_low();
         _ = linear.speed(0.7).timeout(Duration::from_millis(1100)).drive_to_point(dt, Vec2::new(24.0, 24.0), true).await;
+        let target = Vec2::new(56.5, 57.0);
         _ = turn.turn_to_point(dt, target, true).await;
-        _ = move_to.speed(0.8).timeout(Duration::from_millis(2500)).move_to_point(dt, target).await;
+        _ = move_to.speed(0.60).timeout(Duration::from_millis(2000)).move_to_point(dt, target).await;
+        // _ = linear.speed(0.7).timeout(Duration::from_millis(1500)).drive_to_point(dt, target, true).await;
         
         // Score mid
         _ = self.duck_bill.set_high();
-        self.lever.score(LeverStage::Score(2.0, 6.0));
+        sleep(Duration::from_millis(200)).await;
+        self.lever.score(LeverStage::Score(2.0, 5.75));
         sleep(Duration::from_millis(1000)).await;
 
         // Return to matchloader
         _ = linear.timeout(Duration::from_millis(1100)).drive_to_point(dt, Vec2::new(24.0, 24.0), false).await;
-        _ = self.duck_bill.set_low();
         _ = self.lift.set_high();
         _ = turn.speed(0.8).timeout(Duration::from_millis(500)).turn_to_point(dt, Vec2::new(24.5, 0.0), false).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
@@ -84,6 +86,7 @@ impl Robot {
         _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(24.5, 18.5)).await;
         _ = self.match_loader.set_low();
         _ = turn.timeout(Duration::from_millis(500)).tolerance(Angle::from_degrees(5.0)).speed(1.0).turn_to(dt, Angle::from_degrees(-135.0)).await;
+        _ = self.duck_bill.set_low();
         self.lever.set_intake(-Motor::V5_MAX_VOLTAGE);
         sleep(Duration::from_millis(750)).await;
 
@@ -91,7 +94,7 @@ impl Robot {
         _ = self.match_loader.set_high();
         _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, Angle::from_degrees(-90.0)).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
-        _ = linear.speed(0.3).timeout(Duration::from_millis(1250)).drive_distance(dt, 20.0).await;
+        _ = linear.speed(0.3).timeout(Duration::from_millis(1500)).drive_distance(dt, 20.0).await;
 
         // Score on long goal
         _ = move_to.timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(23.5, 42.25)).await;
@@ -101,12 +104,12 @@ impl Robot {
         sleep(Duration::from_millis(500)).await;
 
         // Wing
-        _ = move_to.speed(0.3).move_to_point(dt, Vec2::new(34.225, 28.0)).await;
-        _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, Angle::from_degrees(90.0)).await;
+        _ = move_to.speed(0.4).move_to_point(dt, Vec2::new(33.5, 33.0)).await;
+        _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, -Angle::QUARTER_TURN).await;
         _ = self.wing.toggle();
-        _ = move_to.speed(1.0).move_to_point(dt, Vec2::new(33.1, 64.0)).await;
+        _ = move_to.speed(0.5).move_to_point(dt, Vec2::new(33.5, 64.0)).await;
         dt.brake(BrakeMode::Hold);
-        sleep(Duration::from_millis(30000)).await;
-    }
+        sleep_until(timer + Duration::from_secs(29)).await;
+        _ = self.wing.set_low();    }
 }
  

@@ -1,5 +1,5 @@
 use core::borrow;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use atum::{
     controllers::pid::Pid,
@@ -10,7 +10,7 @@ use atum::{
 use futures_lite::future::zip;
 use vexide::{
     math::Angle,
-    prelude::{sleep, Motor}, smart::motor::BrakeMode,
+    prelude::{sleep, Motor}, smart::motor::BrakeMode, time::sleep_until,
 };
 
 use crate::{
@@ -20,6 +20,8 @@ use crate::{
 
 impl Robot {
     pub async fn troll(&mut self) {
+        let timer = Instant::now();
+
         let mut linear = Linear::new(
             LINEAR_PID,
             MotionParameters {
@@ -92,7 +94,7 @@ impl Robot {
         _ = self.wing.toggle();
         _ = move_to.speed(0.9).move_to_point(dt, Vec2::new(32.5, 60.0)).await;
         dt.brake(BrakeMode::Hold);
-        sleep(Duration::from_millis(30000)).await;
-    }
+        sleep_until(timer + Duration::from_secs(29)).await;
+        _ = self.wing.set_low();    }
 }
  

@@ -11,7 +11,7 @@ use futures_lite::future::zip;
 use log::debug;
 use vexide::{
     math::Angle,
-    prelude::{sleep, Motor}, smart::motor::BrakeMode,
+    prelude::{sleep, Motor}, smart::motor::BrakeMode, time::sleep_until,
 };
 
 use crate::{
@@ -21,6 +21,8 @@ use crate::{
 
 impl Robot {
     pub async fn justrush(&mut self) {
+        let timer = Instant::now();
+
         let time = Instant::now();
 
         let mut linear = Linear::new(
@@ -79,8 +81,8 @@ impl Robot {
         _ = self.wing.toggle();
         _ = move_to.speed(1.0).move_to_point(dt, Vec2::new(33.5, 64.0)).await;
         dt.brake(BrakeMode::Hold);
-        debug!("Time taken: {:?}", time.elapsed());
-        sleep(Duration::from_millis(30000)).await;
+        sleep_until(timer + Duration::from_secs(29)).await;
+        _ = self.wing.set_low();
     }
 }
  

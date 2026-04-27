@@ -255,7 +255,7 @@ async fn main(peripherals: Peripherals) {
     .detach();
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 5,
+        index: 3,
         test_auton: false,
         color_override: false,
     }));

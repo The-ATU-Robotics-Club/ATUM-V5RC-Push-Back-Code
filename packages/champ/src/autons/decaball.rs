@@ -1,5 +1,5 @@
 use core::borrow;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use atum::{
     controllers::pid::Pid,
@@ -7,10 +7,11 @@ use atum::{
     motion::{MotionParameters, linear::Linear, move_to::MoveTo, swing, turn::Turn},
     subsystems::intakes::lever::LeverStage,
 };
+
 use futures_lite::future::zip;
 use vexide::{
     math::Angle,
-    prelude::{sleep, Motor}, smart::motor::BrakeMode,
+    prelude::{sleep, Motor}, smart::motor::BrakeMode, time::sleep_until,
 };
 
 use crate::{
@@ -20,6 +21,8 @@ use crate::{
 
 impl Robot {
     pub async fn decaball(&mut self) {
+        let timer = Instant::now();
+
         let mut linear = Linear::new(
             LINEAR_PID,
             MotionParameters {
@@ -96,14 +99,12 @@ impl Robot {
         _ = self.match_loader.set_low();
 
         // Wing
-        _ = move_to.speed(0.3).move_to_point(dt, Vec2::new(34.0, 28.0)).await;
-        _ = self.lift.set_high();
-        _ = self.duck_bill.set_low();
-        _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, Angle::from_degrees(90.0)).await;
+        _ = move_to.speed(0.4).move_to_point(dt, Vec2::new(33.5, 33.0)).await;
+        _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, -Angle::QUARTER_TURN).await;
         _ = self.wing.toggle();
-        _ = move_to.speed(1.0).move_to_point(dt, Vec2::new(33.0, 64.0)).await;
+        _ = move_to.speed(0.5).move_to_point(dt, Vec2::new(33.5, 64.0)).await;
         dt.brake(BrakeMode::Hold);
-        sleep(Duration::from_millis(30000)).await;
-    }
+        sleep_until(timer + Duration::from_secs(29)).await;
+        _ = self.wing.set_low();    }
 }
  
