@@ -53,7 +53,7 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.blf().await,
+            1 => self.rightmidfirst().await,
             2 => self.benten().await,
             3 => self.bmw().await,
             4 => self.candycrush().await,
@@ -256,7 +256,7 @@ async fn main(peripherals: Peripherals) {
 
             let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
-            info!("Drivetrain: {}", *cloned_pose.borrow());
+            // info!("Drivetrain: {}", *cloned_pose.borrow());
 
             sleep(Duration::from_millis(30)).await;
 
@@ -333,7 +333,7 @@ async fn main(peripherals: Peripherals) {
         peripherals.display,
         vec![
             "Select Auton",
-            "awp",
+            "RIGHT BOTTOM MID SECOND",
             "Ben 10 Solos",
             "bottom first",
             "Candry C-rush",
