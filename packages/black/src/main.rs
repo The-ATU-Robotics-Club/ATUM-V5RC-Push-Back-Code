@@ -53,10 +53,11 @@ impl Compete for Robot {
         let route = self.settings.borrow().index;
 
         match route {
-            1 => self.rightmidfirst().await,
+            1 => self.sjtu().await,
             2 => self.benten().await,
             3 => self.bmw().await,
             4 => self.candycrush().await,
+            5 => self.thorns().await,
             _ => (),
         }
 
@@ -256,7 +257,7 @@ async fn main(peripherals: Peripherals) {
 
             let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
-            // info!("Drivetrain: {}", *cloned_pose.borrow());
+            info!("Drivetrain: {}", *cloned_pose.borrow());
 
             sleep(Duration::from_millis(30)).await;
 
@@ -265,7 +266,7 @@ async fn main(peripherals: Peripherals) {
     }).detach();
     let settings = Rc::new(RefCell::new(Settings {
         color: Color::Red,
-        index: 4,
+        index: 5,
         test_auton: false,
         color_override: false,
     }));
@@ -333,10 +334,11 @@ async fn main(peripherals: Peripherals) {
         peripherals.display,
         vec![
             "Select Auton",
-            "RIGHT BOTTOM MID SECOND",
+            "SJTU",
             "Ben 10 Solos",
             "bottom first",
             "Candry C-rush",
+            "DOME"
 
 
         ],
