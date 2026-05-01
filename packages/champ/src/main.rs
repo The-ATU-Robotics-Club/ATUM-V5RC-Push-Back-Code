@@ -50,6 +50,7 @@ impl Compete for Robot {
             3 => self.midthenrush().await,
             4 => self.rushthenmid().await,
             5 => self.troll().await,
+            6 => self.ucfatumizer().await,
             _ => (),
         }
 
@@ -249,6 +250,8 @@ async fn main(peripherals: Peripherals) {
         loop {
             let corrected = rcl.corrected_pose(*cloned_pose.borrow(), MAX_ERROR);
             cloned_pose.replace(corrected);
+            info!("{}", corrected);
+
             sleep(Duration::from_millis(30)).await;
         }
     })
@@ -328,6 +331,7 @@ async fn main(peripherals: Peripherals) {
             "Mid then Rush",
             "Rush then Mid",
             "Troll",
+            "UCFATUMizer"
         ],
         LOGGER.clone_messages(),
         settings.clone(),

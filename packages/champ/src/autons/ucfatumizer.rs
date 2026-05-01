@@ -20,7 +20,7 @@ use crate::{
 };
 
 impl Robot {
-    pub async fn decaball(&mut self) {
+    pub async fn ucfatumizer(&mut self) {
         let timer = Instant::now();
 
         let mut linear = Linear::new(
@@ -104,6 +104,9 @@ impl Robot {
         _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, Angle::QUARTER_TURN).await;
         _ = self.wing.toggle();
         _ = move_to.speed(0.5).move_to_point(dt, Vec2::new(33.5, 64.0)).await;
+        dt.brake(BrakeMode::Hold);
+        sleep_until(timer + Duration::from_secs(19)).await;
+        _ = move_to.speed(0.5).move_to_point(dt, Vec2::new(33.5, 66.0)).await;
         dt.brake(BrakeMode::Hold);
     }
 }

@@ -8,7 +8,7 @@ use atum::{
     subsystems::intakes::lever::LeverStage,
 };
 use futures_lite::future::zip;
-use log::debug;
+use log::{debug, info};
 use vexide::{
     math::Angle,
     prelude::{sleep, Motor}, smart::motor::BrakeMode, time::sleep_until,
@@ -59,30 +59,32 @@ impl Robot {
 
         // Drive to and collect matchload balls
         let mut target = Vec2::new(24.5, self.pose.borrow().y);
-        _ = move_to.speed(1.1).timeout(Duration::from_millis(1000)).move_to_point(dt, target).await;
+        _ = move_to.timeout(Duration::from_millis(900)).move_to_point(dt, target).await;
         _ = self.lift.set_high();
         _ = self.match_loader.set_high();
-        _ = turn.speed(1.0).timeout(Duration::from_millis(500)).turn_to(dt, Angle::from_degrees(-90.0)).await;
+        _ = turn.speed(0.8).timeout(Duration::from_millis(500)).turn_to(dt, Angle::from_degrees(-90.0)).await;
         self.lever.set_intake(Motor::V5_MAX_VOLTAGE);
-        _ = linear.speed(1.0).timeout(Duration::from_millis(850)).drive_distance(dt, 13.0).await;
+        _ = linear.speed(0.9).timeout(Duration::from_millis(850)).drive_distance(dt, 13.0).await;
 
         // Score on long goal
-        _ = move_to.speed(2.0).min_velocity(Some(0.5)).timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(23.5, 42.25)).await;
+        _ = move_to.speed(1.0).timeout(Duration::from_millis(1000)).move_to_point(dt, Vec2::new(23.5, 42.25)).await;
         _ = self.duck_bill.set_high();
-        self.lever.score(LeverStage::Score(5.0, 8.0));
-        sleep(Duration::from_millis(400)).await;
+        self.lever.score(LeverStage::Score(5.0, 6.0));
+        sleep(Duration::from_millis(500)).await;
 
         // Wing
-        _ = self.match_loader.set_low();
-        _ = move_to.speed(0.35).move_to_point(dt, Vec2::new(34.5, 28.0)).await;
-        _ = self.lift.set_high();
-        _ = self.duck_bill.set_low();
-        _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, Angle::from_degrees(90.0)).await;
+        _ = move_to.speed(0.5).move_to_point(dt, Vec2::new(33.5, 33.0)).await;
+        _ = turn.tolerance(Angle::from_degrees(1.0)).speed(0.6).turn_to(dt, Angle::QUARTER_TURN).await;
         _ = self.wing.toggle();
-        _ = move_to.speed(1.0).move_to_point(dt, Vec2::new(33.5, 64.0)).await;
+        _ = self.match_loader.set_low();
+        _ = move_to.speed(0.5).move_to_point(dt, Vec2::new(33.5, 64.0)).await;
+        _ = linear.min_velocity(5.0).speed(0.7).drive_distance(dt, 8.0).await;
         dt.brake(BrakeMode::Hold);
-        sleep_until(timer + Duration::from_secs(29)).await;
-        _ = self.wing.set_low();
+        info!("JustRush: {}", timer.elapsed().as_millis());
+        sleep_until(timer + Duration::from_secs_f64(29.5)).await;
+        // dt.set_arcade(-12.0, 0.0);
+
     }
 }
+ 
  

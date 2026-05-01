@@ -351,6 +351,7 @@ async fn main(peripherals: Peripherals) {
             "INCH",
             "skills",
             "skulls",
+            "decaball",
         ],
         LOGGER.clone_messages(),
         settings.clone(),

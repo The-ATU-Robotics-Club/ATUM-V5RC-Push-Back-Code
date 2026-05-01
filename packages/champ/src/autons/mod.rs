@@ -3,6 +3,7 @@ mod justrush;
 mod midthenrush;
 mod rushthenmid;
 mod troll;
+mod ucfatumizer;
 
 use atum::controllers::pid::Pid;
 
